@@ -1,0 +1,14 @@
+# Propriétaires du code : GitHub demande automatiquement leur revue sur chaque pull request.
+# La dernière règle qui correspond à un fichier l'emporte.
+# Une team propriétaire doit avoir au moins l'accès en écriture au dépôt.
+
+# Par défaut : mainteneurs de ForgeNet
+*                   @forgelab-dev/forgenet
+
+# Application mobile Flutter
+/mobile/            @forgelab-dev/flutter
+
+# Fichiers sensibles : CI, propriété du code, politique de sécurité, licence
+/.github/           @forgelab-dev/maintainers
+/SECURITY.md        @forgelab-dev/maintainers
+/LICENSE            @forgelab-dev/maintainers
