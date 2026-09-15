@@ -162,7 +162,7 @@ C'est la meilleure première contribution : elle n'exige aucune connaissance du 
 
 **N'ouvrez pas d'issue publique pour une vulnérabilité.**
 
-Écrivez à **security@lucidforgeafrica.com** avec la description, les étapes de reproduction et l'impact estimé. Nous accusons réception sous 72 heures et vous tenons informé du correctif. ForgeNet gère des secrets, des accès serveur et des données de production : ce canal est pris au sérieux.
+Utilisez le signalement privé de GitHub (onglet **Security** → **Report a vulnerability**) ou, sans compte GitHub, écrivez à **security@lucidforgeafrica.com**. Nous accusons réception sous 72 heures. Le processus complet (délais, périmètre, divulgation coordonnée) est décrit dans [SECURITY.md](SECURITY.md). ForgeNet gère des secrets, des accès serveur et des données de production : ce canal est pris au sérieux.
 
 ## Licence de vos contributions
 
