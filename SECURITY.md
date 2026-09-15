@@ -17,7 +17,7 @@ ForgeNet est en **pré-alpha** : aucune version n'est encore publiée pour la pr
 **N'ouvrez jamais d'issue, de discussion ou de pull request publique pour une vulnérabilité.**
 
 1. **Canal privilégié** : le signalement privé de GitHub. Onglet **Security** du dépôt, puis **Report a vulnerability**, ou directement [ce formulaire](https://github.com/forgelab-dev/lfa-forgenet/security/advisories/new). Seule l'équipe sécurité de ForgeLab y a accès.
-2. **Si vous n'avez pas de compte GitHub** : écrivez à **security@lucidforgeafrica.com**.
+2. **Si vous n'avez pas de compte GitHub** : écrivez à **contact@lucidforgeafrica.com** en indiquant « Sécurité ForgeNet » dans l'objet, sans détail technique dans ce premier message. Nous vous répondrons avec un moyen d'échange confidentiel.
 
 Indiquez si possible :
 
@@ -52,6 +52,6 @@ Nous pratiquons la **divulgation coordonnée** : merci de ne rien publier avant 
 
 ForgeNet is **pre-alpha**: only the `main` branch is supported until the first release.
 
-**Never report a vulnerability through a public issue, discussion or pull request.** Use GitHub's private reporting (**Security** tab → **Report a vulnerability**, or [this form](https://github.com/forgelab-dev/lfa-forgenet/security/advisories/new)). Without a GitHub account, email **security@lucidforgeafrica.com**.
+**Never report a vulnerability through a public issue, discussion or pull request.** Use GitHub's private reporting (**Security** tab → **Report a vulnerability**, or [this form](https://github.com/forgelab-dev/lfa-forgenet/security/advisories/new)). Without a GitHub account, email **contact@lucidforgeafrica.com** with "ForgeNet security" as the subject and no technical details in that first message; we will reply with a confidential channel.
 
 We acknowledge reports within 72 hours and give a first assessment within 7 days. We follow coordinated disclosure: please do not publish anything before the fix is released, or 90 days after your report at the latest. With your consent, you will be credited in the advisory.
