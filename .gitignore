@@ -1,0 +1,109 @@
+# ─── Secrets & configuration locale ────────────────────────────────────────
+# ForgeNet manipule des tokens Vault, des clés de registry et des clés de
+# paiement (FedaPay, Kkiapay, PayPal) : rien de tout cela ne doit être commité.
+.env
+.env.*
+!.env.example
+*.local
+secrets/
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+credentials.json
+service-account*.json
+
+# ─── Outils & éditeurs ─────────────────────────────────────────────────────
+.claude/
+.cursor/
+.aider*
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+*.swp
+*.swo
+*~
+
+# ─── Systèmes d'exploitation ───────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ─── Go (core engine, agent, CLI) ──────────────────────────────────────────
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.*
+vendor/
+go.work
+go.work.sum
+
+# ─── Node / React / Vite (web) ─────────────────────────────────────────────
+node_modules/
+web/dist/
+web/dev-dist/
+web/.vite/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+*.tsbuildinfo
+
+# ─── Flutter / Dart (mobile) ───────────────────────────────────────────────
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/build/
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Generated.xcconfig
+mobile/ios/Flutter/flutter_export_environment.sh
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/android/app/upload-keystore.jks
+*.iml
+.pub-cache/
+.pub/
+
+# ─── Données d'exécution locales ───────────────────────────────────────────
+# Base SQLite, état Caddy, volumes de test, modèles Ollama : jamais versionnés.
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+deploy/caddy_data/
+deploy/caddy_config/
+deploy/volumes/
+ollama/
+
+# ─── Build & logs ──────────────────────────────────────────────────────────
+*.log
+logs/
+tmp/
+.tmp/
+.cache/
+
+# ─── Notes
+# Le code généré depuis api/proto/ (clients Go, TypeScript, Dart) EST versionné :
+# il fait partie du contrat et doit rester synchronisé avec les .proto.
+# Voir CONTRIBUTING.md § « La règle du contrat api/ ».
