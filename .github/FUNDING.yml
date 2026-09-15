@@ -1,13 +1,9 @@
 # Affiche le bouton "Sponsor" en haut de la page GitHub du dépôt.
 # Docs : https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
 #
-# La clé `github:` est volontairement absente : GitHub Sponsors verse via Stripe
-# Connect, qui ne couvre pas le pays d'immatriculation de LucidForge Africa.
-# Même contrainte pour la plupart des plateformes de don (Ko-fi, Liberapay,
-# Buy Me a Coffee) qui s'appuient sur Stripe ou PayPal.
-#
-# On pointe donc vers notre propre page de don, qui regroupe FedaPay, Kkiapay
-# et PayPal. Un seul lien maîtrisé plutôt que trois liens de prestataires :
-# changer de passerelle ne demandera pas de modifier ce fichier.
+# - github : profil GitHub Sponsors de l'organisation ForgeLab (soutien mensuel ou ponctuel)
+# - custom : page de don LucidForge Africa regroupant FedaPay, Kkiapay et PayPal.
+#   Un seul lien maîtrisé : changer de passerelle ne demandera pas de modifier ce fichier.
 
+github: [forgelab-dev]
 custom: ["https://forgenet.lucidforgeafrica.com/soutenir"]

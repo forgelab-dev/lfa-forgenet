@@ -160,7 +160,8 @@ No Community feature is ever removed or crippled to push you toward a paid editi
 ForgeNet is built in West Africa on a modest budget. If it's useful to you:
 
 - ⭐ **Star the repo** — free, and it's what makes us visible
-- 💜 **[Donate](https://forgenet.lucidforgeafrica.com/soutenir)** — PayPal for international supporters, or FedaPay/Kkiapay in XOF (Orange Money, MTN MoMo, Moov, card)
+- 💜 **[GitHub Sponsors](https://github.com/sponsors/forgelab-dev)** — monthly or one-time support, 0% platform fees
+- 📱 **[Donate](https://forgenet.lucidforgeafrica.com/soutenir)** — PayPal for international supporters, or FedaPay/Kkiapay in XOF (Orange Money, MTN MoMo, Moov, card)
 - 🗣 **Spread the word** — a blog post, a tweet, a demo to your team
 
 ## 📄 License

@@ -15,7 +15,7 @@
 - Clarification de la stratégie d'infrastructure : partenariat plutôt que datacenter propre (hors de portée financièrement)
 - **v2.1.0** — Ajout d'un système de don/sponsoring (§5.4) en canal complémentaire, actif dès la Phase 0
 - **v2.2.0** — Correction de principe : stockage 100 % self-hosted sur MinIO, plus de revente de Backblaze B2/Wasabi. Le stockage est un coût inclus dans l'abonnement, jamais une ligne facturée à part — cohérent avec la promesse "zéro-cloud tiers" du produit
-- **v2.3.0** — **Bascule de Gitea vers GitHub** pour l'hébergement du dépôt, la CI/CD et le suivi de projet. Motif : la traction d'un projet open-source se joue là où la communauté se trouve déjà — un dépôt Gitea auto-hébergé est invisible pour les développeurs qui découvrent Coolify (52k étoiles) ou Dokploy. GitHub apporte la découvrabilité, les contributions externes et des Actions **gratuites et illimitées sur dépôt public** — le budget zéro est préservé. (L'argument "GitHub Sponsors en natif", avancé dans une première rédaction de cette entrée, a dû être retiré : LFA n'y est pas éligible — voir §5.3 bis. La bascule reste justifiée par les trois autres motifs.) Distinction à garder en tête : ce changement concerne l'outillage interne de LFA, **pas** le produit, qui continue de supporter Gitea comme source Git pour ses utilisateurs self-hosted
+- **v2.3.0** — **Bascule de Gitea vers GitHub** pour l'hébergement du dépôt, la CI/CD et le suivi de projet. Motif : la traction d'un projet open-source se joue là où la communauté se trouve déjà — un dépôt Gitea auto-hébergé est invisible pour les développeurs qui découvrent Coolify (52k étoiles) ou Dokploy. GitHub apporte la découvrabilité, les contributions externes, GitHub Sponsors en natif (activé pour l'organisation `forgelab-dev`, voir §5.3 bis) et des Actions **gratuites et illimitées sur dépôt public** — le budget zéro est préservé. Distinction à garder en tête : ce changement concerne l'outillage interne de LFA, **pas** le produit, qui continue de supporter Gitea comme source Git pour ses utilisateurs self-hosted
 - **v2.3.0** — Élargissement des moyens de paiement : **FedaPay, Kkiapay et PayPal** (§5.3 bis, §5.3, §3). FedaPay et Kkiapay couvrent le rail FCFA/Mobile Money en redondance l'un de l'autre ; PayPal ouvre le rail international (diaspora, clients hors zone FCFA) que le Mobile Money ne peut pas servir. Point de vigilance consigné : l'encaissement PayPal est restreint dans plusieurs pays d'Afrique de l'Ouest — à confirmer avant toute communication publique
 
 ---
@@ -183,11 +183,11 @@ Génère du cash sans opérer le moindre serveur pour un client :
 
 À traiter comme un **complément de trésorerie, pas comme un pilier** : même pour des projets open-source établis, les dons individuels tournent typiquement autour de quelques dizaines à quelques centaines de dollars par sponsor et par an — utile pour couvrir les petits coûts récurrents (nom de domaine, VPS de démo, etc.), pas pour financer un salaire.
 
-**❌ GitHub Sponsors — écarté, LFA n'est pas éligible**
-- Les versements GitHub Sponsors transitent par **Stripe Connect**, qui ne couvre pas le pays d'immatriculation de LucidForge Africa. Le canal est donc fermé, quelle que soit la qualité du dépôt ou du profil
-- **La même contrainte élimine la plupart des plateformes de don grand public** — Ko-fi, Liberapay, Buy Me a Coffee, Patreon s'appuient toutes sur Stripe ou PayPal. Inutile de les évaluer une par une : elles buteront sur le même mur
-- Conséquence sur le §5.2 : la ligne "canal de don ouvert dès la Phase 0" reste valable, mais elle repose désormais **entièrement sur les passerelles locales**, pas sur un canal international clé en main
-- Conséquence sur le choix GitHub (§4) : la bascule Gitea → GitHub reste justifiée par la découvrabilité, les contributions externes et la CI gratuite — mais **l'argument "GitHub Sponsors en natif" tombe** et ne doit plus être avancé
+**Canal international — GitHub Sponsors (actif, organisation `forgelab-dev`)**
+- **0 % de frais de plateforme** sur les parrainages, contrairement à Patreon ou aux hôtes fiscaux d'Open Collective
+- Paliers mensuels et dons ponctuels, bouton "Sponsor" affiché nativement sur le dépôt
+- Versements via **Stripe Express**, en XOF
+- Leçon retenue : une version intermédiaire de ce document déclarait ce canal inaccessible, à tort. L'éligibilité dépend du pays du compte de versement et se vérifie **directement dans l'assistant d'inscription** — ne jamais la présumer pour une plateforme de paiement
 
 **Canal principal — FCFA via Mobile Money (FedaPay + Kkiapay)**
 - **FedaPay** — passerelle principale, déjà intégrée dans LucidPay : Orange Money, MTN MoMo, Moov, carte. Coût marginal quasi nul puisque l'intégration existe déjà dans l'écosystème LFA
@@ -195,17 +195,17 @@ Génère du cash sans opérer le moindre serveur pour un client :
 - Pertinent pour capter le soutien d'un public local (devs, PME, diaspora) plus à l'aise en FCFA/Mobile Money qu'en carte internationale
 
 **Canal international — PayPal**
-- Seul canal international restant après l'exclusion de GitHub Sponsors : couvre la diaspora et les contributeurs hors zone FCFA, sans Mobile Money
+- Complète GitHub Sponsors : Sponsors capte les développeurs, PayPal la diaspora et les contributeurs hors zone FCFA qui n'ont pas de compte GitHub
 - Sert aussi les achats ponctuels (mission, licence, don unique) auprès de clients étrangers
-- ⚠️ **À vérifier avant annonce publique** : PayPal restreint la *réception* de fonds dans plusieurs pays d'Afrique de l'Ouest (l'envoi y est souvent ouvert, l'encaissement non). Confirmer l'éligibilité du compte marchand LFA avant d'afficher ce canal sur le site ou le README. **Si l'encaissement PayPal est lui aussi fermé, il ne reste plus aucun canal international direct** — voir Open Collective ci-dessous
+- ⚠️ **À vérifier avant annonce publique** : PayPal restreint la *réception* de fonds dans plusieurs pays d'Afrique de l'Ouest (l'envoi y est souvent ouvert, l'encaissement non). Confirmer l'éligibilité du compte marchand LFA avant d'afficher ce canal sur le site ou le README. Si l'encaissement est fermé, GitHub Sponsors reste le canal international
 
-**Canal de repli — Open Collective (à évaluer sérieusement)**
-- Passe d'option secondaire à **alternative principale pour l'international** : Open Collective fonctionne via un **hôte fiscal** qui reçoit les fonds à la place du projet. C'est précisément ce qui permet de contourner le blocage Stripe/PayPal — l'hôte est domicilié dans un pays supporté, pas le projet
+**Canal optionnel — Open Collective**
+- Utile uniquement si un sponsor institutionnel ou une entreprise exige un budget public et transparent avant de s'engager (cas Enterprise/Phase 3 plutôt que Phase 0). Fonctionne via un **hôte fiscal** qui reçoit les fonds à la place du projet
 - Contrepartie : commission de 5 à 15 % des fonds entrants, et une gouvernance plus lourde (budget public, justification des dépenses)
 - Bénéfice secondaire réel : la transparence budgétaire est un argument face aux sponsors institutionnels et aux prospects Enterprise qui évaluent la pérennité du projet
-- **Action** : si PayPal s'avère également fermé, c'est la voie à instruire en priorité pour ne pas se priver totalement du soutien international
+- À réserver aux cas où la transparence budgétaire est elle-même un argument de vente, pas comme canal par défaut
 
-**Mise en œuvre** : une page de don **`https://forgenet.lucidforgeafrica.com/soutenir`** regroupant FedaPay, Kkiapay et PayPal, référencée depuis un fichier `.github/FUNDING.yml` via la clé `custom:` — ce qui affiche quand même le bouton "Sponsor" en haut de la page GitHub, sans passer par GitHub Sponsors. La clé `github:` est volontairement absente (voir ci-dessus).
+**Mise en œuvre** : une page de don **`https://forgenet.lucidforgeafrica.com/soutenir`** regroupant FedaPay, Kkiapay et PayPal, et le profil GitHub Sponsors de `forgelab-dev`, tous deux référencés dans `.github/FUNDING.yml` (clés `github:` et `custom:`) — le bouton "Sponsor" en haut de la page GitHub propose ainsi les deux options.
 
 Un seul lien maîtrisé plutôt que trois liens de prestataires : changer de passerelle, en ajouter une ou en retirer une ne demandera aucune modification du dépôt ni de nouvelle release. Aucun développement lourd, activable dès la Phase 0 — c'est d'ailleurs l'une des raisons de la bascule vers GitHub : ce canal y est natif et sans frais.
 
@@ -214,7 +214,7 @@ Un seul lien maîtrisé plutôt que trois liens de prestataires : changer de pas
 | Offre | Cible | Tarif révisé | Coût infra pour LFA |
 |---|---|---|---|
 | Community Edition | Devs, étudiants | Gratuit | Nul |
-| Dons / Sponsoring | Soutien local, diaspora | Libre — FedaPay et Kkiapay (FCFA/Mobile Money), PayPal (int'l, sous réserve d'éligibilité) | Nul |
+| Dons / Sponsoring | Devs (int'l), soutien local, diaspora | Libre — GitHub Sponsors (0 % frais), FedaPay et Kkiapay (FCFA/Mobile Money), PayPal (int'l, sous réserve d'éligibilité) | Nul |
 | Prestations Lancement & Migration | PME, agences | 150k-500k FCFA / mission | Nul (client héberge) |
 | Managed Cloud Lite — Starter | Freelances, PME | ~5-8k FCFA/mois | ~5-20 €/mois mutualisé |
 | Managed Cloud Lite — Pro | PME, agences | ~15-25k FCFA/mois | Idem + stockage MinIO self-hosted inclus (aucune facturation séparée) |
@@ -240,7 +240,7 @@ Un seul lien maîtrisé plutôt que trois liens de prestataires : changer de pas
 - Taux de conversion Community → Managed Cloud
 - Nombre de missions "Lancement & Migration" signées / mois
 - Tickets de support (volume et délai de réponse, argument de vente du support FR)
-- Dons/sponsoring cumulés par mois, ventilés par canal (FedaPay, Kkiapay, PayPal) — à suivre séparément du MRR, sans jamais le remplacer dans les projections. La ventilation par canal permet aussi d'arbitrer au bout de quelques mois : si Kkiapay ou PayPal ne capte rien, autant retirer le canal que maintenir une intégration pour rien
+- Dons/sponsoring cumulés par mois, ventilés par canal (GitHub Sponsors, FedaPay, Kkiapay, PayPal) — à suivre séparément du MRR, sans jamais le remplacer dans les projections. La ventilation par canal permet aussi d'arbitrer au bout de quelques mois : si Kkiapay ou PayPal ne capte rien, autant retirer le canal que maintenir une intégration pour rien
 
 ---
 
@@ -263,7 +263,7 @@ Un seul lien maîtrisé plutôt que trois liens de prestataires : changer de pas
 - MinIO — stockage objet S3-compatible open-source, déjà présent dans la stack Marketplace 1-Click de ForgeNet ; le block storage cloud (nécessaire pour l'héberger) reste plus cher au To qu'un service comme Backblaze, mais élimine toute dépendance à un cloud tiers payant
 - Coût de construction d'un datacenter Tier III — ~11,3 M$/MW (rapport Africa Data Centres Association, 2026)
 - Partenariat ST Digital × OVHcloud (On-Prem Cloud Platform) — Côte d'Ivoire, Gabon, Cameroun, facturation en monnaie locale
-- GitHub Sponsors — 0 % de frais de plateforme, mais **versements via Stripe Connect uniquement** : canal inaccessible à LFA, et par extension à la plupart des structures d'Afrique de l'Ouest. Même verrou sur Ko-fi, Liberapay, Buy Me a Coffee et Patreon
+- GitHub Sponsors — 0 % de frais de plateforme, paliers mensuels et ponctuels, versements via Stripe Express ; éligibilité vérifiée en septembre 2026 pour l'organisation `forgelab-dev`
 - Open Collective — fonctionnement via hôte fiscal, commission typique de 5 à 15 % des fonds entrants
 - FedaPay — passerelle de paiement déjà intégrée dans LucidPay (Mobile Money Orange/MTN/Moov, cartes, FCFA)
 - Kkiapay — passerelle FCFA alternative (Mobile Money, cartes), retenue en redondance de FedaPay ; grille tarifaire et couverture opérateur à comparer avant mise en production

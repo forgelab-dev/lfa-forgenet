@@ -154,7 +154,7 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 - [ ] Couche d'abstraction paiement (un seul port `PaymentProvider`, trois adaptateurs) — ne jamais coder un prestataire en dur dans la logique de facturation `☁️ MC`
 - [ ] Gestion d'abonnement (upgrade/downgrade Starter/Pro) `☁️ MC`
 - [ ] Factures téléchargeables `☁️ MC`
-- [ ] Page "Soutenir ForgeNet" sur `forgenet.lucidforgeafrica.com/soutenir` (FedaPay, Kkiapay, PayPal) — référencée depuis `.github/FUNDING.yml` `🔓 CE`
+- [ ] Page "Soutenir ForgeNet" sur `forgenet.lucidforgeafrica.com/soutenir` (GitHub Sponsors, FedaPay, Kkiapay, PayPal) — page et profil Sponsors référencés depuis `.github/FUNDING.yml` `🔓 CE`
 
 ### 2.9 Paramètres & Compte
 - [ ] Profil, tokens API, préférences de notification `🔓 CE`
