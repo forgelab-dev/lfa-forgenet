@@ -30,7 +30,7 @@ Indiquez si possible :
 
 | Étape | Délai |
 |---|---|
-| Accusé de réception | sous 72 heures |
+| Accusé de réception | sous 72 heures ouvrées |
 | Première évaluation (confirmation, gravité) | sous 7 jours |
 | Correctif et avis de sécurité publié | selon la gravité, en vous tenant informé |
 
@@ -54,4 +54,4 @@ ForgeNet is **pre-alpha**: only the `main` branch is supported until the first r
 
 **Never report a vulnerability through a public issue, discussion or pull request.** Use GitHub's private reporting (**Security** tab → **Report a vulnerability**, or [this form](https://github.com/forgelab-dev/lfa-forgenet/security/advisories/new)). Without a GitHub account, email **contact@lucidforgeafrica.com** with "ForgeNet security" as the subject and no technical details in that first message; we will reply with a confidential channel.
 
-We acknowledge reports within 72 hours and give a first assessment within 7 days. We follow coordinated disclosure: please do not publish anything before the fix is released, or 90 days after your report at the latest. With your consent, you will be credited in the advisory.
+We acknowledge reports within 72 business hours and give a first assessment within 7 days. We follow coordinated disclosure: please do not publish anything before the fix is released, or 90 days after your report at the latest. With your consent, you will be credited in the advisory.
