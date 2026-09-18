@@ -1,0 +1,210 @@
+syntax = "proto3";
+
+package forgenet.v1;
+
+import "forgenet/v1/container.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1";
+
+// --- ENUMS ---
+
+// DeploymentState représente la machine à états explicite du cycle de vie d'un déploiement.
+// Transitions autorisées :
+// PENDING -> BUILDING, CANCELLED
+// BUILDING -> DEPLOYING, FAILED, CANCELLED
+// DEPLOYING -> HEALTH_CHECKING, FAILED, CANCELLED
+// HEALTH_CHECKING -> SUCCESS, FAILED, ROLLING_BACK
+// ROLLING_BACK -> ROLLED_BACK, FAILED
+enum DeploymentState {
+  DEPLOYMENT_STATE_UNSPECIFIED = 0;
+  DEPLOYMENT_STATE_PENDING = 1;
+  DEPLOYMENT_STATE_BUILDING = 2;
+  DEPLOYMENT_STATE_DEPLOYING = 3;
+  DEPLOYMENT_STATE_HEALTH_CHECKING = 4;
+  DEPLOYMENT_STATE_SUCCESS = 5;
+  DEPLOYMENT_STATE_FAILED = 6;
+  DEPLOYMENT_STATE_CANCELLED = 7;
+  DEPLOYMENT_STATE_ROLLING_BACK = 8;
+  DEPLOYMENT_STATE_ROLLED_BACK = 9;
+}
+
+// --- STRATEGY CONFIGURATIONS ---
+
+message RecreateStrategy {}
+
+message RollingStrategy {
+  uint32 max_surge = 1; // ex: nombre ou % de conteneurs temporaires autorisés
+  uint32 max_unavailable = 2; // ex: nombre ou % de conteneurs indisponibles pendant la mise à jour
+}
+
+message BlueGreenStrategy {
+  uint32 auto_promote_seconds = 1; // Délai avant bascule automatique si health check OK (0 = manuel)
+}
+
+message CanaryStrategy {
+  uint32 initial_weight_percent = 1; // ex: 10 pour 10% du trafic
+  uint32 step_weight_percent = 2; // ex: 20% à chaque palier
+  uint32 step_interval_seconds = 3; // Durée d'observation entre deux paliers
+}
+
+// StrategyConfig définit la méthode d'exécution et sa configuration associée.
+message StrategyConfig {
+  oneof strategy {
+    RecreateStrategy recreate = 1;
+    RollingStrategy rolling = 2;
+    BlueGreenStrategy blue_green = 3;
+    CanaryStrategy canary = 4;
+  }
+}
+
+// --- MODELS & ONE OF SOURCES ---
+
+// GitSource définit un déploiement basé sur un dépôt Git à builder.
+message GitSource {
+  string repository_url = 1;
+  string branch = 2;
+  string commit_sha = 3;
+  string dockerfile_path = 4;
+}
+
+// ImageSource définit un déploiement depuis une image Docker pré-construite.
+message ImageSource {
+  string image_ref = 1;
+}
+
+// ComposeSource définit un déploiement basé sur un fichier Docker Compose.
+message ComposeSource {
+  string compose_content = 1;
+}
+
+// DeploymentSource garantit qu'une seule source est spécifiée à la fois.
+message DeploymentSource {
+  oneof source {
+    GitSource git = 1;
+    ImageSource image = 2;
+    ComposeSource compose = 3;
+  }
+}
+
+// Deployment représente l'entité globale d'une opération de déploiement.
+message Deployment {
+  string id = 1;
+  string project_id = 2;
+  DeploymentSource source = 3;
+  DeploymentState state = 4;
+  StrategyConfig strategy = 5;
+  string error_message = 6;
+  string target_env = 7; // ex: "staging", "production"
+  string previous_deployment_id = 8; // Permet de suivre la chaîne de rollback
+  string triggered_by = 9; // ex: "user:123", "webhook:github", "system:auto-rollback"
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  google.protobuf.Timestamp finished_at = 12;
+}
+
+// DeploymentLogEntry représente une ligne de log d'exécution du build ou déploiement.
+message DeploymentLogEntry {
+  google.protobuf.Timestamp emitted_at = 1;
+  string message = 2;
+  string step = 3; // ex: "git_clone", "docker_build", "health_check"
+  LogStream stream = 4; // Utilise LogStream (STDOUT/STDERR) depuis container.proto
+}
+
+// --- REQUEST / RESPONSE MESSAGES ---
+
+message CreateDeploymentRequest {
+  string project_id = 1;
+  DeploymentSource source = 2;
+  StrategyConfig strategy = 3;
+  string target_env = 4;
+  string request_id = 5; // Clé d'idempotence pour éviter les doublons lors des réémissions
+}
+
+message CreateDeploymentResponse {
+  Deployment deployment = 1;
+}
+
+message GetDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message GetDeploymentResponse {
+  Deployment deployment = 1;
+}
+
+message ListDeploymentsRequest {
+  string project_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListDeploymentsResponse {
+  repeated Deployment deployments = 1;
+  string next_page_token = 2;
+}
+
+message CancelDeploymentRequest {
+  string deployment_id = 1;
+  string reason = 2;
+}
+
+message CancelDeploymentResponse {
+  Deployment deployment = 1;
+}
+
+message RollbackDeploymentRequest {
+  string target_deployment_id = 1;
+  string request_id = 2;
+}
+
+message RollbackDeploymentResponse {
+  Deployment deployment = 1;
+}
+
+message StreamDeploymentLogsRequest {
+  string deployment_id = 1;
+  bool follow = 2;
+  google.protobuf.Timestamp since = 3;
+  // Filtrage par flux de sortie.
+  // Si la valeur est LOG_STREAM_UNSPECIFIED, les deux flux (STDOUT et STDERR) sont fusionnés et renvoyés.
+  LogStream stream = 4;
+}
+
+message StreamDeploymentLogsResponse {
+  DeploymentLogEntry log_entry = 1;
+}
+
+message StreamDeploymentRequest {
+  string deployment_id = 1;
+}
+
+message StreamDeploymentResponse {
+  Deployment deployment = 1; // Renvoyer l'objet complet simplifie la mise à jour côté client
+}
+
+// --- SERVICE ---
+
+// DeploymentService gère le cycle de vie asynchrone des déploiements des applications.
+service DeploymentService {
+  // CreateDeployment initie un déploiement de manière asynchrone (retourne immédiatement l'état PENDING).
+  rpc CreateDeployment(CreateDeploymentRequest) returns (CreateDeploymentResponse);
+
+  // GetDeployment récupère les métadonnées d'un déploiement donné.
+  rpc GetDeployment(GetDeploymentRequest) returns (GetDeploymentResponse);
+
+  // ListDeployments liste l'historique des déploiements d'un projet.
+  rpc ListDeployments(ListDeploymentsRequest) returns (ListDeploymentsResponse);
+
+  // CancelDeployment interrompt un déploiement en cours s'il est dans un état annulable (PENDING, BUILDING, DEPLOYING).
+  rpc CancelDeployment(CancelDeploymentRequest) returns (CancelDeploymentResponse);
+
+  // RollbackDeployment initie un nouveau déploiement basé sur un état stable antérieur.
+  rpc RollbackDeployment(RollbackDeploymentRequest) returns (RollbackDeploymentResponse);
+
+  // StreamDeploymentLogs fournit en temps réel les logs de build et de déploiement (STDOUT/STDERR).
+  rpc StreamDeploymentLogs(StreamDeploymentLogsRequest) returns (stream StreamDeploymentLogsResponse);
+
+  // StreamDeployment transmet en streaming les mises à jour complètes de l'état du déploiement.
+  rpc StreamDeployment(StreamDeploymentRequest) returns (stream StreamDeploymentResponse);
+}
