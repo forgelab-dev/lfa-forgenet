@@ -19,6 +19,13 @@ enum ContainerState {
   CONTAINER_STATE_DEAD = 6;
 }
 
+// LogStream identifie le flux de sortie du conteneur (stderr ou stdout)
+enum LogStream {
+  LOG_STREAM_UNSPECIFIED = 0;
+  LOG_STREAM_STDERR = 1;
+  LOG_STREAM_STDOUT = 2;
+}
+
 // --- MODELS ---
 
 // PortMapping définit la redirection d'un port hôte vers un port conteneur.
@@ -89,11 +96,13 @@ message StreamContainerLogsRequest {
   bool follow = 2;
   int32 tail_lines = 3;
   google.protobuf.Timestamp since = 4;
+  LogStream stream = 5;
 }
 
 message StreamContainerLogsResponse {
   bytes chunk = 1;
   google.protobuf.Timestamp emitted = 2;
+  LogStream stream = 3;
 }
 
 // --- SERVICE ---
