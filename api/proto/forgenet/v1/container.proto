@@ -102,7 +102,7 @@ message StreamContainerLogsRequest {
 message StreamContainerLogsResponse {
   bytes chunk = 1;
   google.protobuf.Timestamp emitted = 2;
-  LogStream stream = 3;
+  LogStream source = 3;
 }
 
 // --- SERVICE ---
