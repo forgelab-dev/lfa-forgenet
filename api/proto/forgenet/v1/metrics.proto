@@ -1,0 +1,239 @@
+syntax = "proto3";
+
+package forgenet.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1";
+
+// --- ENUMS ---
+
+// MetricUnit définit la liste fermée et exhaustive des unités de mesure.
+enum MetricUnit {
+  METRIC_UNIT_UNSPECIFIED = 0;
+  METRIC_UNIT_PERCENT = 1; // Pourcentage (0-100)
+  METRIC_UNIT_BYTES = 2; // Octets
+  METRIC_UNIT_NANOSECONDS = 3; // Nanosecondes
+  METRIC_UNIT_PACKETS = 4; // Nombre de paquets réseau
+  METRIC_UNIT_OPERATIONS = 5; // Nombre d'opérations d'E/S (I/O Ops)
+  METRIC_UNIT_SECONDS = 6; // Secondes (uptime, durées)
+  METRIC_UNIT_COUNT = 7; // Compteur générique (ex: nombre de conteneurs)
+}
+
+// MetricName définit la liste fermée des métriques observables natives du système.
+enum MetricName {
+  METRIC_NAME_UNSPECIFIED = 0;
+  METRIC_NAME_CPU_USAGE_PERCENT = 1;
+  METRIC_NAME_CPU_SYSTEM_NANOSECONDS = 2;
+  METRIC_NAME_MEMORY_USAGE_BYTES = 3;
+  METRIC_NAME_MEMORY_LIMIT_BYTES = 4;
+  METRIC_NAME_MEMORY_CACHE_BYTES = 5;
+  METRIC_NAME_MEMORY_USAGE_PERCENT = 6;
+  METRIC_NAME_NETWORK_RX_BYTES_TOTAL = 7;
+  METRIC_NAME_NETWORK_TX_BYTES_TOTAL = 8;
+  METRIC_NAME_NETWORK_RX_PACKETS_TOTAL = 9;
+  METRIC_NAME_NETWORK_TX_PACKETS_TOTAL = 10;
+  METRIC_NAME_NETWORK_RX_ERRORS_TOTAL = 11;
+  METRIC_NAME_NETWORK_TX_ERRORS_TOTAL = 12;
+  METRIC_NAME_DISK_READ_BYTES_TOTAL = 13;
+  METRIC_NAME_DISK_WRITE_BYTES_TOTAL = 14;
+  METRIC_NAME_DISK_READ_OPS_TOTAL = 15;
+  METRIC_NAME_DISK_WRITE_OPS_TOTAL = 16;
+  METRIC_NAME_STORAGE_TOTAL_BYTES = 17;
+  METRIC_NAME_STORAGE_USED_BYTES = 18;
+  METRIC_NAME_STORAGE_FREE_BYTES = 19;
+  METRIC_NAME_STORAGE_USAGE_PERCENT = 20;
+  METRIC_NAME_SYSTEM_UPTIME_SECONDS = 21;
+  METRIC_NAME_SYSTEM_ACTIVE_CONTAINERS_COUNT = 22;
+}
+
+// --- COMMON & TIME STRUCTURES ---
+
+// MetricKey identifie une métrique, native ou fournie par une extension.
+message MetricKey {
+  oneof key {
+    // Métrique native de ForgeNet, valeur garantie par le contrat.
+    MetricName known = 1;
+    // Métrique déclarée par un plugin tiers, espace de noms obligatoire
+    // (ex: "acme.queue_depth"). Jamais utilisée pour une métrique native.
+    string custom = 2;
+  }
+}
+
+// TimeRange définit une fenêtre temporelle pour les requêtes d'historique.
+message TimeRange {
+  google.protobuf.Timestamp start_time = 1;
+  google.protobuf.Timestamp end_time = 2;
+}
+
+// MetricSample représente un point de mesure unique dans une série temporelle.
+message MetricSample {
+  google.protobuf.Timestamp timestamp = 1;
+  double value = 2;
+}
+
+// MetricSeries regroupe une série de mesures chronologiques pour une métrique donnée.
+message MetricSeries {
+  MetricKey key = 1;
+  MetricUnit unit = 2;
+  repeated MetricSample samples = 3;
+}
+
+// --- MODELS ---
+
+// CpuMetrics définit la consommation de ressources processeur.
+message CpuMetrics {
+  double cpu_usage_percent = 1; // Utilisation instantanée (ex: 45.5 pour 45.5%)
+  uint32 online_cpus = 2; // Nombre de cœurs attribués/disponibles
+  uint64 system_cpu_nanoseconds = 3; // Temps CPU cumulé consommé par le système
+}
+
+// MemoryMetrics définit l'utilisation de la mémoire RAM et du cache.
+message MemoryMetrics {
+  uint64 usage_bytes = 1; // Octets actuellement utilisés
+  uint64 limit_bytes = 2; // Limite maximale allouée
+  uint64 cache_bytes = 3; // Mémoire tampon/cache réclamable
+  double usage_percent = 4; // Pourcentage d'utilisation de la RAM
+}
+
+// NetworkMetrics détaille le trafic réseau cumulé (compteurs Prometheus).
+message NetworkMetrics {
+  uint64 rx_bytes_total = 1; // Octets reçus cumulés
+  uint64 tx_bytes_total = 2; // Octets transmis cumulés
+  uint64 rx_packets_total = 3; // Paquets reçus cumulés
+  uint64 tx_packets_total = 4; // Paquets transmis cumulés
+  uint64 rx_errors_total = 5; // Erreurs de réception cumulées
+  uint64 tx_errors_total = 6; // Erreurs de transmission cumulées
+}
+
+// DiskIoMetrics détaille les opérations d'E/S sur le disque (compteurs Prometheus).
+message DiskIoMetrics {
+  uint64 read_bytes_total = 1; // Octets lus cumulés
+  uint64 write_bytes_total = 2; // Octets écrits cumulés
+  uint64 read_ops_total = 3; // Nombre total d'opérations de lecture
+  uint64 write_ops_total = 4; // Nombre total d'opérations d'écriture
+}
+
+// StorageMetrics détaille l'occupation du stockage disque.
+message StorageMetrics {
+  uint64 total_bytes = 1; // Capacité totale du disque
+  uint64 used_bytes = 2; // Espace utilisé
+  uint64 free_bytes = 3; // Espace disponible
+  double usage_percent = 4; // Pourcentage d'occupation du disque
+}
+
+// ContainerMetrics regroupe l'ensemble des métriques d'un conteneur à un instant T.
+message ContainerMetrics {
+  string container_id = 1;
+  google.protobuf.Timestamp collected_at = 2;
+  CpuMetrics cpu = 3;
+  MemoryMetrics memory = 4;
+  NetworkMetrics network = 5;
+  DiskIoMetrics disk_io = 6;
+}
+
+// SystemMetrics regroupe les métriques globales du nœud hôte.
+message SystemMetrics {
+  google.protobuf.Timestamp collected_at = 1;
+  uint64 uptime_seconds = 2; // Temps d'activité du système en secondes
+  CpuMetrics cpu = 3;
+  MemoryMetrics memory = 4;
+  StorageMetrics storage = 5; // Occupation du disque hôte
+  NetworkMetrics network = 6;
+  DiskIoMetrics disk_io = 7;
+  uint32 active_containers_count = 8;
+}
+
+// --- REQUEST / RESPONSE MESSAGES ---
+
+message GetContainerMetricsRequest {
+  string container_id = 1;
+}
+
+message GetContainerMetricsResponse {
+  ContainerMetrics metrics = 1;
+}
+
+message StreamContainerMetricsRequest {
+  string container_id = 1;
+  // Intervalle d'échantillonnage en secondes.
+  // Si non spécifié ou égal à 0, le serveur utilise son intervalle par défaut (2s).
+  uint32 interval_seconds = 2;
+}
+
+message StreamContainerMetricsResponse {
+  ContainerMetrics metrics = 1;
+}
+
+message QueryContainerMetricsRequest {
+  string container_id = 1;
+  TimeRange range = 2;
+  // Résolution d'agrégation souhaitée en secondes (ex: 60s pour un point par minute).
+  // Si non renseigné ou égal à 0, le serveur applique un pas d'agrégation automatique adapté à la plage demandée.
+  uint32 step_seconds = 3;
+  // Nombre maximum de points retournés par série pour économiser la bande passante.
+  // Si 0, le serveur applique son plafond maximal (ex: 1000 points).
+  uint32 max_points = 4;
+  // Liste optionnelle des métriques spécifiques à extraire. Si vide, toutes les métriques sont retournées.
+  repeated MetricKey keys = 5;
+}
+
+message QueryContainerMetricsResponse {
+  string container_id = 1;
+  repeated MetricSeries series = 2;
+}
+
+message GetSystemMetricsRequest {}
+
+message GetSystemMetricsResponse {
+  SystemMetrics metrics = 1;
+}
+
+message StreamSystemMetricsRequest {
+  // Intervalle d'échantillonnage en secondes.
+  // Si non spécifié ou égal à 0, le serveur utilise son intervalle par défaut (5s).
+  uint32 interval_seconds = 1;
+}
+
+message StreamSystemMetricsResponse {
+  SystemMetrics metrics = 1;
+}
+
+message QuerySystemMetricsRequest {
+  TimeRange range = 1;
+  // Résolution d'agrégation souhaitée en secondes.
+  // Si 0, le serveur applique son pas d'agrégation automatique.
+  uint32 step_seconds = 2;
+  // Nombre maximum de points retournés par série.
+  // Si 0, le serveur applique son plafond par défaut (ex: 1000 points).
+  uint32 max_points = 3;
+  // Liste optionnelle des métriques spécifiques à extraire. Si vide, toutes les métriques sont retournées.
+  repeated MetricKey keys = 4;
+}
+
+message QuerySystemMetricsResponse {
+  repeated MetricSeries series = 1;
+}
+
+// --- SERVICE ---
+
+// MetricsService fournit la collecte de télémesures en temps réel, en streaming et historiques.
+service MetricsService {
+  // GetContainerMetrics récupère les métriques instantanées d'un conteneur.
+  rpc GetContainerMetrics(GetContainerMetricsRequest) returns (GetContainerMetricsResponse);
+
+  // StreamContainerMetrics transmet en temps réel le flux de métriques d'un conteneur.
+  rpc StreamContainerMetrics(StreamContainerMetricsRequest) returns (stream StreamContainerMetricsResponse);
+
+  // QueryContainerMetrics interroge les séries temporelles historiques d'un conteneur avec résolution ajustable et garde-fous de bande passante.
+  rpc QueryContainerMetrics(QueryContainerMetricsRequest) returns (QueryContainerMetricsResponse);
+
+  // GetSystemMetrics récupère l'état d'utilisation instantané du système hôte.
+  rpc GetSystemMetrics(GetSystemMetricsRequest) returns (GetSystemMetricsResponse);
+
+  // StreamSystemMetrics transmet en continu l'état des ressources globales du nœud hôte.
+  rpc StreamSystemMetrics(StreamSystemMetricsRequest) returns (stream StreamSystemMetricsResponse);
+
+  // QuerySystemMetrics interroge les séries temporelles historiques du système hôte.
+  rpc QuerySystemMetrics(QuerySystemMetricsRequest) returns (QuerySystemMetricsResponse);
+}
