@@ -1,0 +1,33 @@
+version: v2
+plugins:
+  # --- GO PLUGINS ---
+  # 1. Génère le code client et serveur gRPC
+  - remote: buf.build/grpc/go
+    out: ../pkg/gen
+    opt:
+      - paths=source_relative
+  
+  # 2. Génère les structures de données (messages, enums)
+  - remote: buf.build/protocolbuffers/go
+    out: ../pkg/gen
+    opt:
+      - paths=source_relative
+
+  # --- TYPESCRIPT PLUGINS ---
+  # Génère le code TypeScript moderne (Protobuf-ES & ConnectRPC)
+  - remote: buf.build/connectrpc/es
+    out: ../web/src/gen
+    opt:
+      - target=ts
+
+  - remote: buf.build/bufbuild/es
+    out: ../web/src/gen
+    opt:
+      - target=ts
+
+  # --- DART PLUGIN ---
+  # Génère les messages et clients gRPC pour Dart / Flutter
+  - remote: buf.build/protocolbuffers/dart
+    out: ../mobile/lib/src/gen
+    opt:
+      - grpc
