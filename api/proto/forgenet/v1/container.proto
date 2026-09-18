@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package forgenet.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1";
+
+// --- ENUMS ---
+
+// ContainerState représente les différents états possibles du cycle de vie d'un conteneur.
+enum ContainerState {
+  CONTAINER_STATE_UNSPECIFIED = 0;
+  CONTAINER_STATE_CREATED = 1;
+  CONTAINER_STATE_RUNNING = 2;
+  CONTAINER_STATE_PAUSED = 3;
+  CONTAINER_STATE_RESTARTING = 4;
+  CONTAINER_STATE_EXITED = 5;
+  CONTAINER_STATE_DEAD = 6;
+}
+
+// --- MODELS ---
+
+// PortMapping définit la redirection d'un port hôte vers un port conteneur.
+message PortMapping {
+  uint32 host_port = 1;
+  uint32 container_port = 2;
+  string protocol = 3; // ex: "tcp", "udp"
+}
+
+// Container représente l'état complet et les métadonnées d'un conteneur.
+message Container {
+  string id = 1;
+  string name = 2;
+  string image = 3;
+  ContainerState state = 4;
+  repeated PortMapping ports = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+// --- REQUEST / RESPONSE MESSAGES ---
+
+message ListContainersRequest {
+  bool include_stopped = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListContainersResponse {
+  repeated Container containers = 1;
+  string next_page_token = 2;
+}
+
+message GetContainerRequest {
+  string container_id = 1;
+}
+
+message GetContainerResponse {
+  Container container = 1;
+}
+
+message StartContainerRequest {
+  string container_id = 1;
+}
+
+message StartContainerResponse {
+  Container container = 1;
+}
+
+message StopContainerRequest {
+  string container_id = 1;
+  uint32 timeout_seconds = 2;
+}
+
+message StopContainerResponse {
+  Container container = 1;
+}
+
+message RestartContainerRequest {
+  string container_id = 1;
+}
+
+message RestartContainerResponse {
+  Container container = 1;
+}
+
+message StreamContainerLogsRequest {
+  string container_id = 1;
+  bool follow = 2;
+  int32 tail_lines = 3;
+  google.protobuf.Timestamp since = 4;
+}
+
+message StreamContainerLogsResponse {
+  bytes chunk = 1;
+  google.protobuf.Timestamp emitted = 2;
+}
+
+// --- SERVICE ---
+
+// ContainerService fournit les méthodes gRPC pour gérer le cycle de vie des conteneurs.
+service ContainerService {
+  // ListContainers retourne la liste paginée des conteneurs existants.
+  rpc ListContainers(ListContainersRequest) returns (ListContainersResponse);
+
+  // GetContainer récupère les informations détaillées d'un conteneur spécifique par son ID.
+  rpc GetContainer(GetContainerRequest) returns (GetContainerResponse);
+
+  // StartContainer démarre un conteneur arrêté.
+  rpc StartContainer(StartContainerRequest) returns (StartContainerResponse);
+
+  // StopContainer arrête proprement un conteneur en cours d'exécution avec un délai d'attente (grace period).
+  rpc StopContainer(StopContainerRequest) returns (StopContainerResponse);
+
+  // RestartContainer redémarre un conteneur.
+  rpc RestartContainer(RestartContainerRequest) returns (RestartContainerResponse);
+
+  // StreamContainerLogs ouvre un flux gRPC pour lire les logs d'un conteneur en temps réel (streaming).
+  rpc StreamContainerLogs(StreamContainerLogsRequest) returns (stream StreamContainerLogsResponse);
+}
