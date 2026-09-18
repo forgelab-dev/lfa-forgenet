@@ -1,0 +1,57 @@
+name: API · contrat protobuf
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - "api/**"
+            - "pkg/gen/**"
+            - "web/src/gen/**"
+            - "mobile/lib/src/gen/**"
+            - .github/workflows/api.yml
+    pull_request:
+        branches:
+            - main
+        paths:
+            - "api/**"
+            - "pkg/gen/**"
+            - "web/src/gen/**"
+            - "mobile/lib/src/gen/**"
+            - .github/workflows/api.yml
+
+permissions:
+    contents: read
+
+jobs:
+    buf-ci:
+        runs-on: ubuntu-latest
+
+        defaults:
+            run:
+                working-directory: api
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Buf
+              uses: bufbuild/buf-setup-action@v1
+
+            - name: Check format
+              run: buf format --diff --exit-code
+
+            - name: Lint Protobuf
+              run: buf lint
+
+            - name: Check Breaking Changes
+              run: buf breaking --against 'https://github.com/forgelab-dev/lfa-forgenet.git#branch=main,subdir=api'
+
+            - name: Generate code
+              run: buf generate
+
+            - name: Check working tree clean
+              working-directory: .
+              run: git add -A && git diff --staged --exit-code
