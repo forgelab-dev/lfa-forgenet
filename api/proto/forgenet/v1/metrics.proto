@@ -20,7 +20,7 @@ enum MetricUnit {
   METRIC_UNIT_COUNT = 7; // Compteur générique (ex: nombre de conteneurs)
 }
 
-// MetricName définit la liste fermée des métriques observables dans le système.
+// MetricName définit la liste fermée des métriques observables natives du système.
 enum MetricName {
   METRIC_NAME_UNSPECIFIED = 0;
   METRIC_NAME_CPU_USAGE_PERCENT = 1;
@@ -49,6 +49,17 @@ enum MetricName {
 
 // --- COMMON & TIME STRUCTURES ---
 
+// MetricKey identifie une métrique, native ou fournie par une extension.
+message MetricKey {
+  oneof key {
+    // Métrique native de ForgeNet, valeur garantie par le contrat.
+    MetricName known = 1;
+    // Métrique déclarée par un plugin tiers, espace de noms obligatoire
+    // (ex: "acme.queue_depth"). Jamais utilisée pour une métrique native.
+    string custom = 2;
+  }
+}
+
 // TimeRange définit une fenêtre temporelle pour les requêtes d'historique.
 message TimeRange {
   google.protobuf.Timestamp start_time = 1;
@@ -63,7 +74,7 @@ message MetricSample {
 
 // MetricSeries regroupe une série de mesures chronologiques pour une métrique donnée.
 message MetricSeries {
-  MetricName metric_name = 1;
+  MetricKey key = 1;
   MetricUnit unit = 2;
   repeated MetricSample samples = 3;
 }
@@ -164,7 +175,7 @@ message QueryContainerMetricsRequest {
   // Si 0, le serveur applique son plafond maximal (ex: 1000 points).
   uint32 max_points = 4;
   // Liste optionnelle des métriques spécifiques à extraire. Si vide, toutes les métriques sont retournées.
-  repeated MetricName metric_names = 5;
+  repeated MetricKey keys = 5;
 }
 
 message QueryContainerMetricsResponse {
@@ -197,7 +208,7 @@ message QuerySystemMetricsRequest {
   // Si 0, le serveur applique son plafond par défaut (ex: 1000 points).
   uint32 max_points = 3;
   // Liste optionnelle des métriques spécifiques à extraire. Si vide, toutes les métriques sont retournées.
-  repeated MetricName metric_names = 4;
+  repeated MetricKey keys = 4;
 }
 
 message QuerySystemMetricsResponse {

@@ -12,7 +12,43 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file forgenet/v1/metrics.proto.
  */
 export const file_forgenet_v1_metrics: GenFile = /*@__PURE__*/
-  fileDesc("Chlmb3JnZW5ldC92MS9tZXRyaWNzLnByb3RvEgtmb3JnZW5ldC52MSJpCglUaW1lUmFuZ2USLgoKc3RhcnRfdGltZRgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLAoIZW5kX3RpbWUYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIkwKDE1ldHJpY1NhbXBsZRItCgl0aW1lc3RhbXAYASABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg0KBXZhbHVlGAIgASgBIo8BCgxNZXRyaWNTZXJpZXMSLAoLbWV0cmljX25hbWUYASABKA4yFy5mb3JnZW5ldC52MS5NZXRyaWNOYW1lEiUKBHVuaXQYAiABKA4yFy5mb3JnZW5ldC52MS5NZXRyaWNVbml0EioKB3NhbXBsZXMYAyADKAsyGS5mb3JnZW5ldC52MS5NZXRyaWNTYW1wbGUiXAoKQ3B1TWV0cmljcxIZChFjcHVfdXNhZ2VfcGVyY2VudBgBIAEoARITCgtvbmxpbmVfY3B1cxgCIAEoDRIeChZzeXN0ZW1fY3B1X25hbm9zZWNvbmRzGAMgASgEImUKDU1lbW9yeU1ldHJpY3MSEwoLdXNhZ2VfYnl0ZXMYASABKAQSEwoLbGltaXRfYnl0ZXMYAiABKAQSEwoLY2FjaGVfYnl0ZXMYAyABKAQSFQoNdXNhZ2VfcGVyY2VudBgEIAEoASKmAQoOTmV0d29ya01ldHJpY3MSFgoOcnhfYnl0ZXNfdG90YWwYASABKAQSFgoOdHhfYnl0ZXNfdG90YWwYAiABKAQSGAoQcnhfcGFja2V0c190b3RhbBgDIAEoBBIYChB0eF9wYWNrZXRzX3RvdGFsGAQgASgEEhcKD3J4X2Vycm9yc190b3RhbBgFIAEoBBIXCg90eF9lcnJvcnNfdG90YWwYBiABKAQidQoNRGlza0lvTWV0cmljcxIYChByZWFkX2J5dGVzX3RvdGFsGAEgASgEEhkKEXdyaXRlX2J5dGVzX3RvdGFsGAIgASgEEhYKDnJlYWRfb3BzX3RvdGFsGAMgASgEEhcKD3dyaXRlX29wc190b3RhbBgEIAEoBCJkCg5TdG9yYWdlTWV0cmljcxITCgt0b3RhbF9ieXRlcxgBIAEoBBISCgp1c2VkX2J5dGVzGAIgASgEEhIKCmZyZWVfYnl0ZXMYAyABKAQSFQoNdXNhZ2VfcGVyY2VudBgEIAEoASKHAgoQQ29udGFpbmVyTWV0cmljcxIUCgxjb250YWluZXJfaWQYASABKAkSMAoMY29sbGVjdGVkX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIkCgNjcHUYAyABKAsyFy5mb3JnZW5ldC52MS5DcHVNZXRyaWNzEioKBm1lbW9yeRgEIAEoCzIaLmZvcmdlbmV0LnYxLk1lbW9yeU1ldHJpY3MSLAoHbmV0d29yaxgFIAEoCzIbLmZvcmdlbmV0LnYxLk5ldHdvcmtNZXRyaWNzEisKB2Rpc2tfaW8YBiABKAsyGi5mb3JnZW5ldC52MS5EaXNrSW9NZXRyaWNzItUCCg1TeXN0ZW1NZXRyaWNzEjAKDGNvbGxlY3RlZF9hdBgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFgoOdXB0aW1lX3NlY29uZHMYAiABKAQSJAoDY3B1GAMgASgLMhcuZm9yZ2VuZXQudjEuQ3B1TWV0cmljcxIqCgZtZW1vcnkYBCABKAsyGi5mb3JnZW5ldC52MS5NZW1vcnlNZXRyaWNzEiwKB3N0b3JhZ2UYBSABKAsyGy5mb3JnZW5ldC52MS5TdG9yYWdlTWV0cmljcxIsCgduZXR3b3JrGAYgASgLMhsuZm9yZ2VuZXQudjEuTmV0d29ya01ldHJpY3MSKwoHZGlza19pbxgHIAEoCzIaLmZvcmdlbmV0LnYxLkRpc2tJb01ldHJpY3MSHwoXYWN0aXZlX2NvbnRhaW5lcnNfY291bnQYCCABKA0iMgoaR2V0Q29udGFpbmVyTWV0cmljc1JlcXVlc3QSFAoMY29udGFpbmVyX2lkGAEgASgJIk0KG0dldENvbnRhaW5lck1ldHJpY3NSZXNwb25zZRIuCgdtZXRyaWNzGAEgASgLMh0uZm9yZ2VuZXQudjEuQ29udGFpbmVyTWV0cmljcyJPCh1TdHJlYW1Db250YWluZXJNZXRyaWNzUmVxdWVzdBIUCgxjb250YWluZXJfaWQYASABKAkSGAoQaW50ZXJ2YWxfc2Vjb25kcxgCIAEoDSJQCh5TdHJlYW1Db250YWluZXJNZXRyaWNzUmVzcG9uc2USLgoHbWV0cmljcxgBIAEoCzIdLmZvcmdlbmV0LnYxLkNvbnRhaW5lck1ldHJpY3MitAEKHFF1ZXJ5Q29udGFpbmVyTWV0cmljc1JlcXVlc3QSFAoMY29udGFpbmVyX2lkGAEgASgJEiUKBXJhbmdlGAIgASgLMhYuZm9yZ2VuZXQudjEuVGltZVJhbmdlEhQKDHN0ZXBfc2Vjb25kcxgDIAEoDRISCgptYXhfcG9pbnRzGAQgASgNEi0KDG1ldHJpY19uYW1lcxgFIAMoDjIXLmZvcmdlbmV0LnYxLk1ldHJpY05hbWUiYAodUXVlcnlDb250YWluZXJNZXRyaWNzUmVzcG9uc2USFAoMY29udGFpbmVyX2lkGAEgASgJEikKBnNlcmllcxgCIAMoCzIZLmZvcmdlbmV0LnYxLk1ldHJpY1NlcmllcyIZChdHZXRTeXN0ZW1NZXRyaWNzUmVxdWVzdCJHChhHZXRTeXN0ZW1NZXRyaWNzUmVzcG9uc2USKwoHbWV0cmljcxgBIAEoCzIaLmZvcmdlbmV0LnYxLlN5c3RlbU1ldHJpY3MiNgoaU3RyZWFtU3lzdGVtTWV0cmljc1JlcXVlc3QSGAoQaW50ZXJ2YWxfc2Vjb25kcxgBIAEoDSJKChtTdHJlYW1TeXN0ZW1NZXRyaWNzUmVzcG9uc2USKwoHbWV0cmljcxgBIAEoCzIaLmZvcmdlbmV0LnYxLlN5c3RlbU1ldHJpY3MimwEKGVF1ZXJ5U3lzdGVtTWV0cmljc1JlcXVlc3QSJQoFcmFuZ2UYASABKAsyFi5mb3JnZW5ldC52MS5UaW1lUmFuZ2USFAoMc3RlcF9zZWNvbmRzGAIgASgNEhIKCm1heF9wb2ludHMYAyABKA0SLQoMbWV0cmljX25hbWVzGAQgAygOMhcuZm9yZ2VuZXQudjEuTWV0cmljTmFtZSJHChpRdWVyeVN5c3RlbU1ldHJpY3NSZXNwb25zZRIpCgZzZXJpZXMYASADKAsyGS5mb3JnZW5ldC52MS5NZXRyaWNTZXJpZXMq2wEKCk1ldHJpY1VuaXQSGwoXTUVUUklDX1VOSVRfVU5TUEVDSUZJRUQQABIXChNNRVRSSUNfVU5JVF9QRVJDRU5UEAESFQoRTUVUUklDX1VOSVRfQllURVMQAhIbChdNRVRSSUNfVU5JVF9OQU5PU0VDT05EUxADEhcKE01FVFJJQ19VTklUX1BBQ0tFVFMQBBIaChZNRVRSSUNfVU5JVF9PUEVSQVRJT05TEAUSFwoTTUVUUklDX1VOSVRfU0VDT05EUxAGEhUKEU1FVFJJQ19VTklUX0NPVU5UEAcqgQcKCk1ldHJpY05hbWUSGwoXTUVUUklDX05BTUVfVU5TUEVDSUZJRUQQABIhCh1NRVRSSUNfTkFNRV9DUFVfVVNBR0VfUEVSQ0VOVBABEiYKIk1FVFJJQ19OQU1FX0NQVV9TWVNURU1fTkFOT1NFQ09ORFMQAhIiCh5NRVRSSUNfTkFNRV9NRU1PUllfVVNBR0VfQllURVMQAxIiCh5NRVRSSUNfTkFNRV9NRU1PUllfTElNSVRfQllURVMQBBIiCh5NRVRSSUNfTkFNRV9NRU1PUllfQ0FDSEVfQllURVMQBRIkCiBNRVRSSUNfTkFNRV9NRU1PUllfVVNBR0VfUEVSQ0VOVBAGEiYKIk1FVFJJQ19OQU1FX05FVFdPUktfUlhfQllURVNfVE9UQUwQBxImCiJNRVRSSUNfTkFNRV9ORVRXT1JLX1RYX0JZVEVTX1RPVEFMEAgSKAokTUVUUklDX05BTUVfTkVUV09SS19SWF9QQUNLRVRTX1RPVEFMEAkSKAokTUVUUklDX05BTUVfTkVUV09SS19UWF9QQUNLRVRTX1RPVEFMEAoSJwojTUVUUklDX05BTUVfTkVUV09SS19SWF9FUlJPUlNfVE9UQUwQCxInCiNNRVRSSUNfTkFNRV9ORVRXT1JLX1RYX0VSUk9SU19UT1RBTBAMEiUKIU1FVFJJQ19OQU1FX0RJU0tfUkVBRF9CWVRFU19UT1RBTBANEiYKIk1FVFJJQ19OQU1FX0RJU0tfV1JJVEVfQllURVNfVE9UQUwQDhIjCh9NRVRSSUNfTkFNRV9ESVNLX1JFQURfT1BTX1RPVEFMEA8SJAogTUVUUklDX05BTUVfRElTS19XUklURV9PUFNfVE9UQUwQEBIjCh9NRVRSSUNfTkFNRV9TVE9SQUdFX1RPVEFMX0JZVEVTEBESIgoeTUVUUklDX05BTUVfU1RPUkFHRV9VU0VEX0JZVEVTEBISIgoeTUVUUklDX05BTUVfU1RPUkFHRV9GUkVFX0JZVEVTEBMSJQohTUVUUklDX05BTUVfU1RPUkFHRV9VU0FHRV9QRVJDRU5UEBQSJQohTUVUUklDX05BTUVfU1lTVEVNX1VQVElNRV9TRUNPTkRTEBUSLgoqTUVUUklDX05BTUVfU1lTVEVNX0FDVElWRV9DT05UQUlORVJTX0NPVU5UEBYykwUKDk1ldHJpY3NTZXJ2aWNlEmgKE0dldENvbnRhaW5lck1ldHJpY3MSJy5mb3JnZW5ldC52MS5HZXRDb250YWluZXJNZXRyaWNzUmVxdWVzdBooLmZvcmdlbmV0LnYxLkdldENvbnRhaW5lck1ldHJpY3NSZXNwb25zZRJzChZTdHJlYW1Db250YWluZXJNZXRyaWNzEiouZm9yZ2VuZXQudjEuU3RyZWFtQ29udGFpbmVyTWV0cmljc1JlcXVlc3QaKy5mb3JnZW5ldC52MS5TdHJlYW1Db250YWluZXJNZXRyaWNzUmVzcG9uc2UwARJuChVRdWVyeUNvbnRhaW5lck1ldHJpY3MSKS5mb3JnZW5ldC52MS5RdWVyeUNvbnRhaW5lck1ldHJpY3NSZXF1ZXN0GiouZm9yZ2VuZXQudjEuUXVlcnlDb250YWluZXJNZXRyaWNzUmVzcG9uc2USXwoQR2V0U3lzdGVtTWV0cmljcxIkLmZvcmdlbmV0LnYxLkdldFN5c3RlbU1ldHJpY3NSZXF1ZXN0GiUuZm9yZ2VuZXQudjEuR2V0U3lzdGVtTWV0cmljc1Jlc3BvbnNlEmoKE1N0cmVhbVN5c3RlbU1ldHJpY3MSJy5mb3JnZW5ldC52MS5TdHJlYW1TeXN0ZW1NZXRyaWNzUmVxdWVzdBooLmZvcmdlbmV0LnYxLlN0cmVhbVN5c3RlbU1ldHJpY3NSZXNwb25zZTABEmUKElF1ZXJ5U3lzdGVtTWV0cmljcxImLmZvcmdlbmV0LnYxLlF1ZXJ5U3lzdGVtTWV0cmljc1JlcXVlc3QaJy5mb3JnZW5ldC52MS5RdWVyeVN5c3RlbU1ldHJpY3NSZXNwb25zZUJFWkNnaXRodWIuY29tL2ZvcmdlbGFiLWRldi9sZmEtZm9yZ2VuZXQvcGtnL2dlbi9mb3JnZW5ldC92MTtmb3JnZW5ldHYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("Chlmb3JnZW5ldC92MS9tZXRyaWNzLnByb3RvEgtmb3JnZW5ldC52MSJOCglNZXRyaWNLZXkSKAoFa25vd24YASABKA4yFy5mb3JnZW5ldC52MS5NZXRyaWNOYW1lSAASEAoGY3VzdG9tGAIgASgJSABCBQoDa2V5ImkKCVRpbWVSYW5nZRIuCgpzdGFydF90aW1lGAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIsCghlbmRfdGltZRgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTAoMTWV0cmljU2FtcGxlEi0KCXRpbWVzdGFtcBgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDQoFdmFsdWUYAiABKAEihgEKDE1ldHJpY1NlcmllcxIjCgNrZXkYASABKAsyFi5mb3JnZW5ldC52MS5NZXRyaWNLZXkSJQoEdW5pdBgCIAEoDjIXLmZvcmdlbmV0LnYxLk1ldHJpY1VuaXQSKgoHc2FtcGxlcxgDIAMoCzIZLmZvcmdlbmV0LnYxLk1ldHJpY1NhbXBsZSJcCgpDcHVNZXRyaWNzEhkKEWNwdV91c2FnZV9wZXJjZW50GAEgASgBEhMKC29ubGluZV9jcHVzGAIgASgNEh4KFnN5c3RlbV9jcHVfbmFub3NlY29uZHMYAyABKAQiZQoNTWVtb3J5TWV0cmljcxITCgt1c2FnZV9ieXRlcxgBIAEoBBITCgtsaW1pdF9ieXRlcxgCIAEoBBITCgtjYWNoZV9ieXRlcxgDIAEoBBIVCg11c2FnZV9wZXJjZW50GAQgASgBIqYBCg5OZXR3b3JrTWV0cmljcxIWCg5yeF9ieXRlc190b3RhbBgBIAEoBBIWCg50eF9ieXRlc190b3RhbBgCIAEoBBIYChByeF9wYWNrZXRzX3RvdGFsGAMgASgEEhgKEHR4X3BhY2tldHNfdG90YWwYBCABKAQSFwoPcnhfZXJyb3JzX3RvdGFsGAUgASgEEhcKD3R4X2Vycm9yc190b3RhbBgGIAEoBCJ1Cg1EaXNrSW9NZXRyaWNzEhgKEHJlYWRfYnl0ZXNfdG90YWwYASABKAQSGQoRd3JpdGVfYnl0ZXNfdG90YWwYAiABKAQSFgoOcmVhZF9vcHNfdG90YWwYAyABKAQSFwoPd3JpdGVfb3BzX3RvdGFsGAQgASgEImQKDlN0b3JhZ2VNZXRyaWNzEhMKC3RvdGFsX2J5dGVzGAEgASgEEhIKCnVzZWRfYnl0ZXMYAiABKAQSEgoKZnJlZV9ieXRlcxgDIAEoBBIVCg11c2FnZV9wZXJjZW50GAQgASgBIocCChBDb250YWluZXJNZXRyaWNzEhQKDGNvbnRhaW5lcl9pZBgBIAEoCRIwCgxjb2xsZWN0ZWRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiQKA2NwdRgDIAEoCzIXLmZvcmdlbmV0LnYxLkNwdU1ldHJpY3MSKgoGbWVtb3J5GAQgASgLMhouZm9yZ2VuZXQudjEuTWVtb3J5TWV0cmljcxIsCgduZXR3b3JrGAUgASgLMhsuZm9yZ2VuZXQudjEuTmV0d29ya01ldHJpY3MSKwoHZGlza19pbxgGIAEoCzIaLmZvcmdlbmV0LnYxLkRpc2tJb01ldHJpY3Mi1QIKDVN5c3RlbU1ldHJpY3MSMAoMY29sbGVjdGVkX2F0GAEgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCg51cHRpbWVfc2Vjb25kcxgCIAEoBBIkCgNjcHUYAyABKAsyFy5mb3JnZW5ldC52MS5DcHVNZXRyaWNzEioKBm1lbW9yeRgEIAEoCzIaLmZvcmdlbmV0LnYxLk1lbW9yeU1ldHJpY3MSLAoHc3RvcmFnZRgFIAEoCzIbLmZvcmdlbmV0LnYxLlN0b3JhZ2VNZXRyaWNzEiwKB25ldHdvcmsYBiABKAsyGy5mb3JnZW5ldC52MS5OZXR3b3JrTWV0cmljcxIrCgdkaXNrX2lvGAcgASgLMhouZm9yZ2VuZXQudjEuRGlza0lvTWV0cmljcxIfChdhY3RpdmVfY29udGFpbmVyc19jb3VudBgIIAEoDSIyChpHZXRDb250YWluZXJNZXRyaWNzUmVxdWVzdBIUCgxjb250YWluZXJfaWQYASABKAkiTQobR2V0Q29udGFpbmVyTWV0cmljc1Jlc3BvbnNlEi4KB21ldHJpY3MYASABKAsyHS5mb3JnZW5ldC52MS5Db250YWluZXJNZXRyaWNzIk8KHVN0cmVhbUNvbnRhaW5lck1ldHJpY3NSZXF1ZXN0EhQKDGNvbnRhaW5lcl9pZBgBIAEoCRIYChBpbnRlcnZhbF9zZWNvbmRzGAIgASgNIlAKHlN0cmVhbUNvbnRhaW5lck1ldHJpY3NSZXNwb25zZRIuCgdtZXRyaWNzGAEgASgLMh0uZm9yZ2VuZXQudjEuQ29udGFpbmVyTWV0cmljcyKrAQocUXVlcnlDb250YWluZXJNZXRyaWNzUmVxdWVzdBIUCgxjb250YWluZXJfaWQYASABKAkSJQoFcmFuZ2UYAiABKAsyFi5mb3JnZW5ldC52MS5UaW1lUmFuZ2USFAoMc3RlcF9zZWNvbmRzGAMgASgNEhIKCm1heF9wb2ludHMYBCABKA0SJAoEa2V5cxgFIAMoCzIWLmZvcmdlbmV0LnYxLk1ldHJpY0tleSJgCh1RdWVyeUNvbnRhaW5lck1ldHJpY3NSZXNwb25zZRIUCgxjb250YWluZXJfaWQYASABKAkSKQoGc2VyaWVzGAIgAygLMhkuZm9yZ2VuZXQudjEuTWV0cmljU2VyaWVzIhkKF0dldFN5c3RlbU1ldHJpY3NSZXF1ZXN0IkcKGEdldFN5c3RlbU1ldHJpY3NSZXNwb25zZRIrCgdtZXRyaWNzGAEgASgLMhouZm9yZ2VuZXQudjEuU3lzdGVtTWV0cmljcyI2ChpTdHJlYW1TeXN0ZW1NZXRyaWNzUmVxdWVzdBIYChBpbnRlcnZhbF9zZWNvbmRzGAEgASgNIkoKG1N0cmVhbVN5c3RlbU1ldHJpY3NSZXNwb25zZRIrCgdtZXRyaWNzGAEgASgLMhouZm9yZ2VuZXQudjEuU3lzdGVtTWV0cmljcyKSAQoZUXVlcnlTeXN0ZW1NZXRyaWNzUmVxdWVzdBIlCgVyYW5nZRgBIAEoCzIWLmZvcmdlbmV0LnYxLlRpbWVSYW5nZRIUCgxzdGVwX3NlY29uZHMYAiABKA0SEgoKbWF4X3BvaW50cxgDIAEoDRIkCgRrZXlzGAQgAygLMhYuZm9yZ2VuZXQudjEuTWV0cmljS2V5IkcKGlF1ZXJ5U3lzdGVtTWV0cmljc1Jlc3BvbnNlEikKBnNlcmllcxgBIAMoCzIZLmZvcmdlbmV0LnYxLk1ldHJpY1NlcmllcyrbAQoKTWV0cmljVW5pdBIbChdNRVRSSUNfVU5JVF9VTlNQRUNJRklFRBAAEhcKE01FVFJJQ19VTklUX1BFUkNFTlQQARIVChFNRVRSSUNfVU5JVF9CWVRFUxACEhsKF01FVFJJQ19VTklUX05BTk9TRUNPTkRTEAMSFwoTTUVUUklDX1VOSVRfUEFDS0VUUxAEEhoKFk1FVFJJQ19VTklUX09QRVJBVElPTlMQBRIXChNNRVRSSUNfVU5JVF9TRUNPTkRTEAYSFQoRTUVUUklDX1VOSVRfQ09VTlQQByqBBwoKTWV0cmljTmFtZRIbChdNRVRSSUNfTkFNRV9VTlNQRUNJRklFRBAAEiEKHU1FVFJJQ19OQU1FX0NQVV9VU0FHRV9QRVJDRU5UEAESJgoiTUVUUklDX05BTUVfQ1BVX1NZU1RFTV9OQU5PU0VDT05EUxACEiIKHk1FVFJJQ19OQU1FX01FTU9SWV9VU0FHRV9CWVRFUxADEiIKHk1FVFJJQ19OQU1FX01FTU9SWV9MSU1JVF9CWVRFUxAEEiIKHk1FVFJJQ19OQU1FX01FTU9SWV9DQUNIRV9CWVRFUxAFEiQKIE1FVFJJQ19OQU1FX01FTU9SWV9VU0FHRV9QRVJDRU5UEAYSJgoiTUVUUklDX05BTUVfTkVUV09SS19SWF9CWVRFU19UT1RBTBAHEiYKIk1FVFJJQ19OQU1FX05FVFdPUktfVFhfQllURVNfVE9UQUwQCBIoCiRNRVRSSUNfTkFNRV9ORVRXT1JLX1JYX1BBQ0tFVFNfVE9UQUwQCRIoCiRNRVRSSUNfTkFNRV9ORVRXT1JLX1RYX1BBQ0tFVFNfVE9UQUwQChInCiNNRVRSSUNfTkFNRV9ORVRXT1JLX1JYX0VSUk9SU19UT1RBTBALEicKI01FVFJJQ19OQU1FX05FVFdPUktfVFhfRVJST1JTX1RPVEFMEAwSJQohTUVUUklDX05BTUVfRElTS19SRUFEX0JZVEVTX1RPVEFMEA0SJgoiTUVUUklDX05BTUVfRElTS19XUklURV9CWVRFU19UT1RBTBAOEiMKH01FVFJJQ19OQU1FX0RJU0tfUkVBRF9PUFNfVE9UQUwQDxIkCiBNRVRSSUNfTkFNRV9ESVNLX1dSSVRFX09QU19UT1RBTBAQEiMKH01FVFJJQ19OQU1FX1NUT1JBR0VfVE9UQUxfQllURVMQERIiCh5NRVRSSUNfTkFNRV9TVE9SQUdFX1VTRURfQllURVMQEhIiCh5NRVRSSUNfTkFNRV9TVE9SQUdFX0ZSRUVfQllURVMQExIlCiFNRVRSSUNfTkFNRV9TVE9SQUdFX1VTQUdFX1BFUkNFTlQQFBIlCiFNRVRSSUNfTkFNRV9TWVNURU1fVVBUSU1FX1NFQ09ORFMQFRIuCipNRVRSSUNfTkFNRV9TWVNURU1fQUNUSVZFX0NPTlRBSU5FUlNfQ09VTlQQFjKTBQoOTWV0cmljc1NlcnZpY2USaAoTR2V0Q29udGFpbmVyTWV0cmljcxInLmZvcmdlbmV0LnYxLkdldENvbnRhaW5lck1ldHJpY3NSZXF1ZXN0GiguZm9yZ2VuZXQudjEuR2V0Q29udGFpbmVyTWV0cmljc1Jlc3BvbnNlEnMKFlN0cmVhbUNvbnRhaW5lck1ldHJpY3MSKi5mb3JnZW5ldC52MS5TdHJlYW1Db250YWluZXJNZXRyaWNzUmVxdWVzdBorLmZvcmdlbmV0LnYxLlN0cmVhbUNvbnRhaW5lck1ldHJpY3NSZXNwb25zZTABEm4KFVF1ZXJ5Q29udGFpbmVyTWV0cmljcxIpLmZvcmdlbmV0LnYxLlF1ZXJ5Q29udGFpbmVyTWV0cmljc1JlcXVlc3QaKi5mb3JnZW5ldC52MS5RdWVyeUNvbnRhaW5lck1ldHJpY3NSZXNwb25zZRJfChBHZXRTeXN0ZW1NZXRyaWNzEiQuZm9yZ2VuZXQudjEuR2V0U3lzdGVtTWV0cmljc1JlcXVlc3QaJS5mb3JnZW5ldC52MS5HZXRTeXN0ZW1NZXRyaWNzUmVzcG9uc2USagoTU3RyZWFtU3lzdGVtTWV0cmljcxInLmZvcmdlbmV0LnYxLlN0cmVhbVN5c3RlbU1ldHJpY3NSZXF1ZXN0GiguZm9yZ2VuZXQudjEuU3RyZWFtU3lzdGVtTWV0cmljc1Jlc3BvbnNlMAESZQoSUXVlcnlTeXN0ZW1NZXRyaWNzEiYuZm9yZ2VuZXQudjEuUXVlcnlTeXN0ZW1NZXRyaWNzUmVxdWVzdBonLmZvcmdlbmV0LnYxLlF1ZXJ5U3lzdGVtTWV0cmljc1Jlc3BvbnNlQkVaQ2dpdGh1Yi5jb20vZm9yZ2VsYWItZGV2L2xmYS1mb3JnZW5ldC9wa2cvZ2VuL2ZvcmdlbmV0L3YxO2ZvcmdlbmV0djFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+
+/**
+ * MetricKey identifie une métrique, native ou fournie par une extension.
+ *
+ * @generated from message forgenet.v1.MetricKey
+ */
+export type MetricKey = Message<"forgenet.v1.MetricKey"> & {
+  /**
+   * @generated from oneof forgenet.v1.MetricKey.key
+   */
+  key: {
+    /**
+     * Métrique native de ForgeNet, valeur garantie par le contrat.
+     *
+     * @generated from field: forgenet.v1.MetricName known = 1;
+     */
+    value: MetricName;
+    case: "known";
+  } | {
+    /**
+     * Métrique déclarée par un plugin tiers, espace de noms obligatoire
+     * (ex: "acme.queue_depth"). Jamais utilisée pour une métrique native.
+     *
+     * @generated from field: string custom = 2;
+     */
+    value: string;
+    case: "custom";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message forgenet.v1.MetricKey.
+ * Use `create(MetricKeySchema)` to create a new message.
+ */
+export const MetricKeySchema: GenMessage<MetricKey> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_metrics, 0);
 
 /**
  * TimeRange définit une fenêtre temporelle pour les requêtes d'historique.
@@ -36,7 +72,7 @@ export type TimeRange = Message<"forgenet.v1.TimeRange"> & {
  * Use `create(TimeRangeSchema)` to create a new message.
  */
 export const TimeRangeSchema: GenMessage<TimeRange> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 0);
+  messageDesc(file_forgenet_v1_metrics, 1);
 
 /**
  * MetricSample représente un point de mesure unique dans une série temporelle.
@@ -60,7 +96,7 @@ export type MetricSample = Message<"forgenet.v1.MetricSample"> & {
  * Use `create(MetricSampleSchema)` to create a new message.
  */
 export const MetricSampleSchema: GenMessage<MetricSample> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 1);
+  messageDesc(file_forgenet_v1_metrics, 2);
 
 /**
  * MetricSeries regroupe une série de mesures chronologiques pour une métrique donnée.
@@ -69,9 +105,9 @@ export const MetricSampleSchema: GenMessage<MetricSample> = /*@__PURE__*/
  */
 export type MetricSeries = Message<"forgenet.v1.MetricSeries"> & {
   /**
-   * @generated from field: forgenet.v1.MetricName metric_name = 1;
+   * @generated from field: forgenet.v1.MetricKey key = 1;
    */
-  metricName: MetricName;
+  key?: MetricKey | undefined;
 
   /**
    * @generated from field: forgenet.v1.MetricUnit unit = 2;
@@ -89,7 +125,7 @@ export type MetricSeries = Message<"forgenet.v1.MetricSeries"> & {
  * Use `create(MetricSeriesSchema)` to create a new message.
  */
 export const MetricSeriesSchema: GenMessage<MetricSeries> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 2);
+  messageDesc(file_forgenet_v1_metrics, 3);
 
 /**
  * CpuMetrics définit la consommation de ressources processeur.
@@ -124,7 +160,7 @@ export type CpuMetrics = Message<"forgenet.v1.CpuMetrics"> & {
  * Use `create(CpuMetricsSchema)` to create a new message.
  */
 export const CpuMetricsSchema: GenMessage<CpuMetrics> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 3);
+  messageDesc(file_forgenet_v1_metrics, 4);
 
 /**
  * MemoryMetrics définit l'utilisation de la mémoire RAM et du cache.
@@ -166,7 +202,7 @@ export type MemoryMetrics = Message<"forgenet.v1.MemoryMetrics"> & {
  * Use `create(MemoryMetricsSchema)` to create a new message.
  */
 export const MemoryMetricsSchema: GenMessage<MemoryMetrics> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 4);
+  messageDesc(file_forgenet_v1_metrics, 5);
 
 /**
  * NetworkMetrics détaille le trafic réseau cumulé (compteurs Prometheus).
@@ -222,7 +258,7 @@ export type NetworkMetrics = Message<"forgenet.v1.NetworkMetrics"> & {
  * Use `create(NetworkMetricsSchema)` to create a new message.
  */
 export const NetworkMetricsSchema: GenMessage<NetworkMetrics> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 5);
+  messageDesc(file_forgenet_v1_metrics, 6);
 
 /**
  * DiskIoMetrics détaille les opérations d'E/S sur le disque (compteurs Prometheus).
@@ -264,7 +300,7 @@ export type DiskIoMetrics = Message<"forgenet.v1.DiskIoMetrics"> & {
  * Use `create(DiskIoMetricsSchema)` to create a new message.
  */
 export const DiskIoMetricsSchema: GenMessage<DiskIoMetrics> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 6);
+  messageDesc(file_forgenet_v1_metrics, 7);
 
 /**
  * StorageMetrics détaille l'occupation du stockage disque.
@@ -306,7 +342,7 @@ export type StorageMetrics = Message<"forgenet.v1.StorageMetrics"> & {
  * Use `create(StorageMetricsSchema)` to create a new message.
  */
 export const StorageMetricsSchema: GenMessage<StorageMetrics> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 7);
+  messageDesc(file_forgenet_v1_metrics, 8);
 
 /**
  * ContainerMetrics regroupe l'ensemble des métriques d'un conteneur à un instant T.
@@ -350,7 +386,7 @@ export type ContainerMetrics = Message<"forgenet.v1.ContainerMetrics"> & {
  * Use `create(ContainerMetricsSchema)` to create a new message.
  */
 export const ContainerMetricsSchema: GenMessage<ContainerMetrics> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 8);
+  messageDesc(file_forgenet_v1_metrics, 9);
 
 /**
  * SystemMetrics regroupe les métriques globales du nœud hôte.
@@ -408,7 +444,7 @@ export type SystemMetrics = Message<"forgenet.v1.SystemMetrics"> & {
  * Use `create(SystemMetricsSchema)` to create a new message.
  */
 export const SystemMetricsSchema: GenMessage<SystemMetrics> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 9);
+  messageDesc(file_forgenet_v1_metrics, 10);
 
 /**
  * @generated from message forgenet.v1.GetContainerMetricsRequest
@@ -425,7 +461,7 @@ export type GetContainerMetricsRequest = Message<"forgenet.v1.GetContainerMetric
  * Use `create(GetContainerMetricsRequestSchema)` to create a new message.
  */
 export const GetContainerMetricsRequestSchema: GenMessage<GetContainerMetricsRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 10);
+  messageDesc(file_forgenet_v1_metrics, 11);
 
 /**
  * @generated from message forgenet.v1.GetContainerMetricsResponse
@@ -442,7 +478,7 @@ export type GetContainerMetricsResponse = Message<"forgenet.v1.GetContainerMetri
  * Use `create(GetContainerMetricsResponseSchema)` to create a new message.
  */
 export const GetContainerMetricsResponseSchema: GenMessage<GetContainerMetricsResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 11);
+  messageDesc(file_forgenet_v1_metrics, 12);
 
 /**
  * @generated from message forgenet.v1.StreamContainerMetricsRequest
@@ -467,7 +503,7 @@ export type StreamContainerMetricsRequest = Message<"forgenet.v1.StreamContainer
  * Use `create(StreamContainerMetricsRequestSchema)` to create a new message.
  */
 export const StreamContainerMetricsRequestSchema: GenMessage<StreamContainerMetricsRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 12);
+  messageDesc(file_forgenet_v1_metrics, 13);
 
 /**
  * @generated from message forgenet.v1.StreamContainerMetricsResponse
@@ -484,7 +520,7 @@ export type StreamContainerMetricsResponse = Message<"forgenet.v1.StreamContaine
  * Use `create(StreamContainerMetricsResponseSchema)` to create a new message.
  */
 export const StreamContainerMetricsResponseSchema: GenMessage<StreamContainerMetricsResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 13);
+  messageDesc(file_forgenet_v1_metrics, 14);
 
 /**
  * @generated from message forgenet.v1.QueryContainerMetricsRequest
@@ -519,9 +555,9 @@ export type QueryContainerMetricsRequest = Message<"forgenet.v1.QueryContainerMe
   /**
    * Liste optionnelle des métriques spécifiques à extraire. Si vide, toutes les métriques sont retournées.
    *
-   * @generated from field: repeated forgenet.v1.MetricName metric_names = 5;
+   * @generated from field: repeated forgenet.v1.MetricKey keys = 5;
    */
-  metricNames: MetricName[];
+  keys: MetricKey[];
 };
 
 /**
@@ -529,7 +565,7 @@ export type QueryContainerMetricsRequest = Message<"forgenet.v1.QueryContainerMe
  * Use `create(QueryContainerMetricsRequestSchema)` to create a new message.
  */
 export const QueryContainerMetricsRequestSchema: GenMessage<QueryContainerMetricsRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 14);
+  messageDesc(file_forgenet_v1_metrics, 15);
 
 /**
  * @generated from message forgenet.v1.QueryContainerMetricsResponse
@@ -551,7 +587,7 @@ export type QueryContainerMetricsResponse = Message<"forgenet.v1.QueryContainerM
  * Use `create(QueryContainerMetricsResponseSchema)` to create a new message.
  */
 export const QueryContainerMetricsResponseSchema: GenMessage<QueryContainerMetricsResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 15);
+  messageDesc(file_forgenet_v1_metrics, 16);
 
 /**
  * @generated from message forgenet.v1.GetSystemMetricsRequest
@@ -564,7 +600,7 @@ export type GetSystemMetricsRequest = Message<"forgenet.v1.GetSystemMetricsReque
  * Use `create(GetSystemMetricsRequestSchema)` to create a new message.
  */
 export const GetSystemMetricsRequestSchema: GenMessage<GetSystemMetricsRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 16);
+  messageDesc(file_forgenet_v1_metrics, 17);
 
 /**
  * @generated from message forgenet.v1.GetSystemMetricsResponse
@@ -581,7 +617,7 @@ export type GetSystemMetricsResponse = Message<"forgenet.v1.GetSystemMetricsResp
  * Use `create(GetSystemMetricsResponseSchema)` to create a new message.
  */
 export const GetSystemMetricsResponseSchema: GenMessage<GetSystemMetricsResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 17);
+  messageDesc(file_forgenet_v1_metrics, 18);
 
 /**
  * @generated from message forgenet.v1.StreamSystemMetricsRequest
@@ -601,7 +637,7 @@ export type StreamSystemMetricsRequest = Message<"forgenet.v1.StreamSystemMetric
  * Use `create(StreamSystemMetricsRequestSchema)` to create a new message.
  */
 export const StreamSystemMetricsRequestSchema: GenMessage<StreamSystemMetricsRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 18);
+  messageDesc(file_forgenet_v1_metrics, 19);
 
 /**
  * @generated from message forgenet.v1.StreamSystemMetricsResponse
@@ -618,7 +654,7 @@ export type StreamSystemMetricsResponse = Message<"forgenet.v1.StreamSystemMetri
  * Use `create(StreamSystemMetricsResponseSchema)` to create a new message.
  */
 export const StreamSystemMetricsResponseSchema: GenMessage<StreamSystemMetricsResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 19);
+  messageDesc(file_forgenet_v1_metrics, 20);
 
 /**
  * @generated from message forgenet.v1.QuerySystemMetricsRequest
@@ -648,9 +684,9 @@ export type QuerySystemMetricsRequest = Message<"forgenet.v1.QuerySystemMetricsR
   /**
    * Liste optionnelle des métriques spécifiques à extraire. Si vide, toutes les métriques sont retournées.
    *
-   * @generated from field: repeated forgenet.v1.MetricName metric_names = 4;
+   * @generated from field: repeated forgenet.v1.MetricKey keys = 4;
    */
-  metricNames: MetricName[];
+  keys: MetricKey[];
 };
 
 /**
@@ -658,7 +694,7 @@ export type QuerySystemMetricsRequest = Message<"forgenet.v1.QuerySystemMetricsR
  * Use `create(QuerySystemMetricsRequestSchema)` to create a new message.
  */
 export const QuerySystemMetricsRequestSchema: GenMessage<QuerySystemMetricsRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 20);
+  messageDesc(file_forgenet_v1_metrics, 21);
 
 /**
  * @generated from message forgenet.v1.QuerySystemMetricsResponse
@@ -675,7 +711,7 @@ export type QuerySystemMetricsResponse = Message<"forgenet.v1.QuerySystemMetrics
  * Use `create(QuerySystemMetricsResponseSchema)` to create a new message.
  */
 export const QuerySystemMetricsResponseSchema: GenMessage<QuerySystemMetricsResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_metrics, 21);
+  messageDesc(file_forgenet_v1_metrics, 22);
 
 /**
  * MetricUnit définit la liste fermée et exhaustive des unités de mesure.
@@ -745,7 +781,7 @@ export const MetricUnitSchema: GenEnum<MetricUnit> = /*@__PURE__*/
   enumDesc(file_forgenet_v1_metrics, 0);
 
 /**
- * MetricName définit la liste fermée des métriques observables dans le système.
+ * MetricName définit la liste fermée des métriques observables natives du système.
  *
  * @generated from enum forgenet.v1.MetricName
  */

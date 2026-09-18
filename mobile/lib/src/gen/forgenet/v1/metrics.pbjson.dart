@@ -87,6 +87,31 @@ final $typed_data.Uint8List metricNameDescriptor = $convert.base64Decode(
     '9VUFRJTUVfU0VDT05EUxAVEi4KKk1FVFJJQ19OQU1FX1NZU1RFTV9BQ1RJVkVfQ09OVEFJTkVS'
     'U19DT1VOVBAW');
 
+@$core.Deprecated('Use metricKeyDescriptor instead')
+const MetricKey$json = {
+  '1': 'MetricKey',
+  '2': [
+    {
+      '1': 'known',
+      '3': 1,
+      '4': 1,
+      '5': 14,
+      '6': '.forgenet.v1.MetricName',
+      '9': 0,
+      '10': 'known'
+    },
+    {'1': 'custom', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'custom'},
+  ],
+  '8': [
+    {'1': 'key'},
+  ],
+};
+
+/// Descriptor for `MetricKey`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List metricKeyDescriptor = $convert.base64Decode(
+    'CglNZXRyaWNLZXkSLwoFa25vd24YASABKA4yFy5mb3JnZW5ldC52MS5NZXRyaWNOYW1lSABSBW'
+    'tub3duEhgKBmN1c3RvbRgCIAEoCUgAUgZjdXN0b21CBQoDa2V5');
+
 @$core.Deprecated('Use timeRangeDescriptor instead')
 const TimeRange$json = {
   '1': 'TimeRange',
@@ -142,12 +167,12 @@ const MetricSeries$json = {
   '1': 'MetricSeries',
   '2': [
     {
-      '1': 'metric_name',
+      '1': 'key',
       '3': 1,
       '4': 1,
-      '5': 14,
-      '6': '.forgenet.v1.MetricName',
-      '10': 'metricName'
+      '5': 11,
+      '6': '.forgenet.v1.MetricKey',
+      '10': 'key'
     },
     {
       '1': 'unit',
@@ -170,10 +195,9 @@ const MetricSeries$json = {
 
 /// Descriptor for `MetricSeries`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List metricSeriesDescriptor = $convert.base64Decode(
-    'CgxNZXRyaWNTZXJpZXMSOAoLbWV0cmljX25hbWUYASABKA4yFy5mb3JnZW5ldC52MS5NZXRyaW'
-    'NOYW1lUgptZXRyaWNOYW1lEisKBHVuaXQYAiABKA4yFy5mb3JnZW5ldC52MS5NZXRyaWNVbml0'
-    'UgR1bml0EjMKB3NhbXBsZXMYAyADKAsyGS5mb3JnZW5ldC52MS5NZXRyaWNTYW1wbGVSB3NhbX'
-    'BsZXM=');
+    'CgxNZXRyaWNTZXJpZXMSKAoDa2V5GAEgASgLMhYuZm9yZ2VuZXQudjEuTWV0cmljS2V5UgNrZX'
+    'kSKwoEdW5pdBgCIAEoDjIXLmZvcmdlbmV0LnYxLk1ldHJpY1VuaXRSBHVuaXQSMwoHc2FtcGxl'
+    'cxgDIAMoCzIZLmZvcmdlbmV0LnYxLk1ldHJpY1NhbXBsZVIHc2FtcGxlcw==');
 
 @$core.Deprecated('Use cpuMetricsDescriptor instead')
 const CpuMetrics$json = {
@@ -488,12 +512,12 @@ const QueryContainerMetricsRequest$json = {
     {'1': 'step_seconds', '3': 3, '4': 1, '5': 13, '10': 'stepSeconds'},
     {'1': 'max_points', '3': 4, '4': 1, '5': 13, '10': 'maxPoints'},
     {
-      '1': 'metric_names',
+      '1': 'keys',
       '3': 5,
       '4': 3,
-      '5': 14,
-      '6': '.forgenet.v1.MetricName',
-      '10': 'metricNames'
+      '5': 11,
+      '6': '.forgenet.v1.MetricKey',
+      '10': 'keys'
     },
   ],
 };
@@ -503,8 +527,7 @@ final $typed_data.Uint8List queryContainerMetricsRequestDescriptor = $convert.ba
     'ChxRdWVyeUNvbnRhaW5lck1ldHJpY3NSZXF1ZXN0EiEKDGNvbnRhaW5lcl9pZBgBIAEoCVILY2'
     '9udGFpbmVySWQSLAoFcmFuZ2UYAiABKAsyFi5mb3JnZW5ldC52MS5UaW1lUmFuZ2VSBXJhbmdl'
     'EiEKDHN0ZXBfc2Vjb25kcxgDIAEoDVILc3RlcFNlY29uZHMSHQoKbWF4X3BvaW50cxgEIAEoDV'
-    'IJbWF4UG9pbnRzEjoKDG1ldHJpY19uYW1lcxgFIAMoDjIXLmZvcmdlbmV0LnYxLk1ldHJpY05h'
-    'bWVSC21ldHJpY05hbWVz');
+    'IJbWF4UG9pbnRzEioKBGtleXMYBSADKAsyFi5mb3JnZW5ldC52MS5NZXRyaWNLZXlSBGtleXM=');
 
 @$core.Deprecated('Use queryContainerMetricsResponseDescriptor instead')
 const QueryContainerMetricsResponse$json = {
@@ -609,12 +632,12 @@ const QuerySystemMetricsRequest$json = {
     {'1': 'step_seconds', '3': 2, '4': 1, '5': 13, '10': 'stepSeconds'},
     {'1': 'max_points', '3': 3, '4': 1, '5': 13, '10': 'maxPoints'},
     {
-      '1': 'metric_names',
+      '1': 'keys',
       '3': 4,
       '4': 3,
-      '5': 14,
-      '6': '.forgenet.v1.MetricName',
-      '10': 'metricNames'
+      '5': 11,
+      '6': '.forgenet.v1.MetricKey',
+      '10': 'keys'
     },
   ],
 };
@@ -623,8 +646,8 @@ const QuerySystemMetricsRequest$json = {
 final $typed_data.Uint8List querySystemMetricsRequestDescriptor = $convert.base64Decode(
     'ChlRdWVyeVN5c3RlbU1ldHJpY3NSZXF1ZXN0EiwKBXJhbmdlGAEgASgLMhYuZm9yZ2VuZXQudj'
     'EuVGltZVJhbmdlUgVyYW5nZRIhCgxzdGVwX3NlY29uZHMYAiABKA1SC3N0ZXBTZWNvbmRzEh0K'
-    'Cm1heF9wb2ludHMYAyABKA1SCW1heFBvaW50cxI6CgxtZXRyaWNfbmFtZXMYBCADKA4yFy5mb3'
-    'JnZW5ldC52MS5NZXRyaWNOYW1lUgttZXRyaWNOYW1lcw==');
+    'Cm1heF9wb2ludHMYAyABKA1SCW1heFBvaW50cxIqCgRrZXlzGAQgAygLMhYuZm9yZ2VuZXQudj'
+    'EuTWV0cmljS2V5UgRrZXlz');
 
 @$core.Deprecated('Use querySystemMetricsResponseDescriptor instead')
 const QuerySystemMetricsResponse$json = {

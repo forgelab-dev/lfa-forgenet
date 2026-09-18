@@ -52,7 +52,7 @@ class MetricUnit extends $pb.ProtobufEnum {
   const MetricUnit._(super.value, super.name);
 }
 
-/// MetricName définit la liste fermée des métriques observables dans le système.
+/// MetricName définit la liste fermée des métriques observables natives du système.
 class MetricName extends $pb.ProtobufEnum {
   static const MetricName METRIC_NAME_UNSPECIFIED =
       MetricName._(0, _omitEnumNames ? '' : 'METRIC_NAME_UNSPECIFIED');

@@ -23,6 +23,93 @@ export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'metrics.pbenum.dart';
 
+enum MetricKey_Key { known, custom, notSet }
+
+/// MetricKey identifie une métrique, native ou fournie par une extension.
+class MetricKey extends $pb.GeneratedMessage {
+  factory MetricKey({
+    MetricName? known,
+    $core.String? custom,
+  }) {
+    final result = MetricKey._();
+    if (known != null) result.known = known;
+    if (custom != null) result.custom = custom;
+    return result;
+  }
+
+  MetricKey._();
+
+  factory MetricKey.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      MetricKey()..mergeFromBuffer(data, registry);
+  factory MetricKey.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      MetricKey()..mergeFromJson(json, registry);
+
+  static const $core.Map<$core.int, MetricKey_Key> _MetricKey_KeyByTag = {
+    1: MetricKey_Key.known,
+    2: MetricKey_Key.custom,
+    0: MetricKey_Key.notSet
+  };
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'MetricKey',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: MetricKey.$_createMessage)
+    ..oo(0, [1, 2])
+    ..aE<MetricName>(1, _omitFieldNames ? '' : 'known',
+        enumValues: MetricName.values)
+    ..aOS(2, _omitFieldNames ? '' : 'custom')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MetricKey clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MetricKey copyWith(void Function(MetricKey) updates) =>
+      super.copyWith((message) => updates(message as MetricKey)) as MetricKey;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use MetricKey() / MetricKey.new instead')
+  static MetricKey create() => MetricKey._();
+  static $pb.GeneratedMessage $_createMessage() => MetricKey._();
+  @$core.override
+  MetricKey createEmptyInstance() => MetricKey._();
+  @$core.pragma('dart2js:noInline')
+  static MetricKey getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<MetricKey>(MetricKey.$_createMessage);
+  static MetricKey? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  MetricKey_Key whichKey() => _MetricKey_KeyByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(1)
+  @$pb.TagNumber(2)
+  void clearKey() => $_clearField($_whichOneof(0));
+
+  /// Métrique native de ForgeNet, valeur garantie par le contrat.
+  @$pb.TagNumber(1)
+  MetricName get known => $_getN(0);
+  @$pb.TagNumber(1)
+  set known(MetricName value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasKnown() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearKnown() => $_clearField(1);
+
+  /// Métrique déclarée par un plugin tiers, espace de noms obligatoire
+  /// (ex: "acme.queue_depth"). Jamais utilisée pour une métrique native.
+  @$pb.TagNumber(2)
+  $core.String get custom => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set custom($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasCustom() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearCustom() => $_clearField(2);
+}
+
 /// TimeRange définit une fenêtre temporelle pour les requêtes d'historique.
 class TimeRange extends $pb.GeneratedMessage {
   factory TimeRange({
@@ -173,12 +260,12 @@ class MetricSample extends $pb.GeneratedMessage {
 /// MetricSeries regroupe une série de mesures chronologiques pour une métrique donnée.
 class MetricSeries extends $pb.GeneratedMessage {
   factory MetricSeries({
-    MetricName? metricName,
+    MetricKey? key,
     MetricUnit? unit,
     $core.Iterable<MetricSample>? samples,
   }) {
     final result = MetricSeries._();
-    if (metricName != null) result.metricName = metricName;
+    if (key != null) result.key = key;
     if (unit != null) result.unit = unit;
     if (samples != null) result.samples.addAll(samples);
     return result;
@@ -197,8 +284,8 @@ class MetricSeries extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'MetricSeries',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
       createEmptyInstance: MetricSeries.$_createMessage)
-    ..aE<MetricName>(1, _omitFieldNames ? '' : 'metricName',
-        enumValues: MetricName.values)
+    ..aOM<MetricKey>(1, _omitFieldNames ? '' : 'key',
+        subBuilder: MetricKey.$_createMessage)
     ..aE<MetricUnit>(2, _omitFieldNames ? '' : 'unit',
         enumValues: MetricUnit.values)
     ..pPM<MetricSample>(3, _omitFieldNames ? '' : 'samples',
@@ -228,13 +315,15 @@ class MetricSeries extends $pb.GeneratedMessage {
   static MetricSeries? _defaultInstance;
 
   @$pb.TagNumber(1)
-  MetricName get metricName => $_getN(0);
+  MetricKey get key => $_getN(0);
   @$pb.TagNumber(1)
-  set metricName(MetricName value) => $_setField(1, value);
+  set key(MetricKey value) => $_setField(1, value);
   @$pb.TagNumber(1)
-  $core.bool hasMetricName() => $_has(0);
+  $core.bool hasKey() => $_has(0);
   @$pb.TagNumber(1)
-  void clearMetricName() => $_clearField(1);
+  void clearKey() => $_clearField(1);
+  @$pb.TagNumber(1)
+  MetricKey ensureKey() => $_ensure(0);
 
   @$pb.TagNumber(2)
   MetricUnit get unit => $_getN(1);
@@ -1339,14 +1428,14 @@ class QueryContainerMetricsRequest extends $pb.GeneratedMessage {
     TimeRange? range,
     $core.int? stepSeconds,
     $core.int? maxPoints,
-    $core.Iterable<MetricName>? metricNames,
+    $core.Iterable<MetricKey>? keys,
   }) {
     final result = QueryContainerMetricsRequest._();
     if (containerId != null) result.containerId = containerId;
     if (range != null) result.range = range;
     if (stepSeconds != null) result.stepSeconds = stepSeconds;
     if (maxPoints != null) result.maxPoints = maxPoints;
-    if (metricNames != null) result.metricNames.addAll(metricNames);
+    if (keys != null) result.keys.addAll(keys);
     return result;
   }
 
@@ -1369,11 +1458,8 @@ class QueryContainerMetricsRequest extends $pb.GeneratedMessage {
     ..aI(3, _omitFieldNames ? '' : 'stepSeconds',
         fieldType: $pb.PbFieldType.OU3)
     ..aI(4, _omitFieldNames ? '' : 'maxPoints', fieldType: $pb.PbFieldType.OU3)
-    ..pc<MetricName>(
-        5, _omitFieldNames ? '' : 'metricNames', $pb.PbFieldType.KE,
-        valueOf: MetricName.valueOf,
-        enumValues: MetricName.values,
-        defaultEnumValue: MetricName.METRIC_NAME_UNSPECIFIED)
+    ..pPM<MetricKey>(5, _omitFieldNames ? '' : 'keys',
+        subBuilder: MetricKey.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1448,7 +1534,7 @@ class QueryContainerMetricsRequest extends $pb.GeneratedMessage {
 
   /// Liste optionnelle des métriques spécifiques à extraire. Si vide, toutes les métriques sont retournées.
   @$pb.TagNumber(5)
-  $pb.PbList<MetricName> get metricNames => $_getList(4);
+  $pb.PbList<MetricKey> get keys => $_getList(4);
 }
 
 class QueryContainerMetricsResponse extends $pb.GeneratedMessage {
@@ -1763,13 +1849,13 @@ class QuerySystemMetricsRequest extends $pb.GeneratedMessage {
     TimeRange? range,
     $core.int? stepSeconds,
     $core.int? maxPoints,
-    $core.Iterable<MetricName>? metricNames,
+    $core.Iterable<MetricKey>? keys,
   }) {
     final result = QuerySystemMetricsRequest._();
     if (range != null) result.range = range;
     if (stepSeconds != null) result.stepSeconds = stepSeconds;
     if (maxPoints != null) result.maxPoints = maxPoints;
-    if (metricNames != null) result.metricNames.addAll(metricNames);
+    if (keys != null) result.keys.addAll(keys);
     return result;
   }
 
@@ -1791,11 +1877,8 @@ class QuerySystemMetricsRequest extends $pb.GeneratedMessage {
     ..aI(2, _omitFieldNames ? '' : 'stepSeconds',
         fieldType: $pb.PbFieldType.OU3)
     ..aI(3, _omitFieldNames ? '' : 'maxPoints', fieldType: $pb.PbFieldType.OU3)
-    ..pc<MetricName>(
-        4, _omitFieldNames ? '' : 'metricNames', $pb.PbFieldType.KE,
-        valueOf: MetricName.valueOf,
-        enumValues: MetricName.values,
-        defaultEnumValue: MetricName.METRIC_NAME_UNSPECIFIED)
+    ..pPM<MetricKey>(4, _omitFieldNames ? '' : 'keys',
+        subBuilder: MetricKey.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1859,7 +1942,7 @@ class QuerySystemMetricsRequest extends $pb.GeneratedMessage {
 
   /// Liste optionnelle des métriques spécifiques à extraire. Si vide, toutes les métriques sont retournées.
   @$pb.TagNumber(4)
-  $pb.PbList<MetricName> get metricNames => $_getList(3);
+  $pb.PbList<MetricKey> get keys => $_getList(3);
 }
 
 class QuerySystemMetricsResponse extends $pb.GeneratedMessage {
