@@ -1,0 +1,13 @@
+version: v2
+modules:
+  - path: proto
+lint:
+  enum_zero_value_suffix: _UNSPECIFIED
+  service_suffix: Service
+  disable_builtin: false
+  use:
+    - STANDARD
+breaking:
+  disable_builtin: false
+  use:
+    - FILE
