@@ -14,12 +14,7 @@ plugins:
       - paths=source_relative
 
   # --- TYPESCRIPT PLUGINS ---
-  # Génère le code TypeScript moderne (Protobuf-ES & ConnectRPC)
-  - remote: buf.build/connectrpc/es
-    out: ../web/src/gen
-    opt:
-      - target=ts
-
+  # Génère le code TypeScript moderne (Protobuf-ES)
   - remote: buf.build/bufbuild/es
     out: ../web/src/gen
     opt:
