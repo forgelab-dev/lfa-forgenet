@@ -1,0 +1,220 @@
+name: CI · modules & garde-fou
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.detect.outputs.api }}
+      go: ${{ steps.detect.outputs.go }}
+      web: ${{ steps.detect.outputs.web }}
+      mobile: ${{ steps.detect.outputs.mobile }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed modules
+        id: detect
+        run: |
+          CHANGED=$(git diff origin/main...HEAD --name-only || true)
+          echo "Fichiers modifiés :"
+          echo "$CHANGED"
+          set_output() {
+            echo "$1=$2" >> "$GITHUB_OUTPUT"
+          }
+          if echo "$CHANGED" | grep -Eq "^(api/|pkg/gen/|web/src/gen/|mobile/lib/src/gen/)"; then
+            set_output api true
+          else
+            set_output api false
+          fi
+          if echo "$CHANGED" | grep -Eq "^(go\.mod|go\.sum|internal/|cmd/|\.golangci\.yml)"; then
+            set_output go true
+          else
+            set_output go false
+          fi
+          if echo "$CHANGED" | grep -Eq "^web/"; then
+            set_output web true
+          else
+            set_output web false
+          fi
+          if echo "$CHANGED" | grep -Eq "^mobile/"; then
+            set_output mobile true
+          else
+            set_output mobile false
+          fi
+
+  buf:
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Buf
+        uses: bufbuild/buf-setup-action@v1
+
+      - name: Check format
+        run: buf format --diff --exit-code
+
+      - name: Lint Protobuf
+        run: buf lint
+
+      - name: Check Breaking Changes
+        run: |
+          if git ls-tree -r --name-only origin/main | grep -q '^api/proto/.*\.proto$'; then
+            buf breaking --against 'https://github.com/forgelab-dev/lfa-forgenet.git#branch=main,subdir=api'
+          else
+            echo "Aucun .proto sur main : première PR du contrat, vérification ignorée."
+          fi
+
+      - name: Generate code
+        run: buf generate
+
+      - name: Check working tree clean
+        working-directory: .
+        run: git add -A && git diff --staged --exit-code
+
+  go:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.4"
+
+      - name: Lint Go
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+      - name: Vet & build (si code Go présent)
+        run: |
+          if git ls-files '*.go' | grep -q .; then
+            go vet ./...
+            go build ./...
+          else
+            echo "Aucun fichier .go suivi : vérification go list uniquement."
+            go list ./...
+          fi
+
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-save
+          fi
+
+      - name: Lint sources
+        run: npx eslint src/
+
+      - name: Check formatting
+        run: npx prettier --check src/
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+  mobile:
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Flutter project presence
+        id: check
+        working-directory: .
+        run: |
+          if [ -f mobile/pubspec.yaml ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "Aucun pubspec.yaml sous mobile/ : projet Flutter non initialisé, job ignoré."
+          fi
+
+      - name: Setup Flutter
+        if: steps.check.outputs.present == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        if: steps.check.outputs.present == 'true'
+        run: flutter pub get
+
+      - name: Analyze Dart
+        if: steps.check.outputs.present == 'true'
+        run: flutter analyze
+
+      - name: Check formatting
+        if: steps.check.outputs.present == 'true'
+        run: dart format --output=none --set-exit-if-changed .
+
+  all-checks-pass:
+    needs: [buf, go, web, mobile]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all required checks
+        run: |
+          echo "buf=${{ needs.buf.result }} go=${{ needs.go.result }} web=${{ needs.web.result }} mobile=${{ needs.mobile.result }}"
+          fail=0
+          for r in "${{ needs.buf.result }}" "${{ needs.go.result }}" "${{ needs.web.result }}" "${{ needs.mobile.result }}"; do
+            if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
+              fail=1
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo "Un ou plusieurs jobs requis ont échoué."
+            exit 1
+          fi
+          echo "All checks passed (success ou skipped)."
