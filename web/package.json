@@ -1,0 +1,24 @@
+{
+  "name": "forgenet-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dashboard web ForgeNet — squelette vide, code généré protobuf-es uniquement (issue #2 étape B). Setup Vite/React à venir (issue #9).",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "lint": "eslint src/",
+    "format:check": "prettier --check src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.15.0"
+  },
+  "devDependencies": {
+    "eslint": "10.11.0",
+    "prettier": "3.9.8",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.1"
+  }
+}

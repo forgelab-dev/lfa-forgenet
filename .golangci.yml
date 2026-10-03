@@ -1,0 +1,37 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  relative-path-mode: gomod
+
+linters:
+  default: standard
+  enable:
+    - gosec
+    - revive
+    - bodyclose
+    - errcheck
+    - gocyclo
+  exclusions:
+    generated: disable
+    paths:
+      - pkg/gen/
+    rules:
+      - path: _test\.go
+        linters:
+          - gocyclo
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+  fix: false
+
+severity:
+  default: error
