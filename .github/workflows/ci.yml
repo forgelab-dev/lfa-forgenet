@@ -99,22 +99,28 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.26.4"
+          go-version-file: go.mod
 
       - name: Lint Go
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.13.2
 
-      - name: Vet & build (si code Go présent)
+      - name: Vet, build & test (si code Go présent)
         run: |
           if git ls-files '*.go' | grep -q .; then
             go vet ./...
             go build ./...
+            go test -race -count=1 ./...
           else
             echo "Aucun fichier .go suivi : vérification go list uniquement."
             go list ./...
           fi
+
+      # Les failles connues de la bibliothèque standard et des dépendances bloquent
+      # la PR : govulncheck ne signale que celles que le code peut réellement atteindre.
+      - name: Vulnérabilités connues
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
   web:
     needs: changes
