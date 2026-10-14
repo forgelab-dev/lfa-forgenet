@@ -3,11 +3,15 @@ package sqlite
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
+)
+
+const (
+	sessionColumns = `id, user_id, token_hash, name, role, expires_at, created_at, last_used_at, revoked`
+	selectSession  = `SELECT ` + sessionColumns + ` FROM sessions`
 )
 
 type sessionsStore struct {
@@ -19,147 +23,77 @@ func newSessionsStore(db *sql.DB) store.SessionStore {
 }
 
 func (s *sessionsStore) CreateSession(ctx context.Context, session *store.Session) error {
-	now := time.Now().UTC()
 	if session.CreatedAt.IsZero() {
-		session.CreatedAt = now
+		session.CreatedAt = time.Now().UTC()
 	}
 
-	const query = `
-	INSERT INTO sessions (id, user_id, token_hash, name, role, expires_at, created_at, last_used_at, revoked)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-
-	var lastUsedStr any
+	var lastUsed any
 	if session.LastUsedAt != nil {
-		lastUsedStr = session.LastUsedAt.Format(time.RFC3339Nano)
+		lastUsed = formatTime(*session.LastUsedAt)
 	}
 
-	revokedInt := 0
-	if session.Revoked {
-		revokedInt = 1
-	}
-
-	_, err := s.db.ExecContext(ctx, query,
-		session.ID,
-		session.UserID,
-		session.TokenHash,
-		session.Name,
-		string(session.Role),
-		session.ExpiresAt.Format(time.RFC3339Nano),
-		session.CreatedAt.Format(time.RFC3339Nano),
-		lastUsedStr,
-		revokedInt,
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO sessions (`+sessionColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		session.ID, session.UserID, session.TokenHash, session.Name, string(session.Role),
+		formatTime(session.ExpiresAt), formatTime(session.CreatedAt), lastUsed, session.Revoked,
 	)
 	if err != nil {
-		if isConstraintError(err) {
-			return store.ErrConflict
-		}
-		return fmt.Errorf("création de la session : %w", err)
+		return wrapWriteError(err, "création de la session")
 	}
-
 	return nil
 }
 
 func (s *sessionsStore) GetSessionByID(ctx context.Context, id string) (*store.Session, error) {
-	const query = `
-	SELECT id, user_id, token_hash, name, role, expires_at, created_at, last_used_at, revoked
-	FROM sessions WHERE id = ?`
-
-	return s.scanSession(s.db.QueryRowContext(ctx, query, id))
+	return scanSession(s.db.QueryRowContext(ctx, selectSession+` WHERE id = ?`, id))
 }
 
 func (s *sessionsStore) GetSessionByTokenHash(ctx context.Context, tokenHash string) (*store.Session, error) {
-	const query = `
-	SELECT id, user_id, token_hash, name, role, expires_at, created_at, last_used_at, revoked
-	FROM sessions WHERE token_hash = ?`
-
-	return s.scanSession(s.db.QueryRowContext(ctx, query, tokenHash))
+	return scanSession(s.db.QueryRowContext(ctx, selectSession+` WHERE token_hash = ?`, tokenHash))
 }
 
 func (s *sessionsStore) TouchSession(ctx context.Context, id string, lastUsed time.Time) error {
-	const query = `UPDATE sessions SET last_used_at = ? WHERE id = ?`
-
-	res, err := s.db.ExecContext(ctx, query, lastUsed.Format(time.RFC3339Nano), id)
-	if err != nil {
-		return fmt.Errorf("mise à jour last_used_at : %w", err)
-	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("lecture rows affected : %w", err)
-	}
-	if rows == 0 {
-		return store.ErrNotFound
-	}
-
-	return nil
+	return execOne(ctx, s.db, "mise à jour de last_used_at",
+		`UPDATE sessions SET last_used_at = ? WHERE id = ?`, formatTime(lastUsed), id)
 }
 
 func (s *sessionsStore) RevokeSession(ctx context.Context, id string) error {
-	const query = `UPDATE sessions SET revoked = 1 WHERE id = ?`
-
-	res, err := s.db.ExecContext(ctx, query, id)
-	if err != nil {
-		return fmt.Errorf("révocation de session : %w", err)
-	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("lecture rows affected : %w", err)
-	}
-	if rows == 0 {
-		return store.ErrNotFound
-	}
-
-	return nil
+	return execOne(ctx, s.db, "révocation de la session",
+		`UPDATE sessions SET revoked = 1 WHERE id = ?`, id)
 }
 
 func (s *sessionsStore) DeleteExpiredSessions(ctx context.Context) error {
-	const query = `DELETE FROM sessions WHERE expires_at < ?`
-
-	nowStr := time.Now().UTC().Format(time.RFC3339Nano)
-	_, err := s.db.ExecContext(ctx, query, nowStr)
-	if err != nil {
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM sessions WHERE expires_at < ?`, formatTime(time.Now())); err != nil {
 		return fmt.Errorf("suppression des sessions expirées : %w", err)
 	}
-
 	return nil
 }
 
-func (s *sessionsStore) scanSession(row *sql.Row) (*store.Session, error) {
-	var sess store.Session
-	var roleStr, expiresStr, createdStr string
-	var lastUsedStr sql.NullString
-	var revokedInt int
-
-	err := row.Scan(
-		&sess.ID,
-		&sess.UserID,
-		&sess.TokenHash,
-		&sess.Name,
-		&roleStr,
-		&expiresStr,
-		&createdStr,
-		&lastUsedStr,
-		&revokedInt,
+func scanSession(row scanner) (*store.Session, error) {
+	var (
+		sess                 store.Session
+		role                 string
+		expiresAt, createdAt string
+		lastUsed             sql.NullString
 	)
+	err := row.Scan(&sess.ID, &sess.UserID, &sess.TokenHash, &sess.Name, &role,
+		&expiresAt, &createdAt, &lastUsed, &sess.Revoked)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, store.ErrNotFound
-		}
-		return nil, fmt.Errorf("scan session : %w", err)
+		return nil, wrapReadError(err, "lecture de la session")
 	}
 
-	sess.Role = store.Role(roleStr)
-	sess.ExpiresAt, _ = time.Parse(time.RFC3339Nano, expiresStr)
-	sess.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdStr)
-	sess.Revoked = revokedInt == 1
-
-	if lastUsedStr.Valid {
-		t, err := time.Parse(time.RFC3339Nano, lastUsedStr.String)
-		if err == nil {
-			sess.LastUsedAt = &t
-		}
+	sess.Role = store.Role(role)
+	if sess.ExpiresAt, err = parseTime(expiresAt); err != nil {
+		return nil, err
 	}
-
+	if sess.CreatedAt, err = parseTime(createdAt); err != nil {
+		return nil, err
+	}
+	if lastUsed.Valid {
+		t, err := parseTime(lastUsed.String)
+		if err != nil {
+			return nil, err
+		}
+		sess.LastUsedAt = &t
+	}
 	return &sess, nil
 }

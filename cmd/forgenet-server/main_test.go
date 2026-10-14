@@ -125,6 +125,16 @@ log:
 		assert.Equal(t, "SERVING", body.Status)
 	})
 
+	t.Run("readyz signale la base migrée", func(t *testing.T) {
+		resp, err := client.Get(httpAddr + "/readyz")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		var body transportHTTP.HealthResponse
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, "ok", body.Details["database"])
+	})
+
 	t.Run("version", func(t *testing.T) {
 		resp, err := client.Get(httpAddr + "/version")
 		require.NoError(t, err)

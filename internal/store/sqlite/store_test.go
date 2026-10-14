@@ -2,6 +2,7 @@ package sqlite_test
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -31,15 +32,43 @@ func newTestStore(t *testing.T) store.Store {
 	return st
 }
 
-func TestStore_PingAndCheck(t *testing.T) {
+func TestStore_Ping(t *testing.T) {
+	st := newTestStore(t)
+	require.NoError(t, st.Ping(context.Background()))
+}
+
+func TestOpen_CreatesMissingAbsoluteDirectory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "absent", "forgenet.db")
+	st, err := sqlite.Open(context.Background(), config.DatabaseConfig{Path: path, BusyTimeout: time.Second})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = st.Close() })
+	assert.FileExists(t, path)
+}
+
+// Les horodatages sont comparés par SQLite en tant que texte : une demi-seconde
+// d'écart doit suffire à ordonner le journal et à purger une session expirée.
+func TestTimestamps_SubSecondOrdering(t *testing.T) {
 	st := newTestStore(t)
 	ctx := context.Background()
+	base := time.Now().UTC().Truncate(time.Second)
 
-	require.NoError(t, st.Ping(ctx))
+	require.NoError(t, st.Audit().Record(ctx, &store.AuditEvent{ID: "a-entier", Action: "x", Resource: "r", Timestamp: base}))
+	require.NoError(t, st.Audit().Record(ctx, &store.AuditEvent{ID: "a-demi", Action: "x", Resource: "r", Timestamp: base.Add(500 * time.Millisecond)}))
+	events, err := st.Audit().List(ctx, 10, 0)
+	require.NoError(t, err)
+	require.Len(t, events, 2)
+	assert.Equal(t, "a-demi", events[0].ID, "l'événement le plus récent doit venir en premier")
 
-	checker, ok := st.(interface{ Check(context.Context) error })
-	require.True(t, ok)
-	require.NoError(t, checker.Check(ctx))
+	user := &store.User{ID: "u1", Username: "u1", Email: "u1@example.test", PasswordHash: "h", Role: store.RoleMember}
+	require.NoError(t, st.Users().CreateUser(ctx, user))
+	// Expirée depuis une demi-seconde, sur une seconde entière : « …05Z » contre « …04.5Z ».
+	expired := time.Now().UTC().Truncate(time.Second).Add(-500 * time.Millisecond)
+	require.NoError(t, st.Sessions().CreateSession(ctx, &store.Session{
+		ID: "s1", UserID: user.ID, TokenHash: "t1", Name: "n", Role: store.RoleMember, ExpiresAt: expired,
+	}))
+	require.NoError(t, st.Sessions().DeleteExpiredSessions(ctx))
+	_, err = st.Sessions().GetSessionByID(ctx, "s1")
+	assert.ErrorIs(t, err, store.ErrNotFound)
 }
 
 func TestUserStore_CRUD(t *testing.T) {

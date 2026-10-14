@@ -24,13 +24,11 @@ type sqliteStore struct {
 
 // Open initialise une connexion à la base SQLite, applique les migrations requises et retourne un store prêt à l'emploi.
 func Open(ctx context.Context, cfg config.DatabaseConfig) (store.Store, error) {
-	// Création du répertoire parent si nécessaire (sauf pour :memory:)
-	if cfg.Path != ":memory:" && !filepath.IsAbs(cfg.Path) {
-		dir := filepath.Dir(cfg.Path)
-		if dir != "." && dir != "" {
-			if err := os.MkdirAll(dir, 0o750); err != nil {
-				return nil, fmt.Errorf("création du répertoire de la base de données %s : %w", dir, err)
-			}
+	// Le dossier parent est créé pour un chemin relatif comme absolu
+	// (/var/lib/forgenet/forgenet.db à la première installation).
+	if cfg.Path != ":memory:" {
+		if err := os.MkdirAll(filepath.Dir(cfg.Path), 0o750); err != nil {
+			return nil, fmt.Errorf("création du dossier de la base de données : %w", err)
 		}
 	}
 
@@ -90,14 +88,9 @@ func (s *sqliteStore) Audit() store.AuditStore {
 	return s.audit
 }
 
-// Ping vérifie que la base de données est accessible (satisfait également health.Checker).
+// Ping vérifie que la base de données est accessible.
 func (s *sqliteStore) Ping(ctx context.Context) error {
 	return s.db.PingContext(ctx)
-}
-
-// Check permet d'utiliser le store comme health.Checker pour les sondes de readiness.
-func (s *sqliteStore) Check(ctx context.Context) error {
-	return s.Ping(ctx)
 }
 
 func (s *sqliteStore) Close() error {

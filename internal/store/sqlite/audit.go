@@ -3,10 +3,16 @@ package sqlite
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
+)
+
+const (
+	auditColumns = `id, user_id, action, resource, ip_address, metadata, timestamp`
+
+	// defaultAuditPageSize borne une lecture du journal sans limite explicite.
+	defaultAuditPageSize = 50
 )
 
 type auditStore struct {
@@ -22,84 +28,40 @@ func (s *auditStore) Record(ctx context.Context, e *store.AuditEvent) error {
 		e.Timestamp = time.Now().UTC()
 	}
 
-	const query = `
-	INSERT INTO audit_logs (id, user_id, action, resource, ip_address, metadata, timestamp)
-	VALUES (?, ?, ?, ?, ?, ?, ?)`
-
-	_, err := s.db.ExecContext(ctx, query,
-		e.ID,
-		e.UserID,
-		e.Action,
-		e.Resource,
-		e.IPAddress,
-		e.Metadata,
-		e.Timestamp.Format(time.RFC3339Nano),
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO audit_logs (`+auditColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		e.ID, e.UserID, e.Action, e.Resource, e.IPAddress, e.Metadata, formatTime(e.Timestamp),
 	)
 	if err != nil {
-		return fmt.Errorf("enregistrement audit log : %w", err)
+		return wrapWriteError(err, "enregistrement de l'événement d'audit")
 	}
-
 	return nil
 }
 
 func (s *auditStore) List(ctx context.Context, limit, offset int) ([]*store.AuditEvent, error) {
 	if limit <= 0 {
-		limit = 50
+		limit = defaultAuditPageSize
 	}
-	if offset < 0 {
-		offset = 0
-	}
+	offset = max(offset, 0)
 
-	const query = `
-	SELECT id, user_id, action, resource, ip_address, metadata, timestamp
-	FROM audit_logs
-	ORDER BY timestamp DESC
-	LIMIT ? OFFSET ?`
+	return queryAll(ctx, s.db, "lecture du journal d'audit", scanAuditEvent,
+		`SELECT `+auditColumns+` FROM audit_logs ORDER BY timestamp DESC LIMIT ? OFFSET ?`, limit, offset)
+}
 
-	rows, err := s.db.QueryContext(ctx, query, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("requête audit logs : %w", err)
-	}
-	defer func() {
-		_ = rows.Close()
-	}()
-
-	var events []*store.AuditEvent
-	for rows.Next() {
-		var e store.AuditEvent
-		var tsStr string
-		var userID, ipAddr, meta sql.NullString
-
-		err := rows.Scan(
-			&e.ID,
-			&userID,
-			&e.Action,
-			&e.Resource,
-			&ipAddr,
-			&meta,
-			&tsStr,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("scan audit log : %w", err)
-		}
-
-		if userID.Valid {
-			e.UserID = userID.String
-		}
-		if ipAddr.Valid {
-			e.IPAddress = ipAddr.String
-		}
-		if meta.Valid {
-			e.Metadata = meta.String
-		}
-		e.Timestamp, _ = time.Parse(time.RFC3339Nano, tsStr)
-
-		events = append(events, &e)
+func scanAuditEvent(row scanner) (*store.AuditEvent, error) {
+	var (
+		e                    store.AuditEvent
+		userID, ip, metadata sql.NullString
+		timestamp            string
+	)
+	if err := row.Scan(&e.ID, &userID, &e.Action, &e.Resource, &ip, &metadata, &timestamp); err != nil {
+		return nil, wrapReadError(err, "lecture de l'événement d'audit")
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("itération audit logs : %w", err)
+	e.UserID, e.IPAddress, e.Metadata = userID.String, ip.String, metadata.String
+	var err error
+	if e.Timestamp, err = parseTime(timestamp); err != nil {
+		return nil, err
 	}
-
-	return events, nil
+	return &e, nil
 }
