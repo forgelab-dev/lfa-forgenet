@@ -2,10 +2,7 @@ package grpc
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
-	"fmt"
-	"io"
 	"strconv"
 	"time"
 
@@ -15,9 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/audit"
-	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
-	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/docker"
-	"github.com/forgelab-dev/lfa-forgenet/internal/store"
+	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator"
 	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
 )
 
@@ -26,388 +21,204 @@ const (
 	maxPageSize     = 100
 )
 
-// ContainerServiceServer implémente le contrat protobuf ContainerServiceServer.
+// ContainerServiceServer expose orchestrator.Engine selon le contrat
+// forgenet.v1.ContainerService. L'authentification et les rôles sont
+// appliqués en amont par auth.Guard ; ce service traduit et journalise.
 type ContainerServiceServer struct {
 	forgenetv1.UnimplementedContainerServiceServer
-	orchestrator docker.Orchestrator
-	auditor      audit.Auditor
-	logger       zerolog.Logger
+	engine  orchestrator.Engine
+	auditor audit.Auditor
+	logger  zerolog.Logger
 }
 
-// Assure que ContainerServiceServer implémente bien forgenetv1.ContainerServiceServer.
 var _ forgenetv1.ContainerServiceServer = (*ContainerServiceServer)(nil)
 
-// NewContainerServiceServer instancie le serveur gRPC ContainerService.
-func NewContainerServiceServer(orch docker.Orchestrator, auditor audit.Auditor, logger zerolog.Logger) *ContainerServiceServer {
+// NewContainerServiceServer instancie le service gRPC des conteneurs.
+func NewContainerServiceServer(engine orchestrator.Engine, auditor audit.Auditor, logger zerolog.Logger) *ContainerServiceServer {
 	return &ContainerServiceServer{
-		orchestrator: orch,
-		auditor:      auditor,
-		logger:       logger.With().Str("component", "grpc.container_service").Logger(),
+		engine:  engine,
+		auditor: auditor,
+		logger:  logger.With().Str("component", "grpc.container_service").Logger(),
 	}
 }
 
-// ListContainers retourne la liste paginée des conteneurs existants.
+// ListContainers renvoie une page de conteneurs. Le jeton de page est la
+// position du premier élément ; un jeton illisible est refusé.
 func (s *ContainerServiceServer) ListContainers(ctx context.Context, req *forgenetv1.ListContainersRequest) (*forgenetv1.ListContainersResponse, error) {
-	_, ok := auth.UserFromContext(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "authentification requise")
+	pageSize := int(req.GetPageSize())
+	if pageSize <= 0 {
+		pageSize = defaultPageSize
 	}
+	pageSize = min(pageSize, maxPageSize)
 
-	includeStopped := false
-	var pageSize int32 = defaultPageSize
-	pageToken := ""
-
-	if req != nil {
-		includeStopped = req.GetIncludeStopped()
-		if req.GetPageSize() > 0 {
-			pageSize = req.GetPageSize()
-			if pageSize > maxPageSize {
-				pageSize = maxPageSize
-			}
-		}
-		pageToken = req.GetPageToken()
-	}
-
-	allContainers, err := s.orchestrator.ListContainers(ctx, includeStopped)
-	if err != nil {
-		s.logger.Error().Err(err).Msg("échec de la récupération des conteneurs")
-		return nil, status.Errorf(codes.Internal, "erreur orchestrateur : %v", err)
-	}
-
-	// Gestion de l'offset de pagination
 	offset := 0
-	if pageToken != "" {
-		parsed, err := strconv.Atoi(pageToken)
-		if err == nil && parsed >= 0 {
-			offset = parsed
+	if token := req.GetPageToken(); token != "" {
+		n, err := strconv.Atoi(token)
+		if err != nil || n < 0 {
+			return nil, status.Error(codes.InvalidArgument, "jeton de page invalide")
 		}
+		offset = n
 	}
 
-	if offset > len(allContainers) {
-		offset = len(allContainers)
+	containers, err := s.engine.List(ctx, req.GetIncludeStopped())
+	if err != nil {
+		return nil, s.toStatus(err, "liste des conteneurs")
 	}
 
-	end := offset + int(pageSize)
-	nextPageToken := ""
-	if end < len(allContainers) {
-		nextPageToken = strconv.Itoa(end)
-	} else {
-		end = len(allContainers)
+	offset = min(offset, len(containers))
+	end := min(offset+pageSize, len(containers))
+	resp := &forgenetv1.ListContainersResponse{Containers: make([]*forgenetv1.Container, 0, end-offset)}
+	for _, c := range containers[offset:end] {
+		resp.Containers = append(resp.Containers, toProtoContainer(c))
 	}
-
-	paged := allContainers[offset:end]
-	protoContainers := make([]*forgenetv1.Container, len(paged))
-	for i, c := range paged {
-		protoContainers[i] = c.ToProto()
+	if end < len(containers) {
+		resp.NextPageToken = strconv.Itoa(end)
 	}
-
-	return &forgenetv1.ListContainersResponse{
-		Containers:    protoContainers,
-		NextPageToken: nextPageToken,
-	}, nil
+	return resp, nil
 }
 
-// GetContainer récupère les informations détaillées d'un conteneur spécifique.
+// GetContainer renvoie l'état d'un conteneur.
 func (s *ContainerServiceServer) GetContainer(ctx context.Context, req *forgenetv1.GetContainerRequest) (*forgenetv1.GetContainerResponse, error) {
-	_, ok := auth.UserFromContext(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "authentification requise")
-	}
-
-	if req == nil || req.GetContainerId() == "" {
-		return nil, status.Error(codes.InvalidArgument, "l'identifiant du conteneur est requis")
-	}
-
-	info, err := s.orchestrator.GetContainer(ctx, req.GetContainerId())
+	c, err := s.engine.Get(ctx, req.GetContainerId())
 	if err != nil {
-		if errors.Is(err, docker.ErrContainerNotFound) {
-			return nil, status.Errorf(codes.NotFound, "conteneur %q introuvable", req.GetContainerId())
-		}
-		s.logger.Error().Err(err).Str("container_id", req.GetContainerId()).Msg("erreur inspection conteneur")
-		return nil, status.Errorf(codes.Internal, "erreur orchestrateur : %v", err)
+		return nil, s.toStatus(err, "inspection du conteneur")
 	}
-
-	return &forgenetv1.GetContainerResponse{
-		Container: info.ToProto(),
-	}, nil
+	return &forgenetv1.GetContainerResponse{Container: toProtoContainer(c)}, nil
 }
 
-// StartContainer démarre un conteneur arrêté.
+// StartContainer démarre un conteneur (admin).
 func (s *ContainerServiceServer) StartContainer(ctx context.Context, req *forgenetv1.StartContainerRequest) (*forgenetv1.StartContainerResponse, error) {
-	claims, ok := auth.UserFromContext(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "authentification requise")
-	}
-
-	if !isAuthorizedOperator(claims.Role) {
-		return nil, status.Error(codes.PermissionDenied, "droits insuffisants pour démarrer un conteneur")
-	}
-
-	if req == nil || req.GetContainerId() == "" {
-		return nil, status.Error(codes.InvalidArgument, "l'identifiant du conteneur est requis")
-	}
-
-	info, err := s.orchestrator.StartContainer(ctx, req.GetContainerId())
+	c, err := s.mutate(ctx, "container.start", req.GetContainerId(), s.engine.Start)
 	if err != nil {
-		s.auditAction(ctx, claims.UserID, "container.start", req.GetContainerId(), false, map[string]string{"error": err.Error()})
-		if errors.Is(err, docker.ErrContainerNotFound) {
-			return nil, status.Errorf(codes.NotFound, "conteneur %q introuvable", req.GetContainerId())
-		}
-		s.logger.Error().Err(err).Str("container_id", req.GetContainerId()).Msg("erreur démarrage conteneur")
-		return nil, status.Errorf(codes.Internal, "erreur démarrage conteneur : %v", err)
+		return nil, err
 	}
-
-	s.auditAction(ctx, claims.UserID, "container.start", req.GetContainerId(), true, nil)
-
-	return &forgenetv1.StartContainerResponse{
-		Container: info.ToProto(),
-	}, nil
+	return &forgenetv1.StartContainerResponse{Container: c}, nil
 }
 
-// StopContainer arrête proprement un conteneur en cours d'exécution.
+// StopContainer arrête un conteneur dans le délai demandé (admin).
 func (s *ContainerServiceServer) StopContainer(ctx context.Context, req *forgenetv1.StopContainerRequest) (*forgenetv1.StopContainerResponse, error) {
-	claims, ok := auth.UserFromContext(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "authentification requise")
-	}
-
-	if !isAuthorizedOperator(claims.Role) {
-		return nil, status.Error(codes.PermissionDenied, "droits insuffisants pour arrêter un conteneur")
-	}
-
-	if req == nil || req.GetContainerId() == "" {
-		return nil, status.Error(codes.InvalidArgument, "l'identifiant du conteneur est requis")
-	}
-
-	timeoutSec := req.GetTimeoutSeconds()
-	info, err := s.orchestrator.StopContainer(ctx, req.GetContainerId(), timeoutSec)
-	if err != nil {
-		s.auditAction(ctx, claims.UserID, "container.stop", req.GetContainerId(), false, map[string]string{
-			"error":   err.Error(),
-			"timeout": strconv.FormatUint(uint64(timeoutSec), 10),
-		})
-		if errors.Is(err, docker.ErrContainerNotFound) {
-			return nil, status.Errorf(codes.NotFound, "conteneur %q introuvable", req.GetContainerId())
-		}
-		s.logger.Error().Err(err).Str("container_id", req.GetContainerId()).Msg("erreur arrêt conteneur")
-		return nil, status.Errorf(codes.Internal, "erreur arrêt conteneur : %v", err)
-	}
-
-	s.auditAction(ctx, claims.UserID, "container.stop", req.GetContainerId(), true, map[string]string{
-		"timeout": strconv.FormatUint(uint64(timeoutSec), 10),
+	timeout := time.Duration(req.GetTimeoutSeconds()) * time.Second
+	c, err := s.mutate(ctx, "container.stop", req.GetContainerId(), func(ctx context.Context, id string) (orchestrator.Container, error) {
+		return s.engine.Stop(ctx, id, timeout)
 	})
-
-	return &forgenetv1.StopContainerResponse{
-		Container: info.ToProto(),
-	}, nil
+	if err != nil {
+		return nil, err
+	}
+	return &forgenetv1.StopContainerResponse{Container: c}, nil
 }
 
-// RestartContainer redémarre un conteneur.
+// RestartContainer redémarre un conteneur (admin).
 func (s *ContainerServiceServer) RestartContainer(ctx context.Context, req *forgenetv1.RestartContainerRequest) (*forgenetv1.RestartContainerResponse, error) {
-	claims, ok := auth.UserFromContext(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "authentification requise")
-	}
-
-	if !isAuthorizedOperator(claims.Role) {
-		return nil, status.Error(codes.PermissionDenied, "droits insuffisants pour redémarrer un conteneur")
-	}
-
-	if req == nil || req.GetContainerId() == "" {
-		return nil, status.Error(codes.InvalidArgument, "l'identifiant du conteneur est requis")
-	}
-
-	info, err := s.orchestrator.RestartContainer(ctx, req.GetContainerId())
+	c, err := s.mutate(ctx, "container.restart", req.GetContainerId(), s.engine.Restart)
 	if err != nil {
-		s.auditAction(ctx, claims.UserID, "container.restart", req.GetContainerId(), false, map[string]string{"error": err.Error()})
-		if errors.Is(err, docker.ErrContainerNotFound) {
-			return nil, status.Errorf(codes.NotFound, "conteneur %q introuvable", req.GetContainerId())
-		}
-		s.logger.Error().Err(err).Str("container_id", req.GetContainerId()).Msg("erreur redémarrage conteneur")
-		return nil, status.Errorf(codes.Internal, "erreur redémarrage conteneur : %v", err)
+		return nil, err
 	}
-
-	s.auditAction(ctx, claims.UserID, "container.restart", req.GetContainerId(), true, nil)
-
-	return &forgenetv1.RestartContainerResponse{
-		Container: info.ToProto(),
-	}, nil
+	return &forgenetv1.RestartContainerResponse{Container: c}, nil
 }
 
-// StreamContainerLogs ouvre un flux gRPC pour lire les logs d'un conteneur en temps réel.
-func (s *ContainerServiceServer) StreamContainerLogs(
-	req *forgenetv1.StreamContainerLogsRequest,
-	stream forgenetv1.ContainerService_StreamContainerLogsServer,
-) error {
-	ctx := stream.Context()
-	_, ok := auth.UserFromContext(ctx)
-	if !ok {
-		return status.Error(codes.Unauthenticated, "authentification requise")
+// mutate exécute une action qui modifie un conteneur et la consigne au journal
+// d'audit, réussie ou non. Le contexte porte déjà l'utilisateur et son adresse
+// (posés par auth.Guard).
+func (s *ContainerServiceServer) mutate(
+	ctx context.Context,
+	action, id string,
+	do func(context.Context, string) (orchestrator.Container, error),
+) (*forgenetv1.Container, error) {
+	c, err := do(ctx, id)
+	meta := map[string]any{"success": err == nil}
+	if err != nil {
+		meta["error"] = err.Error()
 	}
-
-	if req == nil || req.GetContainerId() == "" {
-		return status.Error(codes.InvalidArgument, "l'identifiant du conteneur est requis")
+	if s.auditor != nil {
+		_ = s.auditor.Log(ctx, action, "container:"+id, meta)
 	}
-
-	showStdout := true
-	showStderr := true
-	switch req.GetStream() {
-	case forgenetv1.LogStream_LOG_STREAM_STDOUT:
-		showStderr = false
-	case forgenetv1.LogStream_LOG_STREAM_STDERR:
-		showStdout = false
-	case forgenetv1.LogStream_LOG_STREAM_UNSPECIFIED:
-		// Garde les deux
+	if err != nil {
+		return nil, s.toStatus(err, action)
 	}
+	return toProtoContainer(c), nil
+}
 
-	var since time.Time
+// StreamContainerLogs transmet les journaux d'un conteneur, morceau par morceau.
+func (s *ContainerServiceServer) StreamContainerLogs(req *forgenetv1.StreamContainerLogsRequest, stream forgenetv1.ContainerService_StreamContainerLogsServer) error {
+	opts := orchestrator.LogOptions{
+		Follow: req.GetFollow(),
+		Tail:   int(req.GetTailLines()),
+		Stdout: req.GetStream() != forgenetv1.LogStream_LOG_STREAM_STDERR,
+		Stderr: req.GetStream() != forgenetv1.LogStream_LOG_STREAM_STDOUT,
+	}
 	if req.GetSince() != nil {
-		since = req.GetSince().AsTime()
+		opts.Since = req.GetSince().AsTime()
 	}
 
-	reader, err := s.orchestrator.StreamLogs(ctx, req.GetContainerId(), req.GetFollow(), int(req.GetTailLines()), since, showStdout, showStderr)
-	if err != nil {
-		if errors.Is(err, docker.ErrContainerNotFound) {
-			return status.Errorf(codes.NotFound, "conteneur %q introuvable", req.GetContainerId())
-		}
-		s.logger.Error().Err(err).Str("container_id", req.GetContainerId()).Msg("erreur ouverture flux logs")
-		return status.Errorf(codes.Internal, "erreur lecture des logs : %v", err)
-	}
-	defer func() {
-		_ = reader.Close()
-	}()
-
-	return forwardLogs(ctx, reader, req.GetStream(), stream)
-}
-
-func forwardLogs(
-	ctx context.Context,
-	reader io.Reader,
-	requestedStream forgenetv1.LogStream,
-	stream forgenetv1.ContainerService_StreamContainerLogsServer,
-) error {
-	header := make([]byte, 8)
-	buf := make([]byte, 4096)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
-		// Tentative de lecture de l'en-tête multiplexé Docker (8 octets)
-		n, err := io.ReadFull(reader, header)
-		if err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				if n > 0 {
-					// Données résiduelles non multiplexées
-					_ = sendChunk(stream, header[:n], requestedStream)
-				}
-				return nil
-			}
-			return err
-		}
-
-		// Détection d'un en-tête Docker multiplexé valide :
-		// header[0]: 1 (stdout) ou 2 (stderr)
-		// header[1..3]: 0
-		if (header[0] == 1 || header[0] == 2) && header[1] == 0 && header[2] == 0 && header[3] == 0 {
-			streamSource := forgenetv1.LogStream_LOG_STREAM_STDOUT
-			if header[0] == 2 {
-				streamSource = forgenetv1.LogStream_LOG_STREAM_STDERR
-			}
-
-			frameSize := binary.BigEndian.Uint32(header[4:8])
-			if frameSize == 0 {
-				continue
-			}
-
-			// Lecture du contenu de la frame par morceaux
-			var remaining = int64(frameSize)
-			for remaining > 0 {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-				}
-
-				toRead := int64(len(buf))
-				if remaining < toRead {
-					toRead = remaining
-				}
-
-				chunkN, readErr := reader.Read(buf[:toRead])
-				if chunkN > 0 {
-					if err := sendChunk(stream, buf[:chunkN], streamSource); err != nil {
-						return err
-					}
-					remaining -= int64(chunkN)
-				}
-				if readErr != nil {
-					if errors.Is(readErr, io.EOF) {
-						return nil
-					}
-					return readErr
-				}
-			}
-		} else {
-			// Flux brut non multiplexé (ex: TTY alloué ou flux textuel)
-			defaultSource := requestedStream
-			if defaultSource == forgenetv1.LogStream_LOG_STREAM_UNSPECIFIED {
-				defaultSource = forgenetv1.LogStream_LOG_STREAM_STDOUT
-			}
-
-			if err := sendChunk(stream, header[:n], defaultSource); err != nil {
-				return err
-			}
-
-			rawN, rawErr := reader.Read(buf)
-			if rawN > 0 {
-				if err := sendChunk(stream, buf[:rawN], defaultSource); err != nil {
-					return err
-				}
-			}
-			if rawErr != nil {
-				if errors.Is(rawErr, io.EOF) {
-					return nil
-				}
-				return rawErr
-			}
-		}
-	}
-}
-
-func sendChunk(stream forgenetv1.ContainerService_StreamContainerLogsServer, data []byte, source forgenetv1.LogStream) error {
-	cp := make([]byte, len(data))
-	copy(cp, data)
-	return stream.Send(&forgenetv1.StreamContainerLogsResponse{
-		Chunk:   cp,
-		Emitted: timestamppb.Now(),
-		Source:  source,
+	err := s.engine.Logs(stream.Context(), req.GetContainerId(), opts, func(chunk orchestrator.LogChunk) error {
+		return stream.Send(&forgenetv1.StreamContainerLogsResponse{
+			Chunk:   chunk.Data,
+			Emitted: timestamppb.Now(),
+			Source:  toProtoLogStream(chunk.Stream),
+		})
 	})
+	if err != nil {
+		return s.toStatus(err, "lecture des journaux")
+	}
+	return nil
 }
 
-func isAuthorizedOperator(role store.Role) bool {
-	return role == store.RoleAdmin || role == store.RoleMember
+// toStatus traduit une erreur du domaine en statut gRPC. Le détail d'une
+// erreur interne (chemin du socket, message du démon…) reste dans le journal.
+func (s *ContainerServiceServer) toStatus(err error, action string) error {
+	switch {
+	case errors.Is(err, orchestrator.ErrNotFound):
+		return status.Error(codes.NotFound, "conteneur introuvable")
+	case errors.Is(err, orchestrator.ErrInvalidArgument):
+		return status.Error(codes.InvalidArgument, "demande invalide : identifiant ou paramètre manquant")
+	case errors.Is(err, context.Canceled):
+		return status.Error(codes.Canceled, "appel annulé")
+	default:
+		s.logger.Error().Err(err).Str("action", action).Msg("échec de l'orchestrateur")
+		return status.Error(codes.Internal, "erreur du moteur de conteneurs")
+	}
 }
 
-func (s *ContainerServiceServer) auditAction(
-	ctx context.Context,
-	userID string,
-	action string,
-	containerID string,
-	success bool,
-	meta map[string]string,
-) {
-	if s.auditor == nil {
-		return
+func toProtoContainer(c orchestrator.Container) *forgenetv1.Container {
+	ports := make([]*forgenetv1.PortMapping, 0, len(c.Ports))
+	for _, p := range c.Ports {
+		ports = append(ports, &forgenetv1.PortMapping{
+			HostPort:      uint32(p.HostPort),
+			ContainerPort: uint32(p.ContainerPort),
+			Protocol:      p.Protocol,
+		})
 	}
-	auditCtx := audit.WithAuditContext(ctx, userID, "")
-	metadata := make(map[string]any, len(meta)+1)
-	for k, v := range meta {
-		metadata[k] = v
+	pc := &forgenetv1.Container{
+		Id:    c.ID,
+		Name:  c.Name,
+		Image: c.Image,
+		State: toProtoState(c.State),
+		Ports: ports,
 	}
-	metadata["success"] = success
-	_ = s.auditor.Log(auditCtx, action, fmt.Sprintf("container:%s", containerID), metadata)
+	if !c.CreatedAt.IsZero() {
+		pc.CreatedAt = timestamppb.New(c.CreatedAt)
+	}
+	return pc
+}
+
+var protoStates = map[orchestrator.State]forgenetv1.ContainerState{
+	orchestrator.StateCreated:    forgenetv1.ContainerState_CONTAINER_STATE_CREATED,
+	orchestrator.StateRunning:    forgenetv1.ContainerState_CONTAINER_STATE_RUNNING,
+	orchestrator.StatePaused:     forgenetv1.ContainerState_CONTAINER_STATE_PAUSED,
+	orchestrator.StateRestarting: forgenetv1.ContainerState_CONTAINER_STATE_RESTARTING,
+	orchestrator.StateExited:     forgenetv1.ContainerState_CONTAINER_STATE_EXITED,
+	orchestrator.StateDead:       forgenetv1.ContainerState_CONTAINER_STATE_DEAD,
+}
+
+// toProtoState renvoie UNSPECIFIED pour un état sans équivalent dans le
+// contrat (removing, inconnu).
+func toProtoState(s orchestrator.State) forgenetv1.ContainerState {
+	return protoStates[s]
+}
+
+func toProtoLogStream(s orchestrator.LogStream) forgenetv1.LogStream {
+	if s == orchestrator.Stderr {
+		return forgenetv1.LogStream_LOG_STREAM_STDERR
+	}
+	return forgenetv1.LogStream_LOG_STREAM_STDOUT
 }

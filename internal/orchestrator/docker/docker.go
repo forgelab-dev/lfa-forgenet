@@ -1,3 +1,4 @@
+// Package docker implémente orchestrator.Engine avec Docker Engine.
 package docker
 
 import (
@@ -5,381 +6,297 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/netip"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-	"github.com/docker/docker/errdefs"
-	"github.com/docker/go-connections/nat"
+	cerrdefs "github.com/containerd/errdefs"
+	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
+
+	"github.com/forgelab-dev/lfa-forgenet/internal/config"
+	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator"
 )
 
-// Service implémente l'interface Orchestrator en s'appuyant sur Docker Engine.
-type Service struct {
-	cli EngineClient
+// Engine pilote les conteneurs d'un démon Docker.
+type Engine struct {
+	cli         EngineClient
+	publishHost netip.Addr
 }
 
-// Assure que Service implémente bien l'interface Orchestrator.
-var _ Orchestrator = (*Service)(nil)
+var _ orchestrator.Engine = (*Engine)(nil)
 
-// New instancie un orchestrateur Docker à partir des paramètres d'hôte et de version d'API.
-// Si dockerHost est vide, la configuration standard de l'environnement est utilisée.
-func New(dockerHost, apiVersion string) (*Service, error) {
-	opts := []client.Opt{
-		client.FromEnv,
+// New se connecte au démon décrit par la configuration (variables DOCKER_* par
+// défaut). La version d'API est négociée au premier appel, sauf si elle est fixée.
+func New(cfg config.DockerConfig) (*Engine, error) {
+	opts := []client.Opt{client.FromEnv}
+	if cfg.Host != "" {
+		opts = append(opts, client.WithHost(cfg.Host))
 	}
-	if dockerHost != "" {
-		opts = append(opts, client.WithHost(dockerHost))
+	if cfg.APIVersion != "" {
+		opts = append(opts, client.WithAPIVersion(cfg.APIVersion))
 	}
-	if apiVersion != "" {
-		opts = append(opts, client.WithVersion(apiVersion))
-	} else {
-		opts = append(opts, client.WithAPIVersionNegotiation())
-	}
-
-	cli, err := client.NewClientWithOpts(opts...)
+	cli, err := client.New(opts...)
 	if err != nil {
-		return nil, fmt.Errorf("initialisation client docker: %w", err)
+		return nil, fmt.Errorf("client Docker : %w", err)
 	}
-
-	return NewWithClient(cli), nil
+	return NewWithClient(cli, cfg.PublishHost)
 }
 
-// NewWithClient instancie un orchestrateur Docker autour d'un EngineClient fourni (pratique pour les mocks et tests).
-func NewWithClient(cli EngineClient) *Service {
-	return &Service{
-		cli: cli,
-	}
-}
-
-// Ping vérifie la communication avec le démon Docker.
-func (s *Service) Ping(ctx context.Context) error {
-	_, err := s.cli.Ping(ctx)
+// NewWithClient construit l'orchestrateur autour d'un client fourni. publishHost
+// est l'adresse de l'hôte sur laquelle les ports des conteneurs sont publiés.
+func NewWithClient(cli EngineClient, publishHost string) (*Engine, error) {
+	addr, err := netip.ParseAddr(publishHost)
 	if err != nil {
-		return fmt.Errorf("démon docker injoignable: %w", err)
+		return nil, fmt.Errorf("adresse de publication des ports %q : %w", publishHost, err)
+	}
+	return &Engine{cli: cli, publishHost: addr}, nil
+}
+
+// Close libère la connexion au démon.
+func (e *Engine) Close() error {
+	return e.cli.Close()
+}
+
+// Ping vérifie que le démon répond.
+func (e *Engine) Ping(ctx context.Context) error {
+	if _, err := e.cli.Ping(ctx, client.PingOptions{}); err != nil {
+		return fmt.Errorf("démon Docker injoignable : %w", err)
 	}
 	return nil
 }
 
-// Close libère les ressources et connexions sous-jacentes du client Docker.
-func (s *Service) Close() error {
-	if s.cli != nil {
-		return s.cli.Close()
-	}
-	return nil
-}
-
-// ListContainers retourne l'ensemble des conteneurs selon le filtre d'arrêt.
-func (s *Service) ListContainers(ctx context.Context, includeStopped bool) ([]*ContainerInfo, error) {
-	opts := container.ListOptions{
-		All: includeStopped,
-	}
-
-	containers, err := s.cli.ContainerList(ctx, opts)
+// List renvoie les conteneurs en cours, ou tous avec includeStopped.
+func (e *Engine) List(ctx context.Context, includeStopped bool) ([]orchestrator.Container, error) {
+	res, err := e.cli.ContainerList(ctx, client.ContainerListOptions{All: includeStopped})
 	if err != nil {
-		return nil, fmt.Errorf("liste des conteneurs: %w", err)
+		return nil, fmt.Errorf("liste des conteneurs : %w", err)
 	}
-
-	results := make([]*ContainerInfo, 0, len(containers))
-	for _, c := range containers {
-		results = append(results, summaryToContainerInfo(c))
+	containers := make([]orchestrator.Container, 0, len(res.Items))
+	for _, c := range res.Items {
+		containers = append(containers, fromSummary(c))
 	}
-
-	return results, nil
+	return containers, nil
 }
 
-// GetContainer inspecte un conteneur par son identifiant ou son nom.
-func (s *Service) GetContainer(ctx context.Context, containerID string) (*ContainerInfo, error) {
-	trimmedID := strings.TrimSpace(containerID)
-	if trimmedID == "" {
-		return nil, errors.New("l'identifiant du conteneur ne peut pas être vide")
-	}
-
-	cJSON, err := s.cli.ContainerInspect(ctx, trimmedID)
+// Get renvoie l'état d'un conteneur (identifiant ou nom).
+func (e *Engine) Get(ctx context.Context, id string) (orchestrator.Container, error) {
+	res, err := e.inspect(ctx, id)
 	if err != nil {
-		if isNotFound(err) {
-			return nil, ErrContainerNotFound
-		}
-		return nil, fmt.Errorf("inspection du conteneur %q: %w", trimmedID, err)
+		return orchestrator.Container{}, err
 	}
-
-	return inspectToContainerInfo(cJSON), nil
+	return fromInspect(res), nil
 }
 
-// CreateContainer instancie un nouveau conteneur.
-func (s *Service) CreateContainer(ctx context.Context, req CreateContainerRequest) (*ContainerInfo, error) {
-	imageName := strings.TrimSpace(req.Image)
-	if imageName == "" {
-		return nil, errors.New("le nom de l'image est obligatoire")
+// Create crée le conteneur sans le démarrer et renvoie son état.
+func (e *Engine) Create(ctx context.Context, spec orchestrator.CreateSpec) (orchestrator.Container, error) {
+	if strings.TrimSpace(spec.Image) == "" {
+		return orchestrator.Container{}, fmt.Errorf("%w : l'image est obligatoire", orchestrator.ErrInvalidArgument)
 	}
-
-	exposedPorts := nat.PortSet{}
-	portBindings := nat.PortMap{}
-
-	for _, p := range req.Ports {
-		proto := strings.ToLower(p.Protocol)
-		if proto == "" {
-			proto = "tcp"
-		}
-		natPort, err := nat.NewPort(proto, strconv.FormatUint(uint64(p.ContainerPort), 10))
-		if err != nil {
-			return nil, fmt.Errorf("port invalide %d/%s: %w", p.ContainerPort, proto, err)
-		}
-
-		exposedPorts[natPort] = struct{}{}
-		if p.HostPort > 0 {
-			portBindings[natPort] = []nat.PortBinding{
-				{
-					HostIP:   "0.0.0.0",
-					HostPort: strconv.FormatUint(uint64(p.HostPort), 10),
-				},
-			}
-		}
-	}
-
-	cfg := &container.Config{
-		Image:        imageName,
-		Env:          req.Env,
-		Labels:       req.Labels,
-		ExposedPorts: exposedPorts,
-	}
-
-	hostCfg := &container.HostConfig{
-		PortBindings: portBindings,
-	}
-
-	if req.MemoryLimit > 0 {
-		hostCfg.Memory = req.MemoryLimit
-	}
-	if req.CPULimit > 0 {
-		// Convertit milli-CPU en NanoCPUs (1 CPU = 1000m = 1e9 nanoCPUs)
-		hostCfg.NanoCPUs = req.CPULimit * 1_000_000
-	}
-
-	created, err := s.cli.ContainerCreate(ctx, cfg, hostCfg, nil, nil, req.Name)
+	exposed, bindings, err := e.portConfig(spec.Ports)
 	if err != nil {
-		return nil, fmt.Errorf("création du conteneur: %w", err)
+		return orchestrator.Container{}, err
 	}
 
-	return s.GetContainer(ctx, created.ID)
-}
-
-// StartContainer démarre un conteneur arrêté.
-func (s *Service) StartContainer(ctx context.Context, containerID string) (*ContainerInfo, error) {
-	trimmedID := strings.TrimSpace(containerID)
-	if trimmedID == "" {
-		return nil, errors.New("l'identifiant du conteneur ne peut pas être vide")
-	}
-
-	err := s.cli.ContainerStart(ctx, trimmedID, container.StartOptions{})
-	if err != nil {
-		if isNotFound(err) {
-			return nil, ErrContainerNotFound
-		}
-		return nil, fmt.Errorf("démarrage du conteneur %q: %w", trimmedID, err)
-	}
-
-	return s.GetContainer(ctx, trimmedID)
-}
-
-// StopContainer arrête proprement un conteneur avec un délai de grâce.
-func (s *Service) StopContainer(ctx context.Context, containerID string, timeoutSeconds uint32) (*ContainerInfo, error) {
-	trimmedID := strings.TrimSpace(containerID)
-	if trimmedID == "" {
-		return nil, errors.New("l'identifiant du conteneur ne peut pas être vide")
-	}
-
-	timeoutVal := int(timeoutSeconds)
-	var stopOpts container.StopOptions
-	if timeoutSeconds > 0 {
-		stopOpts.Timeout = &timeoutVal
-	}
-
-	err := s.cli.ContainerStop(ctx, trimmedID, stopOpts)
-	if err != nil {
-		if isNotFound(err) {
-			return nil, ErrContainerNotFound
-		}
-		return nil, fmt.Errorf("arrêt du conteneur %q: %w", trimmedID, err)
-	}
-
-	return s.GetContainer(ctx, trimmedID)
-}
-
-// RestartContainer redémarre un conteneur.
-func (s *Service) RestartContainer(ctx context.Context, containerID string) (*ContainerInfo, error) {
-	trimmedID := strings.TrimSpace(containerID)
-	if trimmedID == "" {
-		return nil, errors.New("l'identifiant du conteneur ne peut pas être vide")
-	}
-
-	err := s.cli.ContainerRestart(ctx, trimmedID, container.StopOptions{})
-	if err != nil {
-		if isNotFound(err) {
-			return nil, ErrContainerNotFound
-		}
-		return nil, fmt.Errorf("redémarrage du conteneur %q: %w", trimmedID, err)
-	}
-
-	return s.GetContainer(ctx, trimmedID)
-}
-
-// DeleteContainer supprime un conteneur.
-func (s *Service) DeleteContainer(ctx context.Context, containerID string, force bool) error {
-	trimmedID := strings.TrimSpace(containerID)
-	if trimmedID == "" {
-		return errors.New("l'identifiant du conteneur ne peut pas être vide")
-	}
-
-	err := s.cli.ContainerRemove(ctx, trimmedID, container.RemoveOptions{
-		Force: force,
+	created, err := e.cli.ContainerCreate(ctx, client.ContainerCreateOptions{
+		Name: spec.Name,
+		Config: &container.Config{
+			Image:        spec.Image,
+			Env:          spec.Env,
+			Labels:       spec.Labels,
+			ExposedPorts: exposed,
+		},
+		HostConfig: &container.HostConfig{
+			PortBindings: bindings,
+			Resources: container.Resources{
+				Memory: spec.MemoryBytes,
+				// 1 cœur = 1000 milli-CPU = 1e9 nano-CPU.
+				NanoCPUs: spec.MilliCPU * 1_000_000,
+			},
+		},
 	})
 	if err != nil {
-		if isNotFound(err) {
-			return ErrContainerNotFound
-		}
-		return fmt.Errorf("suppression du conteneur %q: %w", trimmedID, err)
+		return orchestrator.Container{}, engineError("création du conteneur", err)
 	}
+	return e.Get(ctx, created.ID)
+}
 
+// Start démarre un conteneur et renvoie son nouvel état.
+func (e *Engine) Start(ctx context.Context, id string) (orchestrator.Container, error) {
+	return e.act(ctx, id, "démarrage", func(id string) error {
+		_, err := e.cli.ContainerStart(ctx, id, client.ContainerStartOptions{})
+		return err
+	})
+}
+
+// Stop arrête un conteneur (SIGTERM, puis SIGKILL après timeout) et renvoie son nouvel état.
+func (e *Engine) Stop(ctx context.Context, id string, timeout time.Duration) (orchestrator.Container, error) {
+	opts := client.ContainerStopOptions{}
+	if timeout > 0 {
+		seconds := int(timeout.Round(time.Second) / time.Second)
+		opts.Timeout = &seconds
+	}
+	return e.act(ctx, id, "arrêt", func(id string) error {
+		_, err := e.cli.ContainerStop(ctx, id, opts)
+		return err
+	})
+}
+
+// Restart redémarre un conteneur et renvoie son nouvel état.
+func (e *Engine) Restart(ctx context.Context, id string) (orchestrator.Container, error) {
+	return e.act(ctx, id, "redémarrage", func(id string) error {
+		_, err := e.cli.ContainerRestart(ctx, id, client.ContainerRestartOptions{})
+		return err
+	})
+}
+
+// Remove supprime un conteneur ; force arrête d'abord un conteneur en cours.
+func (e *Engine) Remove(ctx context.Context, id string, force bool) error {
+	id, err := requireID(id)
+	if err != nil {
+		return err
+	}
+	if _, err := e.cli.ContainerRemove(ctx, id, client.ContainerRemoveOptions{Force: force}); err != nil {
+		return engineError("suppression du conteneur "+id, err)
+	}
 	return nil
 }
 
-// StreamLogs ouvre un flux de lecture des logs d'un conteneur.
-func (s *Service) StreamLogs(
-	ctx context.Context,
-	containerID string,
-	follow bool,
-	tail int,
-	since time.Time,
-	stdout, stderr bool,
-) (io.ReadCloser, error) {
-	trimmedID := strings.TrimSpace(containerID)
-	if trimmedID == "" {
-		return nil, errors.New("l'identifiant du conteneur ne peut pas être vide")
-	}
-
-	tailStr := "all"
-	if tail > 0 {
-		tailStr = strconv.Itoa(tail)
-	}
-
-	sinceStr := ""
-	if !since.IsZero() {
-		sinceStr = since.Format(time.RFC3339)
-	}
-
-	opts := container.LogsOptions{
-		ShowStdout: stdout,
-		ShowStderr: stderr,
-		Follow:     follow,
-		Tail:       tailStr,
-		Since:      sinceStr,
-	}
-
-	reader, err := s.cli.ContainerLogs(ctx, trimmedID, opts)
+// Logs sépare les sorties du conteneur. Sans TTY, Docker multiplexe stdout et
+// stderr dans un même flux, décodé par stdcopy ; avec TTY, le flux est brut et
+// tout provient de stdout. Le réglage est lu sur le conteneur, pas deviné à
+// partir des octets reçus.
+func (e *Engine) Logs(ctx context.Context, id string, opts orchestrator.LogOptions, emit func(orchestrator.LogChunk) error) error {
+	info, err := e.inspect(ctx, id)
 	if err != nil {
-		if isNotFound(err) {
-			return nil, ErrContainerNotFound
+		return err
+	}
+
+	logOpts := client.ContainerLogsOptions{
+		ShowStdout: opts.Stdout,
+		ShowStderr: opts.Stderr,
+		Follow:     opts.Follow,
+		Tail:       "all",
+	}
+	if opts.Tail > 0 {
+		logOpts.Tail = strconv.Itoa(opts.Tail)
+	}
+	if !opts.Since.IsZero() {
+		logOpts.Since = opts.Since.UTC().Format(time.RFC3339Nano)
+	}
+
+	rc, err := e.cli.ContainerLogs(ctx, info.Container.ID, logOpts)
+	if err != nil {
+		return engineError("lecture des journaux", err)
+	}
+	defer func() { _ = rc.Close() }()
+
+	stdout := chunkWriter{stream: orchestrator.Stdout, emit: emit}
+	if info.Container.Config != nil && info.Container.Config.Tty {
+		_, err = io.Copy(stdout, rc)
+	} else {
+		_, err = stdcopy.StdCopy(stdout, chunkWriter{stream: orchestrator.Stderr, emit: emit}, rc)
+	}
+	// Avec Follow, l'annulation du contexte est la fin normale de la lecture.
+	if err != nil && ctx.Err() == nil {
+		return err
+	}
+	return nil
+}
+
+// chunkWriter transmet chaque écriture à emit. Les tampons de stdcopy et
+// d'io.Copy sont réutilisés : les données sont copiées avant d'être émises.
+type chunkWriter struct {
+	stream orchestrator.LogStream
+	emit   func(orchestrator.LogChunk) error
+}
+
+func (w chunkWriter) Write(p []byte) (int, error) {
+	if err := w.emit(orchestrator.LogChunk{Stream: w.stream, Data: append([]byte(nil), p...)}); err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
+// act exécute une action sur un conteneur puis renvoie son nouvel état.
+func (e *Engine) act(ctx context.Context, id, action string, do func(id string) error) (orchestrator.Container, error) {
+	id, err := requireID(id)
+	if err != nil {
+		return orchestrator.Container{}, err
+	}
+	if err := do(id); err != nil {
+		return orchestrator.Container{}, engineError(action+" du conteneur "+id, err)
+	}
+	return e.Get(ctx, id)
+}
+
+func (e *Engine) inspect(ctx context.Context, id string) (client.ContainerInspectResult, error) {
+	id, err := requireID(id)
+	if err != nil {
+		return client.ContainerInspectResult{}, err
+	}
+	res, err := e.cli.ContainerInspect(ctx, id, client.ContainerInspectOptions{})
+	if err != nil {
+		return client.ContainerInspectResult{}, engineError("inspection du conteneur "+id, err)
+	}
+	return res, nil
+}
+
+// portConfig traduit les ports demandés. Un port publié sans adresse l'est sur
+// l'adresse configurée (127.0.0.1 par défaut) : l'exposition publique passe par
+// le reverse proxy, pas par un port ouvert sur toutes les interfaces.
+func (e *Engine) portConfig(ports []orchestrator.Port) (network.PortSet, network.PortMap, error) {
+	exposed := network.PortSet{}
+	bindings := network.PortMap{}
+	for _, p := range ports {
+		proto := network.IPProtocol(strings.ToLower(p.Protocol))
+		if proto == "" {
+			proto = network.TCP
 		}
-		return nil, fmt.Errorf("lecture des logs du conteneur %q: %w", trimmedID, err)
-	}
+		// network.PortFrom n'écarte qu'un protocole vide : la liste est vérifiée ici.
+		if !validProtocols[proto] || p.ContainerPort == 0 {
+			return nil, nil, fmt.Errorf("%w : port %d/%s", orchestrator.ErrInvalidArgument, p.ContainerPort, proto)
+		}
+		port, _ := network.PortFrom(p.ContainerPort, proto)
+		exposed[port] = struct{}{}
+		if p.HostPort == 0 {
+			continue
+		}
 
-	return reader, nil
-}
-
-// summaryToContainerInfo convertit la structure condensée Docker en ContainerInfo du domaine.
-func summaryToContainerInfo(c types.Container) *ContainerInfo {
-	name := ""
-	if len(c.Names) > 0 {
-		name = strings.TrimPrefix(c.Names[0], "/")
-	}
-
-	ports := make([]PortMapping, 0, len(c.Ports))
-	for _, p := range c.Ports {
-		ports = append(ports, PortMapping{
-			HostPort:      uint32(p.PublicPort),
-			ContainerPort: uint32(p.PrivatePort),
-			Protocol:      p.Type,
-		})
-	}
-
-	return &ContainerInfo{
-		ID:        c.ID,
-		Name:      name,
-		Image:     c.Image,
-		State:     ParseContainerState(c.State),
-		Ports:     ports,
-		CreatedAt: time.Unix(c.Created, 0).UTC(),
-	}
-}
-
-// inspectToContainerInfo convertit le rapport d'inspection Docker complet en ContainerInfo du domaine.
-func inspectToContainerInfo(c types.ContainerJSON) *ContainerInfo {
-	name := strings.TrimPrefix(c.Name, "/")
-
-	var ports []PortMapping
-	if c.NetworkSettings != nil && c.NetworkSettings.Ports != nil {
-		for portProto, bindings := range c.NetworkSettings.Ports {
-			cPort, proto := parsePortProto(string(portProto))
-			if len(bindings) > 0 {
-				for _, b := range bindings {
-					hPort, _ := strconv.ParseUint(b.HostPort, 10, 32)
-					ports = append(ports, PortMapping{
-						HostPort:      uint32(hPort),
-						ContainerPort: cPort,
-						Protocol:      proto,
-					})
-				}
-			} else {
-				ports = append(ports, PortMapping{
-					HostPort:      0,
-					ContainerPort: cPort,
-					Protocol:      proto,
-				})
+		hostIP := e.publishHost
+		if p.HostIP != "" {
+			addr, err := netip.ParseAddr(p.HostIP)
+			if err != nil {
+				return nil, nil, fmt.Errorf("%w : adresse %q", orchestrator.ErrInvalidArgument, p.HostIP)
 			}
+			hostIP = addr
 		}
+		bindings[port] = append(bindings[port], network.PortBinding{HostIP: hostIP, HostPort: strconv.Itoa(int(p.HostPort))})
 	}
-
-	createdAt, err := time.Parse(time.RFC3339Nano, c.Created)
-	if err != nil {
-		createdAt = time.Now().UTC()
-	}
-
-	state := ParseContainerState("")
-	if c.State != nil {
-		state = ParseContainerState(c.State.Status)
-	}
-
-	image := c.Config.Image
-	if image == "" {
-		image = c.Image
-	}
-
-	return &ContainerInfo{
-		ID:        c.ID,
-		Name:      name,
-		Image:     image,
-		State:     state,
-		Ports:     ports,
-		CreatedAt: createdAt.UTC(),
-	}
+	return exposed, bindings, nil
 }
 
-func parsePortProto(s string) (uint32, string) {
-	parts := strings.Split(s, "/")
-	p, _ := strconv.ParseUint(parts[0], 10, 32)
-	proto := "tcp"
-	if len(parts) > 1 && parts[1] != "" {
-		proto = parts[1]
+var validProtocols = map[network.IPProtocol]bool{network.TCP: true, network.UDP: true, network.SCTP: true}
+
+func requireID(id string) (string, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return "", fmt.Errorf("%w : l'identifiant du conteneur est obligatoire", orchestrator.ErrInvalidArgument)
 	}
-	return uint32(p), proto
+	return id, nil
 }
 
-func isNotFound(err error) bool {
-	if err == nil {
-		return false
+// engineError traduit les erreurs typées du démon en erreurs du domaine.
+func engineError(action string, err error) error {
+	switch {
+	case cerrdefs.IsNotFound(err):
+		return fmt.Errorf("%s : %w", action, errors.Join(orchestrator.ErrNotFound, err))
+	case cerrdefs.IsInvalidArgument(err):
+		return fmt.Errorf("%s : %w", action, errors.Join(orchestrator.ErrInvalidArgument, err))
+	default:
+		return fmt.Errorf("%s : %w", action, err)
 	}
-	return errdefs.IsNotFound(err) || client.IsErrNotFound(err) || strings.Contains(strings.ToLower(err.Error()), "not found") || strings.Contains(strings.ToLower(err.Error()), "no such container")
 }

@@ -106,18 +106,15 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	authService := auth.NewService(db, cfg.Auth, auditor)
 	grpcServer := transportGRPC.NewServer(cfg.Server, healthService, auth.NewGuard(authService, auth.DefaultPolicy(), logger), logger)
 
-	// Initialisation de l'orchestrateur Docker
-	dockerService, err := docker.New(cfg.Docker.Host, cfg.Docker.APIVersion)
+	// Le client ne se connecte pas encore ici : une erreur signale une
+	// configuration invalide, et l'indisponibilité du démon se lit dans /readyz.
+	engine, err := docker.New(cfg.Docker)
 	if err != nil {
-		logger.Warn().Err(err).Msg("initialisation du client Docker échouée")
-	} else {
-		defer func() {
-			_ = dockerService.Close()
-		}()
-		healthService.RegisterReadinessChecker("docker", health.CheckFunc(dockerService.Ping))
-		containerServer := transportGRPC.NewContainerServiceServer(dockerService, auditor, logger)
-		forgenetv1.RegisterContainerServiceServer(grpcServer.GRPCServer(), containerServer)
+		return err
 	}
+	defer func() { _ = engine.Close() }()
+	healthService.RegisterReadinessChecker("docker", health.CheckFunc(engine.Ping))
+	forgenetv1.RegisterContainerServiceServer(grpcServer.GRPCServer(), transportGRPC.NewContainerServiceServer(engine, auditor, logger))
 
 	servers := []server{
 		{name: "HTTP", transport: transportHTTP.NewServer(cfg.Server, healthService, logger)},

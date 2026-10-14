@@ -3,397 +3,246 @@ package docker_test
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"io"
+	"net/netip"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	cerrdefs "github.com/containerd/errdefs"
+	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/docker"
-	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
 )
 
-type mockDockerClient struct {
-	listFn    func(ctx context.Context, options container.ListOptions) ([]types.Container, error)
-	inspectFn func(ctx context.Context, containerID string) (types.ContainerJSON, error)
-	createFn  func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
-	startFn   func(ctx context.Context, containerID string, options container.StartOptions) error
-	stopFn    func(ctx context.Context, containerID string, options container.StopOptions) error
-	restartFn func(ctx context.Context, containerID string, options container.StopOptions) error
-	removeFn  func(ctx context.Context, containerID string, options container.RemoveOptions) error
-	logsFn    func(ctx context.Context, container string, options container.LogsOptions) (io.ReadCloser, error)
-	pingFn    func(ctx context.Context) (types.Ping, error)
-	closeFn   func() error
+// fakeClient enregistre les options reçues et renvoie les réponses préparées.
+type fakeClient struct {
+	docker.EngineClient // méthodes non utilisées : panique si appelées
+
+	inspect     container.InspectResponse
+	err         error // renvoyée par toutes les actions
+	created     client.ContainerCreateOptions
+	stopOpts    client.ContainerStopOptions
+	logsOpts    client.ContainerLogsOptions
+	logs        []byte
+	removedID   string
+	forceRemove bool
 }
 
-func (m *mockDockerClient) ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error) {
-	if m.listFn != nil {
-		return m.listFn(ctx, options)
-	}
-	return nil, nil
+func (f *fakeClient) ContainerInspect(context.Context, string, client.ContainerInspectOptions) (client.ContainerInspectResult, error) {
+	return client.ContainerInspectResult{Container: f.inspect}, f.err
 }
 
-func (m *mockDockerClient) ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
-	if m.inspectFn != nil {
-		return m.inspectFn(ctx, containerID)
-	}
-	return types.ContainerJSON{}, nil
+func (f *fakeClient) ContainerCreate(_ context.Context, opts client.ContainerCreateOptions) (client.ContainerCreateResult, error) {
+	f.created = opts
+	return client.ContainerCreateResult{ID: "c1"}, f.err
 }
 
-func (m *mockDockerClient) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error) {
-	if m.createFn != nil {
-		return m.createFn(ctx, config, hostConfig, networkingConfig, platform, containerName)
-	}
-	return container.CreateResponse{ID: "created-id-123"}, nil
+func (f *fakeClient) ContainerStart(context.Context, string, client.ContainerStartOptions) (client.ContainerStartResult, error) {
+	return client.ContainerStartResult{}, f.err
 }
 
-func (m *mockDockerClient) ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error {
-	if m.startFn != nil {
-		return m.startFn(ctx, containerID, options)
-	}
-	return nil
+func (f *fakeClient) ContainerStop(_ context.Context, _ string, opts client.ContainerStopOptions) (client.ContainerStopResult, error) {
+	f.stopOpts = opts
+	return client.ContainerStopResult{}, f.err
 }
 
-func (m *mockDockerClient) ContainerStop(ctx context.Context, containerID string, options container.StopOptions) error {
-	if m.stopFn != nil {
-		return m.stopFn(ctx, containerID, options)
-	}
-	return nil
+func (f *fakeClient) ContainerRestart(context.Context, string, client.ContainerRestartOptions) (client.ContainerRestartResult, error) {
+	return client.ContainerRestartResult{}, f.err
 }
 
-func (m *mockDockerClient) ContainerRestart(ctx context.Context, containerID string, options container.StopOptions) error {
-	if m.restartFn != nil {
-		return m.restartFn(ctx, containerID, options)
-	}
-	return nil
+func (f *fakeClient) ContainerRemove(_ context.Context, id string, opts client.ContainerRemoveOptions) (client.ContainerRemoveResult, error) {
+	f.removedID, f.forceRemove = id, opts.Force
+	return client.ContainerRemoveResult{}, f.err
 }
 
-func (m *mockDockerClient) ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error {
-	if m.removeFn != nil {
-		return m.removeFn(ctx, containerID, options)
-	}
-	return nil
+func (f *fakeClient) ContainerLogs(_ context.Context, _ string, opts client.ContainerLogsOptions) (client.ContainerLogsResult, error) {
+	f.logsOpts = opts
+	return io.NopCloser(bytes.NewReader(f.logs)), f.err
 }
 
-func (m *mockDockerClient) ContainerLogs(ctx context.Context, container string, options container.LogsOptions) (io.ReadCloser, error) {
-	if m.logsFn != nil {
-		return m.logsFn(ctx, container, options)
-	}
-	return io.NopCloser(bytes.NewReader(nil)), nil
+func newEngine(t *testing.T, f *fakeClient) *docker.Engine {
+	t.Helper()
+	e, err := docker.NewWithClient(f, "127.0.0.1")
+	require.NoError(t, err)
+	return e
 }
 
-func (m *mockDockerClient) Ping(ctx context.Context) (types.Ping, error) {
-	if m.pingFn != nil {
-		return m.pingFn(ctx)
-	}
-	return types.Ping{}, nil
+func TestNewWithClient_RejectsInvalidPublishHost(t *testing.T) {
+	_, err := docker.NewWithClient(&fakeClient{}, "pas-une-ip")
+	require.Error(t, err)
 }
 
-func (m *mockDockerClient) Close() error {
-	if m.closeFn != nil {
-		return m.closeFn()
-	}
-	return nil
-}
+func TestCreate_PublishesPortsOnConfiguredAddress(t *testing.T) {
+	f := &fakeClient{}
+	e := newEngine(t, f)
 
-func TestDockerService_Ping(t *testing.T) {
-	t.Run("Succès", func(t *testing.T) {
-		mock := &mockDockerClient{
-			pingFn: func(_ context.Context) (types.Ping, error) {
-				return types.Ping{APIVersion: "1.45"}, nil
-			},
-		}
-		svc := docker.NewWithClient(mock)
-		err := svc.Ping(context.Background())
-		assert.NoError(t, err)
+	_, err := e.Create(context.Background(), orchestrator.CreateSpec{
+		Name:  "web",
+		Image: "nginx:alpine",
+		Ports: []orchestrator.Port{
+			{ContainerPort: 80, HostPort: 8080},                     // adresse par défaut
+			{ContainerPort: 443, HostPort: 8443, HostIP: "0.0.0.0"}, // exposition explicite
+			{ContainerPort: 9000, Protocol: "udp"},                  // exposé, non publié
+		},
+		MemoryBytes: 64 << 20,
+		MilliCPU:    500,
 	})
+	require.NoError(t, err)
 
-	t.Run("Démon indisponible", func(t *testing.T) {
-		mock := &mockDockerClient{
-			pingFn: func(_ context.Context) (types.Ping, error) {
-				return types.Ping{}, errors.New("connection refused")
-			},
-		}
-		svc := docker.NewWithClient(mock)
-		err := svc.Ping(context.Background())
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "démon docker injoignable")
-	})
+	cfg, host := f.created.Config, f.created.HostConfig
+	assert.Equal(t, "web", f.created.Name)
+	assert.Len(t, cfg.ExposedPorts, 3)
+	assert.Equal(t, []network.PortBinding{{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "8080"}},
+		host.PortBindings[network.MustParsePort("80/tcp")])
+	assert.Equal(t, netip.MustParseAddr("0.0.0.0"), host.PortBindings[network.MustParsePort("443/tcp")][0].HostIP)
+	assert.NotContains(t, host.PortBindings, network.MustParsePort("9000/udp"))
+	assert.Equal(t, int64(64<<20), host.Memory)
+	assert.Equal(t, int64(500_000_000), host.NanoCPUs, "500 milli-CPU = un demi-cœur")
 }
 
-func TestDockerService_ListContainers(t *testing.T) {
-	now := time.Now().UTC().Truncate(time.Second)
-	mock := &mockDockerClient{
-		listFn: func(_ context.Context, options container.ListOptions) ([]types.Container, error) {
-			assert.True(t, options.All)
-			return []types.Container{
-				{
-					ID:      "cont-1",
-					Names:   []string{"/web-service"},
-					Image:   "nginx:alpine",
-					State:   "running",
-					Created: now.Unix(),
-					Ports: []types.Port{
-						{
-							PrivatePort: 80,
-							PublicPort:  8080,
-							Type:        "tcp",
-						},
-					},
-				},
-				{
-					ID:      "cont-2",
-					Names:   []string{"db-service"},
-					Image:   "postgres:16",
-					State:   "exited",
-					Created: now.Unix(),
-				},
-			}, nil
-		},
-	}
-
-	svc := docker.NewWithClient(mock)
-	containers, err := svc.ListContainers(context.Background(), true)
-	require.NoError(t, err)
-	require.Len(t, containers, 2)
-
-	assert.Equal(t, "cont-1", containers[0].ID)
-	assert.Equal(t, "web-service", containers[0].Name)
-	assert.Equal(t, "nginx:alpine", containers[0].Image)
-	assert.Equal(t, forgenetv1.ContainerState_CONTAINER_STATE_RUNNING, containers[0].State)
-	require.Len(t, containers[0].Ports, 1)
-	assert.Equal(t, uint32(8080), containers[0].Ports[0].HostPort)
-	assert.Equal(t, uint32(80), containers[0].Ports[0].ContainerPort)
-	assert.Equal(t, "tcp", containers[0].Ports[0].Protocol)
-
-	assert.Equal(t, "cont-2", containers[1].ID)
-	assert.Equal(t, "db-service", containers[1].Name)
-	assert.Equal(t, forgenetv1.ContainerState_CONTAINER_STATE_EXITED, containers[1].State)
-
-	// Test proto conversion
-	proto := containers[0].ToProto()
-	require.NotNil(t, proto)
-	assert.Equal(t, "cont-1", proto.Id)
-	assert.Equal(t, "web-service", proto.Name)
-	assert.Equal(t, forgenetv1.ContainerState_CONTAINER_STATE_RUNNING, proto.State)
-}
-
-func TestDockerService_GetContainer(t *testing.T) {
-	t.Run("Succès", func(t *testing.T) {
-		mock := &mockDockerClient{
-			inspectFn: func(_ context.Context, containerID string) (types.ContainerJSON, error) {
-				assert.Equal(t, "cont-123", containerID)
-				return types.ContainerJSON{
-					ContainerJSONBase: &types.ContainerJSONBase{
-						ID:      "cont-123",
-						Name:    "/my-app",
-						Created: "2026-03-01T12:00:00Z",
-						State: &types.ContainerState{
-							Status: "running",
-						},
-						Image: "sha256:abcd",
-					},
-					Config: &container.Config{
-						Image: "my-app:v1",
-					},
-				}, nil
-			},
-		}
-
-		svc := docker.NewWithClient(mock)
-		info, err := svc.GetContainer(context.Background(), "cont-123")
-		require.NoError(t, err)
-		assert.Equal(t, "cont-123", info.ID)
-		assert.Equal(t, "my-app", info.Name)
-		assert.Equal(t, "my-app:v1", info.Image)
-		assert.Equal(t, forgenetv1.ContainerState_CONTAINER_STATE_RUNNING, info.State)
-	})
-
-	t.Run("Conteneur non trouvé", func(t *testing.T) {
-		mock := &mockDockerClient{
-			inspectFn: func(_ context.Context, _ string) (types.ContainerJSON, error) {
-				return types.ContainerJSON{}, errors.New("Error: No such container: missing-id")
-			},
-		}
-
-		svc := docker.NewWithClient(mock)
-		_, err := svc.GetContainer(context.Background(), "missing-id")
-		assert.ErrorIs(t, err, docker.ErrContainerNotFound)
-	})
-
-	t.Run("ID vide", func(t *testing.T) {
-		svc := docker.NewWithClient(&mockDockerClient{})
-		_, err := svc.GetContainer(context.Background(), "   ")
-		assert.Error(t, err)
-	})
-}
-
-func TestDockerService_Lifecycle(t *testing.T) {
-	mock := &mockDockerClient{
-		inspectFn: func(_ context.Context, containerID string) (types.ContainerJSON, error) {
-			return types.ContainerJSON{
-				ContainerJSONBase: &types.ContainerJSONBase{
-					ID:      containerID,
-					Name:    "/test-app",
-					Created: "2026-03-01T12:00:00Z",
-					State: &types.ContainerState{
-						Status: "running",
-					},
-				},
-				Config: &container.Config{Image: "test:latest"},
-			}, nil
-		},
-		startFn: func(_ context.Context, containerID string, _ container.StartOptions) error {
-			assert.Equal(t, "c1", containerID)
-			return nil
-		},
-		stopFn: func(_ context.Context, containerID string, options container.StopOptions) error {
-			assert.Equal(t, "c1", containerID)
-			require.NotNil(t, options.Timeout)
-			assert.Equal(t, 10, *options.Timeout)
-			return nil
-		},
-		restartFn: func(_ context.Context, containerID string, _ container.StopOptions) error {
-			assert.Equal(t, "c1", containerID)
-			return nil
-		},
-		removeFn: func(_ context.Context, containerID string, options container.RemoveOptions) error {
-			assert.Equal(t, "c1", containerID)
-			assert.True(t, options.Force)
-			return nil
-		},
-	}
-
-	svc := docker.NewWithClient(mock)
-
-	// Start
-	started, err := svc.StartContainer(context.Background(), "c1")
-	require.NoError(t, err)
-	assert.Equal(t, "c1", started.ID)
-
-	// Stop
-	stopped, err := svc.StopContainer(context.Background(), "c1", 10)
-	require.NoError(t, err)
-	assert.Equal(t, "c1", stopped.ID)
-
-	// Restart
-	restarted, err := svc.RestartContainer(context.Background(), "c1")
-	require.NoError(t, err)
-	assert.Equal(t, "c1", restarted.ID)
-
-	// Delete
-	err = svc.DeleteContainer(context.Background(), "c1", true)
-	assert.NoError(t, err)
-}
-
-func TestDockerService_CreateContainer(t *testing.T) {
-	var capturedConfig *container.Config
-	var capturedHostConfig *container.HostConfig
-
-	mock := &mockDockerClient{
-		createFn: func(_ context.Context, config *container.Config, hostConfig *container.HostConfig, _ *network.NetworkingConfig, _ *ocispec.Platform, containerName string) (container.CreateResponse, error) {
-			capturedConfig = config
-			capturedHostConfig = hostConfig
-			assert.Equal(t, "mon-conteneur", containerName)
-			return container.CreateResponse{ID: "nouveau-id-789"}, nil
-		},
-		inspectFn: func(_ context.Context, containerID string) (types.ContainerJSON, error) {
-			assert.Equal(t, "nouveau-id-789", containerID)
-			return types.ContainerJSON{
-				ContainerJSONBase: &types.ContainerJSONBase{
-					ID:      "nouveau-id-789",
-					Name:    "/mon-conteneur",
-					Created: "2026-03-01T12:00:00Z",
-					State: &types.ContainerState{
-						Status: "created",
-					},
-				},
-				Config: &container.Config{Image: "redis:7-alpine"},
-			}, nil
-		},
-	}
-
-	svc := docker.NewWithClient(mock)
-
-	req := docker.CreateContainerRequest{
-		Name:  "mon-conteneur",
-		Image: "redis:7-alpine",
-		Env:   []string{"FOO=BAR"},
-		Ports: []docker.PortMapping{
-			{
-				HostPort:      6379,
-				ContainerPort: 6379,
-				Protocol:      "tcp",
-			},
-		},
-		MemoryLimit: 512 * 1024 * 1024,
-		CPULimit:    500, // 0.5 CPU
-	}
-
-	created, err := svc.CreateContainer(context.Background(), req)
-	require.NoError(t, err)
-	assert.Equal(t, "nouveau-id-789", created.ID)
-	assert.Equal(t, "mon-conteneur", created.Name)
-	assert.Equal(t, forgenetv1.ContainerState_CONTAINER_STATE_CREATED, created.State)
-
-	require.NotNil(t, capturedConfig)
-	assert.Equal(t, "redis:7-alpine", capturedConfig.Image)
-	assert.Equal(t, []string{"FOO=BAR"}, capturedConfig.Env)
-
-	require.NotNil(t, capturedHostConfig)
-	assert.Equal(t, int64(512*1024*1024), capturedHostConfig.Memory)
-	assert.Equal(t, int64(500*1_000_000), capturedHostConfig.NanoCPUs)
-}
-
-func TestDockerService_StreamLogs(t *testing.T) {
-	logContent := "log line 1\nlog line 2\n"
-	mock := &mockDockerClient{
-		logsFn: func(_ context.Context, container string, options container.LogsOptions) (io.ReadCloser, error) {
-			assert.Equal(t, "c-logs", container)
-			assert.True(t, options.ShowStdout)
-			assert.True(t, options.ShowStderr)
-			assert.True(t, options.Follow)
-			assert.Equal(t, "100", options.Tail)
-			return io.NopCloser(bytes.NewBufferString(logContent)), nil
-		},
-	}
-
-	svc := docker.NewWithClient(mock)
-	reader, err := svc.StreamLogs(context.Background(), "c-logs", true, 100, time.Time{}, true, true)
-	require.NoError(t, err)
-	defer func() {
-		_ = reader.Close()
-	}()
-
-	buf, err := io.ReadAll(reader)
-	require.NoError(t, err)
-	assert.Equal(t, logContent, string(buf))
-}
-
-func TestParseContainerState(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected forgenetv1.ContainerState
-	}{
-		{"created", forgenetv1.ContainerState_CONTAINER_STATE_CREATED},
-		{"RUNNING", forgenetv1.ContainerState_CONTAINER_STATE_RUNNING},
-		{"paused", forgenetv1.ContainerState_CONTAINER_STATE_PAUSED},
-		{"restarting", forgenetv1.ContainerState_CONTAINER_STATE_RESTARTING},
-		{"exited", forgenetv1.ContainerState_CONTAINER_STATE_EXITED},
-		{"dead", forgenetv1.ContainerState_CONTAINER_STATE_DEAD},
-		{"unknown", forgenetv1.ContainerState_CONTAINER_STATE_UNSPECIFIED},
-		{"", forgenetv1.ContainerState_CONTAINER_STATE_UNSPECIFIED},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			assert.Equal(t, tt.expected, docker.ParseContainerState(tt.input))
+func TestCreate_RejectsInvalidSpec(t *testing.T) {
+	e := newEngine(t, &fakeClient{})
+	for name, spec := range map[string]orchestrator.CreateSpec{
+		"sans image":        {Name: "x"},
+		"protocole faux":    {Image: "nginx", Ports: []orchestrator.Port{{ContainerPort: 80, Protocol: "http"}}},
+		"adresse illisible": {Image: "nginx", Ports: []orchestrator.Port{{ContainerPort: 80, HostPort: 80, HostIP: "ici"}}},
+		"port nul":          {Image: "nginx", Ports: []orchestrator.Port{{ContainerPort: 0}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := e.Create(context.Background(), spec)
+			assert.ErrorIs(t, err, orchestrator.ErrInvalidArgument)
 		})
 	}
+}
+
+func TestActions_TranslateEngineErrors(t *testing.T) {
+	ctx := context.Background()
+	actions := map[string]func(*docker.Engine, string) error{
+		"Get":     func(e *docker.Engine, id string) error { _, err := e.Get(ctx, id); return err },
+		"Start":   func(e *docker.Engine, id string) error { _, err := e.Start(ctx, id); return err },
+		"Stop":    func(e *docker.Engine, id string) error { _, err := e.Stop(ctx, id, 0); return err },
+		"Restart": func(e *docker.Engine, id string) error { _, err := e.Restart(ctx, id); return err },
+		"Remove":  func(e *docker.Engine, id string) error { return e.Remove(ctx, id, false) },
+	}
+	for name, act := range actions {
+		t.Run(name, func(t *testing.T) {
+			assert.ErrorIs(t, act(newEngine(t, &fakeClient{err: cerrdefs.ErrNotFound}), "absent"), orchestrator.ErrNotFound)
+			assert.ErrorIs(t, act(newEngine(t, &fakeClient{}), "  "), orchestrator.ErrInvalidArgument)
+
+			other := errors.New("démon en panne")
+			err := act(newEngine(t, &fakeClient{err: other}), "c1")
+			assert.ErrorIs(t, err, other)
+			assert.NotErrorIs(t, err, orchestrator.ErrNotFound)
+		})
+	}
+}
+
+func TestStop_Timeout(t *testing.T) {
+	f := &fakeClient{}
+	e := newEngine(t, f)
+
+	_, err := e.Stop(context.Background(), "c1", 0)
+	require.NoError(t, err)
+	assert.Nil(t, f.stopOpts.Timeout, "0 : délai du conteneur ou du moteur")
+
+	_, err = e.Stop(context.Background(), "c1", 5*time.Second)
+	require.NoError(t, err)
+	require.NotNil(t, f.stopOpts.Timeout)
+	assert.Equal(t, 5, *f.stopOpts.Timeout)
+}
+
+func TestRemove_Force(t *testing.T) {
+	f := &fakeClient{}
+	require.NoError(t, newEngine(t, f).Remove(context.Background(), " c1 ", true))
+	assert.Equal(t, "c1", f.removedID)
+	assert.True(t, f.forceRemove)
+}
+
+func collectLogs(t *testing.T, e *docker.Engine, opts orchestrator.LogOptions) map[orchestrator.LogStream]string {
+	t.Helper()
+	got := map[orchestrator.LogStream]string{}
+	err := e.Logs(context.Background(), "c1", opts, func(c orchestrator.LogChunk) error {
+		got[c.Stream] += string(c.Data)
+		return nil
+	})
+	require.NoError(t, err)
+	return got
+}
+
+// frame construit une trame du flux multiplexé de Docker : un en-tête de 8
+// octets (sortie, trois zéros, taille en big-endian) suivi des données.
+func frame(stream stdcopy.StdType, data string) []byte {
+	header := []byte{byte(stream), 0, 0, 0, 0, 0, 0, 0}
+	binary.BigEndian.PutUint32(header[4:], uint32(len(data)))
+	return append(header, data...)
+}
+
+func TestLogs_DemultiplexesWithoutTTY(t *testing.T) {
+	mux := append(frame(stdcopy.Stdout, "bonjour\n"), frame(stdcopy.Stderr, "attention\n")...)
+	f := &fakeClient{inspect: container.InspectResponse{ID: "c1", Config: &container.Config{}}, logs: mux}
+	got := collectLogs(t, newEngine(t, f), orchestrator.LogOptions{Stdout: true, Stderr: true, Tail: 10})
+
+	assert.Equal(t, "bonjour\n", got[orchestrator.Stdout])
+	assert.Equal(t, "attention\n", got[orchestrator.Stderr])
+	assert.Equal(t, "10", f.logsOpts.Tail)
+}
+
+func TestLogs_RawStreamWithTTY(t *testing.T) {
+	// Avec un TTY, Docker n'ajoute aucun en-tête : ces octets, qui ressemblent
+	// à un en-tête multiplexé, doivent passer tels quels.
+	raw := []byte("\x01\x00\x00\x00\x00\x00\x00\x02ok")
+	f := &fakeClient{inspect: container.InspectResponse{ID: "c1", Config: &container.Config{Tty: true}}, logs: raw}
+	got := collectLogs(t, newEngine(t, f), orchestrator.LogOptions{Stdout: true})
+
+	assert.Equal(t, string(raw), got[orchestrator.Stdout])
+	assert.Empty(t, got[orchestrator.Stderr])
+	assert.Equal(t, "all", f.logsOpts.Tail)
+}
+
+func TestLogs_StopsWhenEmitFails(t *testing.T) {
+	f := &fakeClient{inspect: container.InspectResponse{ID: "c1", Config: &container.Config{}}, logs: frame(stdcopy.Stdout, "ligne\n")}
+
+	clientGone := errors.New("client parti")
+	err := newEngine(t, f).Logs(context.Background(), "c1", orchestrator.LogOptions{Stdout: true},
+		func(orchestrator.LogChunk) error { return clientGone })
+	assert.ErrorIs(t, err, clientGone)
+}
+
+func TestGet_ToleratesMissingFields(t *testing.T) {
+	f := &fakeClient{inspect: container.InspectResponse{ID: "c1", Name: "/web", Image: "sha256:abc"}}
+	c, err := newEngine(t, f).Get(context.Background(), "c1")
+	require.NoError(t, err)
+	assert.Equal(t, orchestrator.Container{ID: "c1", Name: "web", Image: "sha256:abc"}, c)
+}
+
+func TestGet_MapsStateAndPorts(t *testing.T) {
+	f := &fakeClient{inspect: container.InspectResponse{
+		ID:      "c1",
+		Name:    "/web",
+		Created: "2026-10-14T12:00:00.5Z",
+		State:   &container.State{Status: container.StateRunning},
+		Config:  &container.Config{Image: "nginx:alpine"},
+		NetworkSettings: &container.NetworkSettings{Ports: network.PortMap{
+			network.MustParsePort("443/tcp"): nil,
+			network.MustParsePort("80/tcp"):  {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "8080"}},
+		}},
+	}}
+	c, err := newEngine(t, f).Get(context.Background(), "c1")
+	require.NoError(t, err)
+
+	assert.Equal(t, orchestrator.StateRunning, c.State)
+	assert.Equal(t, "nginx:alpine", c.Image)
+	assert.Equal(t, time.Date(2026, 10, 14, 12, 0, 0, 500_000_000, time.UTC), c.CreatedAt)
+	assert.Equal(t, []orchestrator.Port{
+		{HostIP: "127.0.0.1", HostPort: 8080, ContainerPort: 80, Protocol: "tcp"},
+		{ContainerPort: 443, Protocol: "tcp"},
+	}, c.Ports, "ports triés par port du conteneur")
 }
