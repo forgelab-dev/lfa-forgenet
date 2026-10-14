@@ -91,6 +91,12 @@ type AuthConfig struct {
 	APITokenTTL time.Duration `mapstructure:"api_token_ttl"`
 }
 
+// DockerConfig contient les options de connexion au démon Docker.
+type DockerConfig struct {
+	Host       string `mapstructure:"host"`
+	APIVersion string `mapstructure:"api_version"`
+}
+
 // Config est la structure racine de la configuration ForgeNet.
 type Config struct {
 	Environment string         `mapstructure:"environment"` // "development", "staging", "production"
@@ -98,6 +104,7 @@ type Config struct {
 	Log         LogConfig      `mapstructure:"log"`
 	Database    DatabaseConfig `mapstructure:"database"`
 	Auth        AuthConfig     `mapstructure:"auth"`
+	Docker      DockerConfig   `mapstructure:"docker"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -209,4 +216,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("auth.jwt_secret", "")
 	v.SetDefault("auth.token_ttl", DefaultTokenTTL)
 	v.SetDefault("auth.api_token_ttl", DefaultAPITokenTTL)
+
+	v.SetDefault("docker.host", "")
+	v.SetDefault("docker.api_version", "")
 }
