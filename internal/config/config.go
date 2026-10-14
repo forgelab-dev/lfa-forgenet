@@ -35,6 +35,11 @@ const (
 	DefaultLogFormat = "console"
 	// DefaultEnvironment est l'environnement par défaut de l'application.
 	DefaultEnvironment = "development"
+
+	// DefaultDatabasePath est le chemin d'accès au fichier de base SQLite par défaut.
+	DefaultDatabasePath = "data/forgenet.db"
+	// DefaultDatabaseBusyTimeout est le délai de grâce maximal lors d'un verrou SQLite concurrent.
+	DefaultDatabaseBusyTimeout = 5 * time.Second
 )
 
 // ServerConfig contient les paramètres réseau et timeouts des serveurs HTTP et gRPC.
@@ -64,11 +69,20 @@ type LogConfig struct {
 	Format string `mapstructure:"format"` // "console", "json"
 }
 
+// DatabaseConfig contient les paramètres de persistance SQLite.
+type DatabaseConfig struct {
+	Path         string        `mapstructure:"path"`
+	BusyTimeout  time.Duration `mapstructure:"busy_timeout"`
+	MaxOpenConns int           `mapstructure:"max_open_conns"`
+	MaxIdleConns int           `mapstructure:"max_idle_conns"`
+}
+
 // Config est la structure racine de la configuration ForgeNet.
 type Config struct {
-	Environment string       `mapstructure:"environment"` // "development", "staging", "production"
-	Server      ServerConfig `mapstructure:"server"`
-	Log         LogConfig    `mapstructure:"log"`
+	Environment string         `mapstructure:"environment"` // "development", "staging", "production"
+	Server      ServerConfig   `mapstructure:"server"`
+	Log         LogConfig      `mapstructure:"log"`
+	Database    DatabaseConfig `mapstructure:"database"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -127,6 +141,13 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("le shutdown_timeout doit être strictement positif")
 	}
 
+	if c.Database.Path == "" {
+		return fmt.Errorf("le chemin de la base de données (database.path) ne peut pas être vide")
+	}
+	if c.Database.BusyTimeout <= 0 {
+		return fmt.Errorf("le busy_timeout de la base de données doit être strictement positif")
+	}
+
 	validLogLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
 	if !validLogLevels[strings.ToLower(c.Log.Level)] {
 		return fmt.Errorf("niveau de log inconnu : %q (valeurs acceptées: debug, info, warn, error)", c.Log.Level)
@@ -153,4 +174,9 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("log.level", DefaultLogLevel)
 	v.SetDefault("log.format", DefaultLogFormat)
+
+	v.SetDefault("database.path", DefaultDatabasePath)
+	v.SetDefault("database.busy_timeout", DefaultDatabaseBusyTimeout)
+	v.SetDefault("database.max_open_conns", 1)
+	v.SetDefault("database.max_idle_conns", 1)
 }

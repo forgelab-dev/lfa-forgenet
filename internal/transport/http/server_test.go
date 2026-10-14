@@ -154,3 +154,25 @@ func TestServer_StartAndShutdown(t *testing.T) {
 	serverErr := <-errCh
 	assert.NoError(t, serverErr)
 }
+
+// Les sondes passent par le routeur réel du serveur : chaque route répond en GET
+// et refuse les autres méthodes (405 et en-tête Allow, gérés par ServeMux).
+func TestServer_HealthRoutes_MethodsThroughRealMux(t *testing.T) {
+	srv := transportHTTP.NewServer(config.ServerConfig{}, health.NewService(), zerolog.Nop())
+
+	for _, path := range []string{"/healthz", "/readyz", "/version"} {
+		t.Run(path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			srv.Mux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+			assert.Equal(t, http.StatusOK, rec.Code)
+			assert.Equal(t, "application/json; charset=utf-8", rec.Header().Get("Content-Type"))
+
+			for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete} {
+				rec := httptest.NewRecorder()
+				srv.Mux().ServeHTTP(rec, httptest.NewRequest(method, path, nil))
+				assert.Equal(t, http.StatusMethodNotAllowed, rec.Code, "%s %s", method, path)
+				assert.Equal(t, "GET, HEAD", rec.Header().Get("Allow"))
+			}
+		})
+	}
+}
