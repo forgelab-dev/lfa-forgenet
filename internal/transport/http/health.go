@@ -4,8 +4,13 @@ package http
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
+	"net/netip"
 
+	"github.com/rs/zerolog"
+
+	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	"github.com/forgelab-dev/lfa-forgenet/internal/version"
 )
@@ -19,12 +24,17 @@ type HealthResponse struct {
 // HealthHandler regroupe les handlers HTTP d'observabilité.
 type HealthHandler struct {
 	healthService health.Service
+	exposeDetails string
+	logger        zerolog.Logger
 }
 
-// NewHealthHandler instancie le gestionnaire HTTP de santé.
-func NewHealthHandler(healthService health.Service) *HealthHandler {
+// NewHealthHandler instancie le gestionnaire HTTP de santé. exposeDetails
+// prend une valeur de health.expose_details (always, local ou never).
+func NewHealthHandler(healthService health.Service, exposeDetails string, logger zerolog.Logger) *HealthHandler {
 	return &HealthHandler{
 		healthService: healthService,
+		exposeDetails: exposeDetails,
+		logger:        logger,
 	}
 }
 
@@ -49,21 +59,52 @@ func (h *HealthHandler) Liveness(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Readiness vérifie que le serveur et ses dépendances sont prêts à recevoir du trafic.
+// Readiness vérifie que le serveur et ses dépendances sont prêts à recevoir du
+// trafic. La cause d'une indisponibilité est toujours journalisée, mais n'est
+// renvoyée qu'aux appelants autorisés par health.expose_details.
 func (h *HealthHandler) Readiness(w http.ResponseWriter, r *http.Request) {
 	ready, details := h.healthService.IsReady(r.Context())
+
+	code, state := http.StatusOK, health.StatusServing
 	if !ready {
-		writeJSON(w, http.StatusServiceUnavailable, HealthResponse{
-			Status:  string(health.StatusNotServing),
-			Details: details,
-		})
-		return
+		code, state = http.StatusServiceUnavailable, health.StatusNotServing
+		h.logger.Warn().Interface("details", details).Msg("service non prêt")
 	}
 
-	writeJSON(w, http.StatusOK, HealthResponse{
-		Status:  string(health.StatusServing),
-		Details: details,
-	})
+	resp := HealthResponse{Status: string(state)}
+	if h.showDetails(r) {
+		resp.Details = details
+	}
+	writeJSON(w, code, resp)
+}
+
+func (h *HealthHandler) showDetails(r *http.Request) bool {
+	switch h.exposeDetails {
+	case config.ExposeDetailsAlways:
+		return true
+	case config.ExposeDetailsLocal:
+		return isDirectLocalRequest(r)
+	default:
+		return false
+	}
+}
+
+// isDirectLocalRequest reconnaît une requête émise depuis la machine même.
+// Derrière un reverse proxy local (Caddy), toutes les requêtes arrivent de
+// 127.0.0.1 : une requête portant un en-tête de proxy n'est donc jamais
+// considérée comme locale.
+func isDirectLocalRequest(r *http.Request) bool {
+	for _, header := range []string{"Forwarded", "X-Forwarded-For", "X-Real-Ip"} {
+		if r.Header.Get(header) != "" {
+			return false
+		}
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return false
+	}
+	addr, err := netip.ParseAddr(host)
+	return err == nil && addr.Unmap().IsLoopback()
 }
 
 // Version retourne les métadonnées de build du binaire sous forme JSON.

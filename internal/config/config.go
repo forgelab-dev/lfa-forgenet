@@ -101,6 +101,26 @@ type DockerConfig struct {
 	PublishHost string `mapstructure:"publish_host"`
 }
 
+// Valeurs de health.expose_details.
+const (
+	// ExposeDetailsAlways montre toujours la cause d'une indisponibilité.
+	ExposeDetailsAlways = "always"
+	// ExposeDetailsLocal ne la montre qu'aux requêtes locales directes.
+	ExposeDetailsLocal = "local"
+	// ExposeDetailsNever ne la montre jamais (statut seul).
+	ExposeDetailsNever = "never"
+)
+
+// HealthConfig règle ce que les sondes HTTP révèlent.
+type HealthConfig struct {
+	// ExposeDetails décide si /readyz détaille l'état de chaque dépendance
+	// (base, Docker…), dont les messages peuvent révéler des chemins internes.
+	// Par défaut « local » : seule une requête venue de la machine elle-même,
+	// sans passer par un proxy, les reçoit. Les détails sont toujours écrits
+	// dans le journal du serveur.
+	ExposeDetails string `mapstructure:"expose_details"`
+}
+
 // Config est la structure racine de la configuration ForgeNet.
 type Config struct {
 	Environment string         `mapstructure:"environment"` // "development", "staging", "production"
@@ -109,6 +129,7 @@ type Config struct {
 	Database    DatabaseConfig `mapstructure:"database"`
 	Auth        AuthConfig     `mapstructure:"auth"`
 	Docker      DockerConfig   `mapstructure:"docker"`
+	Health      HealthConfig   `mapstructure:"health"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -189,6 +210,12 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("docker.publish_host doit être une adresse IP : %q", c.Docker.PublishHost)
 	}
 
+	switch c.Health.ExposeDetails {
+	case ExposeDetailsAlways, ExposeDetailsLocal, ExposeDetailsNever:
+	default:
+		return fmt.Errorf("health.expose_details inconnu : %q (valeurs acceptées : always, local, never)", c.Health.ExposeDetails)
+	}
+
 	validLogLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
 	if !validLogLevels[strings.ToLower(c.Log.Level)] {
 		return fmt.Errorf("niveau de log inconnu : %q (valeurs acceptées: debug, info, warn, error)", c.Log.Level)
@@ -228,4 +255,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("docker.host", "")
 	v.SetDefault("docker.api_version", "")
 	v.SetDefault("docker.publish_host", DefaultHost)
+
+	v.SetDefault("health.expose_details", ExposeDetailsLocal)
 }
