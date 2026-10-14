@@ -15,6 +15,7 @@ import (
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/audit"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
+	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
 )
 
 // Policy décrit qui peut appeler chaque méthode gRPC (nom complet,
@@ -29,14 +30,19 @@ type Policy struct {
 }
 
 // DefaultPolicy est la politique du serveur : seules les sondes de santé sont
-// publiques. Chaque service métier y déclare ses méthodes ouvertes aux membres.
+// publiques. Les membres consultent ; agir sur un conteneur (démarrer,
+// arrêter, redémarrer) reste réservé aux admins, par défaut.
 func DefaultPolicy() Policy {
 	return Policy{
 		Public: map[string]bool{
 			grpcHealth.Health_Check_FullMethodName: true,
 			grpcHealth.Health_Watch_FullMethodName: true,
 		},
-		MinRole: map[string]store.Role{},
+		MinRole: map[string]store.Role{
+			forgenetv1.ContainerService_ListContainers_FullMethodName:      store.RoleMember,
+			forgenetv1.ContainerService_GetContainer_FullMethodName:        store.RoleMember,
+			forgenetv1.ContainerService_StreamContainerLogs_FullMethodName: store.RoleMember,
+		},
 	}
 }
 
