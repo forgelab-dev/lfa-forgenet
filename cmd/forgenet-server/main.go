@@ -14,6 +14,7 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	"github.com/forgelab-dev/lfa-forgenet/internal/logging"
+	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
 	transportGRPC "github.com/forgelab-dev/lfa-forgenet/internal/transport/grpc"
 	transportHTTP "github.com/forgelab-dev/lfa-forgenet/internal/transport/http"
 	"github.com/forgelab-dev/lfa-forgenet/internal/version"
@@ -73,7 +74,20 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 		Str("grpc_addr", cfg.Server.GRPCAddress()).
 		Msg("démarrage de ForgeNet Server")
 
+	// La base est ouverte (et migrée) avant d'écouter : un serveur qui accepte
+	// du trafic sans schéma à jour répondrait par des erreurs.
+	db, err := sqlite.Open(ctx, cfg.Database)
+	if err != nil {
+		return fmt.Errorf("base de données : %w", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			logger.Error().Err(err).Msg("fermeture de la base de données")
+		}
+	}()
+
 	healthService := health.NewService()
+	healthService.RegisterReadinessChecker("database", health.CheckFunc(db.Ping))
 	servers := []server{
 		{name: "HTTP", transport: transportHTTP.NewServer(cfg.Server, healthService, logger)},
 		{name: "gRPC", transport: transportGRPC.NewServer(cfg.Server, healthService, logger)},
