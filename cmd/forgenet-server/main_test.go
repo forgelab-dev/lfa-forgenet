@@ -17,14 +17,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	grpcHealth "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
 	transportHTTP "github.com/forgelab-dev/lfa-forgenet/internal/transport/http"
 	"github.com/forgelab-dev/lfa-forgenet/internal/version"
+	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
 )
 
 // binPath est le binaire compilé une seule fois pour tous les tests du paquet.
@@ -157,6 +160,10 @@ log:
 		resp, err := grpcHealth.NewHealthClient(conn).Check(ctx, &grpcHealth.HealthCheckRequest{})
 		require.NoError(t, err)
 		assert.Equal(t, grpcHealth.HealthCheckResponse_SERVING, resp.GetStatus())
+
+		// L'API des conteneurs n'est jamais servie sans authentification.
+		_, err = forgenetv1.NewContainerServiceClient(conn).ListContainers(ctx, &forgenetv1.ListContainersRequest{})
+		assert.Equal(t, codes.Unauthenticated, status.Code(err))
 	})
 
 	require.NoError(t, cmd.Process.Signal(syscall.SIGTERM))

@@ -180,3 +180,15 @@ func TestConfig_Validation(t *testing.T) {
 		})
 	}
 }
+
+func TestLoad_DockerPublishHost(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.Equal(t, "127.0.0.1", cfg.Docker.PublishHost, "par défaut, les ports des conteneurs restent locaux")
+
+	t.Setenv("FORGENET_DOCKER_PUBLISH_HOST", "partout")
+	_, err = config.Load("")
+	require.ErrorContains(t, err, "docker.publish_host")
+}

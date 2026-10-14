@@ -16,10 +16,12 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	"github.com/forgelab-dev/lfa-forgenet/internal/logging"
+	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/docker"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
 	transportGRPC "github.com/forgelab-dev/lfa-forgenet/internal/transport/grpc"
 	transportHTTP "github.com/forgelab-dev/lfa-forgenet/internal/transport/http"
 	"github.com/forgelab-dev/lfa-forgenet/internal/version"
+	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
 )
 
 // main se contente de traduire l'erreur de run en code de sortie : toute la
@@ -102,9 +104,21 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 
 	auditor := audit.NewAuditor(db.Audit(), logger)
 	authService := auth.NewService(db, cfg.Auth, auditor)
+	grpcServer := transportGRPC.NewServer(cfg.Server, healthService, auth.NewGuard(authService, auth.DefaultPolicy(), logger), logger)
+
+	// Le client ne se connecte pas encore ici : une erreur signale une
+	// configuration invalide, et l'indisponibilité du démon se lit dans /readyz.
+	engine, err := docker.New(cfg.Docker)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = engine.Close() }()
+	healthService.RegisterReadinessChecker("docker", health.CheckFunc(engine.Ping))
+	forgenetv1.RegisterContainerServiceServer(grpcServer.GRPCServer(), transportGRPC.NewContainerServiceServer(engine, auditor, logger))
+
 	servers := []server{
 		{name: "HTTP", transport: transportHTTP.NewServer(cfg.Server, healthService, logger)},
-		{name: "gRPC", transport: transportGRPC.NewServer(cfg.Server, healthService, auth.NewGuard(authService, auth.DefaultPolicy(), logger), logger)},
+		{name: "gRPC", transport: grpcServer},
 	}
 
 	if err := serve(ctx, servers, healthService, cfg.Server, logger); err != nil {

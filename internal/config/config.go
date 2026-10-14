@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/netip"
 	"strings"
 	"time"
 
@@ -91,6 +92,15 @@ type AuthConfig struct {
 	APITokenTTL time.Duration `mapstructure:"api_token_ttl"`
 }
 
+// DockerConfig contient les options de connexion au démon Docker.
+type DockerConfig struct {
+	Host       string `mapstructure:"host"`        // vide : variables DOCKER_* ou socket par défaut
+	APIVersion string `mapstructure:"api_version"` // vide : version négociée avec le démon
+	// PublishHost est l'adresse de l'hôte où les ports des conteneurs sont
+	// publiés. Par défaut 127.0.0.1 : l'accès public passe par le reverse proxy.
+	PublishHost string `mapstructure:"publish_host"`
+}
+
 // Config est la structure racine de la configuration ForgeNet.
 type Config struct {
 	Environment string         `mapstructure:"environment"` // "development", "staging", "production"
@@ -98,6 +108,7 @@ type Config struct {
 	Log         LogConfig      `mapstructure:"log"`
 	Database    DatabaseConfig `mapstructure:"database"`
 	Auth        AuthConfig     `mapstructure:"auth"`
+	Docker      DockerConfig   `mapstructure:"docker"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -174,6 +185,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("en production, auth.jwt_secret doit comporter au moins %d caractères", MinJWTSecretLength)
 	}
 
+	if _, err := netip.ParseAddr(c.Docker.PublishHost); err != nil {
+		return fmt.Errorf("docker.publish_host doit être une adresse IP : %q", c.Docker.PublishHost)
+	}
+
 	validLogLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
 	if !validLogLevels[strings.ToLower(c.Log.Level)] {
 		return fmt.Errorf("niveau de log inconnu : %q (valeurs acceptées: debug, info, warn, error)", c.Log.Level)
@@ -209,4 +224,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("auth.jwt_secret", "")
 	v.SetDefault("auth.token_ttl", DefaultTokenTTL)
 	v.SetDefault("auth.api_token_ttl", DefaultAPITokenTTL)
+
+	v.SetDefault("docker.host", "")
+	v.SetDefault("docker.api_version", "")
+	v.SetDefault("docker.publish_host", DefaultHost)
 }
