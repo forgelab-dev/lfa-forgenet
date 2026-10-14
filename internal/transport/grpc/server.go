@@ -36,7 +36,11 @@ func NewServer(cfg config.ServerConfig, healthSvc health.Service, guard *auth.Gu
 			LoggingUnaryInterceptor(componentLogger),
 			guard.Unary(),
 		),
-		grpc.ChainStreamInterceptor(guard.Stream()),
+		grpc.ChainStreamInterceptor(
+			RecoveryStreamInterceptor(componentLogger),
+			LoggingStreamInterceptor(componentLogger),
+			guard.Stream(),
+		),
 	}
 
 	grpcServer := grpc.NewServer(serverOptions...)
