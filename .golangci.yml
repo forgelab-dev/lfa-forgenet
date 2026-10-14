@@ -21,6 +21,8 @@ linters:
       - path: _test\.go
         linters:
           - gocyclo
+          - gosec
+          - errcheck
 
 formatters:
   enable:
