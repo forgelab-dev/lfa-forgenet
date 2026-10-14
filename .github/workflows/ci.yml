@@ -15,45 +15,39 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      api: ${{ steps.detect.outputs.api }}
-      go: ${{ steps.detect.outputs.go }}
-      web: ${{ steps.detect.outputs.web }}
-      mobile: ${{ steps.detect.outputs.mobile }}
+      api: ${{ steps.filter.outputs.api }}
+      go: ${{ steps.filter.outputs.go }}
+      web: ${{ steps.filter.outputs.web }}
+      mobile: ${{ steps.filter.outputs.mobile }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Detect changed modules
-        id: detect
-        run: |
-          CHANGED=$(git diff origin/main...HEAD --name-only || true)
-          echo "Fichiers modifiés :"
-          echo "$CHANGED"
-          set_output() {
-            echo "$1=$2" >> "$GITHUB_OUTPUT"
-          }
-          if echo "$CHANGED" | grep -Eq "^(api/|pkg/gen/|web/src/gen/|mobile/lib/src/gen/)"; then
-            set_output api true
-          else
-            set_output api false
-          fi
-          if echo "$CHANGED" | grep -Eq "^(go\.mod|go\.sum|internal/|cmd/|\.golangci\.yml)"; then
-            set_output go true
-          else
-            set_output go false
-          fi
-          if echo "$CHANGED" | grep -Eq "^web/"; then
-            set_output web true
-          else
-            set_output web false
-          fi
-          if echo "$CHANGED" | grep -Eq "^mobile/"; then
-            set_output mobile true
-          else
-            set_output mobile false
-          fi
+      - name: Detect changed modules by paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'api/**'
+              - 'pkg/gen/**'
+              - 'web/src/gen/**'
+              - 'mobile/lib/src/gen/**'
+              - '.github/workflows/ci.yml'
+            go:
+              - 'go.mod'
+              - 'go.sum'
+              - 'internal/**'
+              - 'cmd/**'
+              - 'pkg/**'
+              - '.golangci.yml'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+            mobile:
+              - 'mobile/**'
+              - '.github/workflows/ci.yml'
 
   buf:
     needs: changes
@@ -105,22 +99,28 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.26.4"
+          go-version-file: go.mod
 
       - name: Lint Go
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.13.2
 
-      - name: Vet & build (si code Go présent)
+      - name: Vet, build & test (si code Go présent)
         run: |
           if git ls-files '*.go' | grep -q .; then
             go vet ./...
             go build ./...
+            go test -race -count=1 ./...
           else
             echo "Aucun fichier .go suivi : vérification go list uniquement."
             go list ./...
           fi
+
+      # Les failles connues de la bibliothèque standard et des dépendances bloquent
+      # la PR : govulncheck ne signale que celles que le code peut réellement atteindre.
+      - name: Vulnérabilités connues
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
   web:
     needs: changes

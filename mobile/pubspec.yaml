@@ -1,0 +1,24 @@
+name: forgenet_mobile
+description: "Application mobile ForgeNet (Flutter) - Companion de gestion cloud souverain"
+publish_to: "none"
+version: 0.1.0-alpha.dev
+
+environment:
+  sdk: ^3.8.1
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Socle commun LucidForge : thème, widgets, stockage chiffré, client API.
+  lucid_core_flutter: ^0.2.0
+  grpc: ^5.1.0
+  protobuf: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

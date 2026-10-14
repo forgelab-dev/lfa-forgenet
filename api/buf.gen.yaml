@@ -1,28 +1,31 @@
 version: v2
+# Versions épinglées : sans elles, chaque nouvelle version d'un plugin distant
+# change le code généré et fait échouer le contrôle « arbre de travail propre ».
+# Monter une version = la changer ici, lancer buf generate, committer le résultat.
 plugins:
   # --- GO PLUGINS ---
   # 1. Génère le code client et serveur gRPC
-  - remote: buf.build/grpc/go
+  - remote: buf.build/grpc/go:v1.6.2
     out: ../pkg/gen
     opt:
       - paths=source_relative
   
   # 2. Génère les structures de données (messages, enums)
-  - remote: buf.build/protocolbuffers/go
+  - remote: buf.build/protocolbuffers/go:v1.36.12
     out: ../pkg/gen
     opt:
       - paths=source_relative
 
   # --- TYPESCRIPT PLUGINS ---
   # Génère le code TypeScript moderne (Protobuf-ES)
-  - remote: buf.build/bufbuild/es
+  - remote: buf.build/bufbuild/es:v2.15.0
     out: ../web/src/gen
     opt:
       - target=ts
 
   # --- DART PLUGIN ---
   # Génère les messages et clients gRPC pour Dart / Flutter
-  - remote: buf.build/protocolbuffers/dart
+  - remote: buf.build/protocolbuffers/dart:v25.1.0
     out: ../mobile/lib/src/gen
     opt:
       - grpc
