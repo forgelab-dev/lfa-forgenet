@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 	grpcHealth "google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 )
@@ -23,15 +24,19 @@ type Server struct {
 	listener   net.Listener
 }
 
-// NewServer instancie un serveur gRPC standardisé avec intercepteurs et health check.
-func NewServer(cfg config.ServerConfig, healthSvc health.Service, logger zerolog.Logger) *Server {
+// NewServer instancie le serveur gRPC : reprise après panique, journalisation,
+// puis garde d'authentification et de rôles sur chaque appel, simple ou flux.
+// Le garde est obligatoire : aucun mode ne sert les méthodes sans lui.
+func NewServer(cfg config.ServerConfig, healthSvc health.Service, guard *auth.Guard, logger zerolog.Logger) *Server {
 	componentLogger := logger.With().Str("component", "transport.grpc").Logger()
 
 	serverOptions := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
 			RecoveryUnaryInterceptor(componentLogger),
 			LoggingUnaryInterceptor(componentLogger),
+			guard.Unary(),
 		),
+		grpc.ChainStreamInterceptor(guard.Stream()),
 	}
 
 	grpcServer := grpc.NewServer(serverOptions...)

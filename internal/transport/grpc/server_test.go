@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	grpcHealth "google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	transportGRPC "github.com/forgelab-dev/lfa-forgenet/internal/transport/grpc"
@@ -28,7 +29,9 @@ func TestGRPCServer_HealthCheck(t *testing.T) {
 		ShutdownTimeout: 2 * time.Second,
 	}
 
-	server := transportGRPC.NewServer(cfg, healthSvc, logger)
+	// Les sondes sont publiques : le garde ne consulte pas le service d'authentification.
+	guard := auth.NewGuard(nil, auth.DefaultPolicy(), logger)
+	server := transportGRPC.NewServer(cfg, healthSvc, guard, logger)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)

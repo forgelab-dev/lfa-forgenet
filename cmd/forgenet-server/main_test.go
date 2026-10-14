@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -19,6 +20,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	grpcHealth "google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/forgelab-dev/lfa-forgenet/internal/config"
+	"github.com/forgelab-dev/lfa-forgenet/internal/store"
+	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
 	transportHTTP "github.com/forgelab-dev/lfa-forgenet/internal/transport/http"
 	"github.com/forgelab-dev/lfa-forgenet/internal/version"
 )
@@ -190,4 +194,33 @@ server:
 			}
 		})
 	}
+}
+
+func TestUserCreate_FirstAdminFromCommandLine(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "forgenet.db")
+	configFile := writeConfig(t, fmt.Sprintf("database:\n  path: %q\n", dbPath))
+
+	create := func(username string) (string, int) {
+		cmd := exec.Command(binPath, "user", "create", "--config", configFile,
+			"--username", username, "--email", username+"@forgenet.test")
+		cmd.Stdin = strings.NewReader("motdepasse-de-test\n")
+		out, err := cmd.CombinedOutput()
+		return string(out), exitCode(t, err)
+	}
+
+	out, code := create("admin")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "rôle admin")
+	assert.NotContains(t, out, "motdepasse-de-test", "le mot de passe ne doit jamais être affiché")
+
+	out, code = create("admin")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "existe déjà")
+
+	db, err := sqlite.Open(context.Background(), config.DatabaseConfig{Path: dbPath, BusyTimeout: time.Second})
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	user, err := db.Users().GetUserByUsername(context.Background(), "admin")
+	require.NoError(t, err)
+	assert.Equal(t, store.RoleAdmin, user.Role)
 }

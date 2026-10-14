@@ -11,6 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/forgelab-dev/lfa-forgenet/internal/audit"
+	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	"github.com/forgelab-dev/lfa-forgenet/internal/logging"
@@ -26,7 +28,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := run(ctx, os.Args[1:], os.Stdout); err != nil {
+	if err := run(ctx, os.Args[1:], os.Stdin, os.Stdout); err != nil {
 		if !errors.Is(err, errAlreadyReported) {
 			fmt.Fprintf(os.Stderr, "forgenet-server : %v\n", err)
 		}
@@ -39,7 +41,12 @@ func main() {
 var errAlreadyReported = errors.New("erreur déjà journalisée")
 
 // run lit les options, charge la configuration et sert jusqu'à l'annulation de ctx.
-func run(ctx context.Context, args []string, stdout io.Writer) error {
+// « forgenet-server user … » administre les comptes au lieu de servir.
+func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) error {
+	if len(args) > 0 && args[0] == "user" {
+		return runUser(ctx, args[1:], stdin, stdout)
+	}
+
 	flags := flag.NewFlagSet("forgenet-server", flag.ContinueOnError)
 	var (
 		configPath  string
@@ -63,7 +70,11 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
+	return runServer(ctx, cfg)
+}
 
+// runServer assemble les composants du serveur et sert jusqu'à l'annulation de ctx.
+func runServer(ctx context.Context, cfg *config.Config) error {
 	logger := logging.New(cfg.Log)
 	buildInfo := version.Get()
 	logger.Info().
@@ -88,9 +99,12 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 
 	healthService := health.NewService()
 	healthService.RegisterReadinessChecker("database", health.CheckFunc(db.Ping))
+
+	auditor := audit.NewAuditor(db.Audit(), logger)
+	authService := auth.NewService(db, cfg.Auth, auditor)
 	servers := []server{
 		{name: "HTTP", transport: transportHTTP.NewServer(cfg.Server, healthService, logger)},
-		{name: "gRPC", transport: transportGRPC.NewServer(cfg.Server, healthService, logger)},
+		{name: "gRPC", transport: transportGRPC.NewServer(cfg.Server, healthService, auth.NewGuard(authService, auth.DefaultPolicy(), logger), logger)},
 	}
 
 	if err := serve(ctx, servers, healthService, cfg.Server, logger); err != nil {
