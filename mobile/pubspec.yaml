@@ -4,12 +4,14 @@ publish_to: "none"
 version: 0.1.0-alpha.dev
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: ^3.8.1
   flutter: ">=3.24.0"
 
 dependencies:
   flutter:
     sdk: flutter
+  # Socle commun LucidForge : thème, widgets, stockage chiffré, client API.
+  lucid_core_flutter: ^0.2.0
   grpc: ^5.1.0
   protobuf: ^6.1.0
 
