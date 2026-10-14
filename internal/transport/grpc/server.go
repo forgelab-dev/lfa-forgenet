@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 	grpcHealth "google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 )
@@ -23,15 +24,28 @@ type Server struct {
 	listener   net.Listener
 }
 
-// NewServer instancie un serveur gRPC standardisé avec intercepteurs et health check.
-func NewServer(cfg config.ServerConfig, healthSvc health.Service, logger zerolog.Logger) *Server {
+// NewServer instancie un serveur gRPC standardisé avec intercepteurs (recovery, logging, auth) et health check.
+func NewServer(cfg config.ServerConfig, healthSvc health.Service, authSvc auth.Service, logger zerolog.Logger) *Server {
 	componentLogger := logger.With().Str("component", "transport.grpc").Logger()
 
-	serverOptions := []grpc.ServerOption{
-		grpc.ChainUnaryInterceptor(
-			RecoveryUnaryInterceptor(componentLogger),
-			LoggingUnaryInterceptor(componentLogger),
-		),
+	exemptMethods := map[string]bool{
+		"/grpc.health.v1.Health/Check": true,
+		"/grpc.health.v1.Health/Watch": true,
+	}
+
+	unaryInterceptors := []grpc.UnaryServerInterceptor{
+		RecoveryUnaryInterceptor(componentLogger),
+		LoggingUnaryInterceptor(componentLogger),
+	}
+	if authSvc != nil {
+		unaryInterceptors = append(unaryInterceptors, auth.UnaryServerInterceptor(authSvc, exemptMethods))
+	}
+
+	var serverOptions []grpc.ServerOption
+	serverOptions = append(serverOptions, grpc.ChainUnaryInterceptor(unaryInterceptors...))
+
+	if authSvc != nil {
+		serverOptions = append(serverOptions, grpc.ChainStreamInterceptor(auth.StreamServerInterceptor(authSvc, exemptMethods)))
 	}
 
 	grpcServer := grpc.NewServer(serverOptions...)

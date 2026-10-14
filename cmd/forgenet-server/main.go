@@ -11,6 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/forgelab-dev/lfa-forgenet/internal/audit"
+	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	"github.com/forgelab-dev/lfa-forgenet/internal/logging"
@@ -88,9 +90,12 @@ func run(ctx context.Context, args []string, stdout io.Writer) error {
 
 	healthService := health.NewService()
 	healthService.RegisterReadinessChecker("database", health.CheckFunc(db.Ping))
+
+	auditor := audit.NewAuditor(db.Audit(), logger)
+	authService := auth.NewService(db, cfg.Auth, auditor)
 	servers := []server{
 		{name: "HTTP", transport: transportHTTP.NewServer(cfg.Server, healthService, logger)},
-		{name: "gRPC", transport: transportGRPC.NewServer(cfg.Server, healthService, logger)},
+		{name: "gRPC", transport: transportGRPC.NewServer(cfg.Server, healthService, authService, logger)},
 	}
 
 	if err := serve(ctx, servers, healthService, cfg.Server, logger); err != nil {

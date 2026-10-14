@@ -28,7 +28,7 @@ func TestGRPCServer_HealthCheck(t *testing.T) {
 		ShutdownTimeout: 2 * time.Second,
 	}
 
-	server := transportGRPC.NewServer(cfg, healthSvc, logger)
+	server := transportGRPC.NewServer(cfg, healthSvc, nil, logger)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)

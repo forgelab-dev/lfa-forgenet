@@ -40,6 +40,11 @@ const (
 	DefaultDatabasePath = "data/forgenet.db"
 	// DefaultDatabaseBusyTimeout est le délai de grâce maximal lors d'un verrou SQLite concurrent.
 	DefaultDatabaseBusyTimeout = 5 * time.Second
+
+	// DefaultTokenTTL est la durée de validité par défaut des tokens de session JWT (24 heures).
+	DefaultTokenTTL = 24 * time.Hour
+	// DefaultAPITokenTTL est la durée de validité par défaut des tokens API (30 jours).
+	DefaultAPITokenTTL = 30 * 24 * time.Hour
 )
 
 // ServerConfig contient les paramètres réseau et timeouts des serveurs HTTP et gRPC.
@@ -77,12 +82,20 @@ type DatabaseConfig struct {
 	MaxIdleConns int           `mapstructure:"max_idle_conns"`
 }
 
+// AuthConfig contient les options de sécurité et de génération de jetons d'authentification.
+type AuthConfig struct {
+	JWTSecret   string        `mapstructure:"jwt_secret"`
+	TokenTTL    time.Duration `mapstructure:"token_ttl"`
+	APITokenTTL time.Duration `mapstructure:"api_token_ttl"`
+}
+
 // Config est la structure racine de la configuration ForgeNet.
 type Config struct {
 	Environment string         `mapstructure:"environment"` // "development", "staging", "production"
 	Server      ServerConfig   `mapstructure:"server"`
 	Log         LogConfig      `mapstructure:"log"`
 	Database    DatabaseConfig `mapstructure:"database"`
+	Auth        AuthConfig     `mapstructure:"auth"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -148,6 +161,16 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("le busy_timeout de la base de données doit être strictement positif")
 	}
 
+	if c.Auth.TokenTTL <= 0 {
+		return fmt.Errorf("le token_ttl d'authentification doit être strictement positif")
+	}
+	if c.Auth.APITokenTTL <= 0 {
+		return fmt.Errorf("le api_token_ttl d'authentification doit être strictement positif")
+	}
+	if c.Environment == "production" && len(c.Auth.JWTSecret) < 16 {
+		return fmt.Errorf("en production, auth.jwt_secret doit comporter au moins 16 caractères")
+	}
+
 	validLogLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
 	if !validLogLevels[strings.ToLower(c.Log.Level)] {
 		return fmt.Errorf("niveau de log inconnu : %q (valeurs acceptées: debug, info, warn, error)", c.Log.Level)
@@ -179,4 +202,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.busy_timeout", DefaultDatabaseBusyTimeout)
 	v.SetDefault("database.max_open_conns", 1)
 	v.SetDefault("database.max_idle_conns", 1)
+
+	v.SetDefault("auth.jwt_secret", "")
+	v.SetDefault("auth.token_ttl", DefaultTokenTTL)
+	v.SetDefault("auth.api_token_ttl", DefaultAPITokenTTL)
 }

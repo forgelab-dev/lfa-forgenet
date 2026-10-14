@@ -38,6 +38,7 @@ func TestLoad_EnvOverrides(t *testing.T) {
 	t.Setenv("FORGENET_LOG_LEVEL", "debug")
 	t.Setenv("FORGENET_LOG_FORMAT", "json")
 	t.Setenv("FORGENET_ENVIRONMENT", "production")
+	t.Setenv("FORGENET_AUTH_JWT_SECRET", "super-secret-production-key-32bytes")
 
 	cfg, err := config.Load("")
 	require.NoError(t, err)
