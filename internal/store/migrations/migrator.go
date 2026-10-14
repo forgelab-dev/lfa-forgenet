@@ -61,7 +61,8 @@ func Load(fsys fs.FS) ([]Migration, error) {
 		return migrations[i].Version < migrations[j].Version
 	})
 
-	// Deux fichiers au même numéro : un seul serait appliqué, l'autre ignoré en silence.
+	// Deux fichiers au même numéro sont refusés : sans ce contrôle, le second
+	// serait considéré comme déjà appliqué et ne s'exécuterait jamais.
 	for i := 1; i < len(migrations); i++ {
 		if migrations[i].Version == migrations[i-1].Version {
 			return nil, fmt.Errorf("numéro de migration %d en double : %s et %s",
