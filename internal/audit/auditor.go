@@ -1,16 +1,15 @@
-// Package audit assure la journalisation horodatée et infalsifiable de toutes les actions sensibles du système.
+// Package audit journalise, horodatées en base et dans les logs structurés, les actions sensibles du système.
 package audit
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/rs/zerolog"
 
+	"github.com/forgelab-dev/lfa-forgenet/internal/ids"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 )
 
@@ -77,7 +76,7 @@ func (a *auditor) Log(ctx context.Context, action, resource string, metadata map
 		}
 	}
 
-	eventID := generateAuditID()
+	eventID := ids.New("aud")
 	event := &store.AuditEvent{
 		ID:        eventID,
 		UserID:    userID,
@@ -111,10 +110,4 @@ func (a *auditor) Log(ctx context.Context, action, resource string, metadata map
 // List retourne les entrées du journal d'audit de manière paginée et antéchronologique.
 func (a *auditor) List(ctx context.Context, limit, offset int) ([]*store.AuditEvent, error) {
 	return a.auditStore.List(ctx, limit, offset)
-}
-
-func generateAuditID() string {
-	b := make([]byte, 12)
-	_, _ = rand.Read(b)
-	return "aud_" + hex.EncodeToString(b)
 }

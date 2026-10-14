@@ -26,9 +26,29 @@ const (
 	RoleMember Role = "member"
 )
 
+// roleRank ordonne les rôles : un rôle accorde tous les droits des rangs inférieurs.
+var roleRank = map[Role]int{RoleMember: 1, RoleAdmin: 2}
+
 // IsValid vérifie que la valeur du rôle correspond à un rôle autorisé.
 func (r Role) IsValid() bool {
-	return r == RoleAdmin || r == RoleMember
+	_, ok := roleRank[r]
+	return ok
+}
+
+// Grants indique si le rôle r suffit pour une action qui exige required.
+// Un rôle inconnu n'accorde rien.
+func (r Role) Grants(required Role) bool {
+	rank, ok := roleRank[r]
+	return ok && rank >= roleRank[required] && required.IsValid()
+}
+
+// Lowest renvoie le moins élevé des deux rôles : un jeton ne peut pas
+// donner plus de droits que son propriétaire n'en a aujourd'hui.
+func Lowest(a, b Role) Role {
+	if roleRank[a] <= roleRank[b] {
+		return a
+	}
+	return b
 }
 
 // User représente un compte utilisateur dans le système d'authentification.
