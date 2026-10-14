@@ -1,6 +1,7 @@
 package http_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -22,7 +23,7 @@ import (
 
 func TestHealthHandler_Liveness(t *testing.T) {
 	healthSvc := health.NewService()
-	handler := transportHTTP.NewHealthHandler(healthSvc)
+	handler := transportHTTP.NewHealthHandler(healthSvc, config.ExposeDetailsAlways, zerolog.Nop())
 
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
@@ -52,7 +53,7 @@ func TestHealthHandler_Liveness(t *testing.T) {
 
 func TestHealthHandler_Readiness(t *testing.T) {
 	healthSvc := health.NewService()
-	handler := transportHTTP.NewHealthHandler(healthSvc)
+	handler := transportHTTP.NewHealthHandler(healthSvc, config.ExposeDetailsAlways, zerolog.Nop())
 
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
@@ -86,7 +87,7 @@ func TestHealthHandler_Readiness(t *testing.T) {
 
 func TestHealthHandler_Version(t *testing.T) {
 	healthSvc := health.NewService()
-	handler := transportHTTP.NewHealthHandler(healthSvc)
+	handler := transportHTTP.NewHealthHandler(healthSvc, config.ExposeDetailsAlways, zerolog.Nop())
 
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
@@ -115,7 +116,7 @@ func TestServer_StartAndShutdown(t *testing.T) {
 		ShutdownTimeout: 2 * time.Second,
 	}
 
-	server := transportHTTP.NewServer(cfg, healthSvc, logger)
+	server := transportHTTP.NewServer(cfg, config.HealthConfig{}, healthSvc, logger)
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
@@ -158,7 +159,7 @@ func TestServer_StartAndShutdown(t *testing.T) {
 // Les sondes passent par le routeur réel du serveur : chaque route répond en GET
 // et refuse les autres méthodes (405 et en-tête Allow, gérés par ServeMux).
 func TestServer_HealthRoutes_MethodsThroughRealMux(t *testing.T) {
-	srv := transportHTTP.NewServer(config.ServerConfig{}, health.NewService(), zerolog.Nop())
+	srv := transportHTTP.NewServer(config.ServerConfig{}, config.HealthConfig{}, health.NewService(), zerolog.Nop())
 
 	for _, path := range []string{"/healthz", "/readyz", "/version"} {
 		t.Run(path, func(t *testing.T) {
@@ -173,6 +174,60 @@ func TestServer_HealthRoutes_MethodsThroughRealMux(t *testing.T) {
 				assert.Equal(t, http.StatusMethodNotAllowed, rec.Code, "%s %s", method, path)
 				assert.Equal(t, "GET, HEAD", rec.Header().Get("Allow"))
 			}
+		})
+	}
+}
+
+// /readyz ne détaille les dépendances qu'aux appelants autorisés par
+// health.expose_details ; le statut et le code HTTP restent les mêmes.
+func TestReadiness_DetailsExposure(t *testing.T) {
+	healthSvc := health.NewService()
+	healthSvc.RegisterReadinessChecker("docker", health.CheckFunc(func(context.Context) error {
+		return errors.New("dial unix /var/run/docker.sock: connection refused")
+	}))
+
+	const (
+		loopback = "127.0.0.1:41000"
+		ipv6     = "[::1]:41000"
+		remote   = "203.0.113.7:41000"
+	)
+	cases := []struct {
+		name, mode, remoteAddr, proxyHeader string
+		wantDetails                         bool
+	}{
+		{"always, requête distante", config.ExposeDetailsAlways, remote, "", true},
+		{"never, requête locale", config.ExposeDetailsNever, loopback, "", false},
+		{"local, boucle IPv4", config.ExposeDetailsLocal, loopback, "", true},
+		{"local, boucle IPv6", config.ExposeDetailsLocal, ipv6, "", true},
+		{"local, requête distante", config.ExposeDetailsLocal, remote, "", false},
+		{"local, via proxy local (X-Forwarded-For)", config.ExposeDetailsLocal, loopback, "X-Forwarded-For", false},
+		{"local, via proxy local (Forwarded)", config.ExposeDetailsLocal, loopback, "Forwarded", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var logs bytes.Buffer
+			mux := http.NewServeMux()
+			transportHTTP.NewHealthHandler(healthSvc, tc.mode, zerolog.New(&logs)).RegisterRoutes(mux)
+
+			req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+			req.RemoteAddr = tc.remoteAddr
+			if tc.proxyHeader != "" {
+				req.Header.Set(tc.proxyHeader, "for=198.51.100.1")
+			}
+			rec := httptest.NewRecorder()
+			mux.ServeHTTP(rec, req)
+
+			assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
+			var resp transportHTTP.HealthResponse
+			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+			assert.Equal(t, string(health.StatusNotServing), resp.Status)
+			if tc.wantDetails {
+				assert.Contains(t, resp.Details["docker"], "docker.sock")
+			} else {
+				assert.Nil(t, resp.Details)
+				assert.NotContains(t, rec.Body.String(), "docker.sock")
+			}
+			assert.Contains(t, logs.String(), "docker.sock", "la cause est toujours journalisée côté serveur")
 		})
 	}
 }

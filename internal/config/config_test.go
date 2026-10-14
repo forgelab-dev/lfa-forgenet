@@ -192,3 +192,15 @@ func TestLoad_DockerPublishHost(t *testing.T) {
 	_, err = config.Load("")
 	require.ErrorContains(t, err, "docker.publish_host")
 }
+
+func TestLoad_HealthExposeDetails(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.Equal(t, config.ExposeDetailsLocal, cfg.Health.ExposeDetails)
+
+	t.Setenv("FORGENET_HEALTH_EXPOSE_DETAILS", "parfois")
+	_, err = config.Load("")
+	require.ErrorContains(t, err, "health.expose_details")
+}

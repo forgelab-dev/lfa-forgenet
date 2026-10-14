@@ -23,10 +23,11 @@ type Server struct {
 }
 
 // NewServer instancie un nouveau serveur HTTP avec ses timeouts et routes de base.
-func NewServer(cfg config.ServerConfig, healthSvc health.Service, logger zerolog.Logger) *Server {
+func NewServer(cfg config.ServerConfig, healthCfg config.HealthConfig, healthSvc health.Service, logger zerolog.Logger) *Server {
 	mux := http.NewServeMux()
+	componentLogger := logger.With().Str("component", "transport.http").Logger()
 
-	healthHandler := NewHealthHandler(healthSvc)
+	healthHandler := NewHealthHandler(healthSvc, healthCfg.ExposeDetails, componentLogger)
 	healthHandler.RegisterRoutes(mux)
 
 	loggingMiddleware := func(next http.Handler) http.Handler {
@@ -53,7 +54,7 @@ func NewServer(cfg config.ServerConfig, healthSvc health.Service, logger zerolog
 	return &Server{
 		httpServer: httpServer,
 		mux:        mux,
-		logger:     logger.With().Str("component", "transport.http").Logger(),
+		logger:     componentLogger,
 	}
 }
 

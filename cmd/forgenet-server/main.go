@@ -117,7 +117,7 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	forgenetv1.RegisterContainerServiceServer(grpcServer.GRPCServer(), transportGRPC.NewContainerServiceServer(engine, auditor, logger))
 
 	servers := []server{
-		{name: "HTTP", transport: transportHTTP.NewServer(cfg.Server, healthService, logger)},
+		{name: "HTTP", transport: transportHTTP.NewServer(cfg.Server, cfg.Health, healthService, logger)},
 		{name: "gRPC", transport: grpcServer},
 	}
 
