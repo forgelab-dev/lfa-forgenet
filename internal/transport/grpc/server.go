@@ -118,29 +118,21 @@ func newHealthHandler(healthService health.Service) *healthHandler {
 }
 
 func (h *healthHandler) Check(ctx context.Context, req *grpcHealth.HealthCheckRequest) (*grpcHealth.HealthCheckResponse, error) {
-	// Si un service spécifique est demandé (ex: "readiness"), on évalue la readiness
+	// Le service « readiness » interroge les dépendances ; par défaut, seule la vivacité compte.
 	if req.GetService() == "readiness" {
 		ready, _ := h.healthService.IsReady(ctx)
-		status := grpcHealth.HealthCheckResponse_SERVING
-		if !ready {
-			status = grpcHealth.HealthCheckResponse_NOT_SERVING
-		}
-		return &grpcHealth.HealthCheckResponse{Status: status}, nil
+		return servingStatus(ready), nil
 	}
-
-	// Par défaut, vérification de vivacité (liveness)
-	live := h.healthService.IsLive(ctx)
-	status := grpcHealth.HealthCheckResponse_SERVING
-	if !live {
-		status = grpcHealth.HealthCheckResponse_NOT_SERVING
-	}
-	return &grpcHealth.HealthCheckResponse{Status: status}, nil
+	return servingStatus(h.healthService.IsLive(ctx)), nil
 }
 
 func (h *healthHandler) Watch(_ *grpcHealth.HealthCheckRequest, stream grpcHealth.Health_WatchServer) error {
-	status := grpcHealth.HealthCheckResponse_SERVING
-	if !h.healthService.IsLive(stream.Context()) {
-		status = grpcHealth.HealthCheckResponse_NOT_SERVING
+	return stream.Send(servingStatus(h.healthService.IsLive(stream.Context())))
+}
+
+func servingStatus(serving bool) *grpcHealth.HealthCheckResponse {
+	if serving {
+		return &grpcHealth.HealthCheckResponse{Status: grpcHealth.HealthCheckResponse_SERVING}
 	}
-	return stream.Send(&grpcHealth.HealthCheckResponse{Status: status})
+	return &grpcHealth.HealthCheckResponse{Status: grpcHealth.HealthCheckResponse_NOT_SERVING}
 }

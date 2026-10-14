@@ -23,166 +23,161 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/version"
 )
 
-func getFreePort(t *testing.T) int {
+// binPath est le binaire compilé une seule fois pour tous les tests du paquet.
+var binPath string
+
+func TestMain(m *testing.M) {
+	dir, err := os.MkdirTemp("", "forgenet-server-test")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	binPath = filepath.Join(dir, "forgenet-server")
+
+	build := exec.Command("go", "build", "-o", binPath, ".")
+	if out, err := build.CombinedOutput(); err != nil {
+		fmt.Fprintf(os.Stderr, "compilation du binaire : %v\n%s", err, out)
+		_ = os.RemoveAll(dir)
+		os.Exit(1)
+	}
+
+	code := m.Run()
+	_ = os.RemoveAll(dir)
+	os.Exit(code)
+}
+
+func freePort(t *testing.T) int {
 	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 	return ln.Addr().(*net.TCPAddr).Port
 }
 
-func TestServer_E2E_Lifecycle(t *testing.T) {
-	// Compilation du binaire de test dans un dossier temporaire
-	tempDir := t.TempDir()
-	binPath := filepath.Join(tempDir, "forgenet-server-test")
+// writeConfig écrit un fichier de configuration minimal dans un dossier temporaire.
+func writeConfig(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "forgenet.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
+	return path
+}
 
-	buildCmd := exec.Command("go", "build", "-o", binPath, "./cmd/forgenet-server")
-	buildCmd.Dir = "../.."
-	out, err := buildCmd.CombinedOutput()
-	require.NoError(t, err, string(out))
+// startServer lance le binaire et renvoie un canal qui reçoit son résultat de sortie.
+func startServer(t *testing.T, env []string, args ...string) (*exec.Cmd, <-chan error) {
+	t.Helper()
+	cmd := exec.Command(binPath, args...)
+	cmd.Dir = t.TempDir()
+	cmd.Env = append(os.Environ(), env...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	require.NoError(t, cmd.Start())
 
-	httpPort := getFreePort(t)
-	grpcPort := getFreePort(t)
+	exited := make(chan error, 1)
+	go func() { exited <- cmd.Wait() }()
+	t.Cleanup(func() { _ = cmd.Process.Kill() })
+	return cmd, exited
+}
 
-	// Fichier de configuration de test
-	configFile := filepath.Join(tempDir, "config.yaml")
-	yamlContent := fmt.Sprintf(`
+func exitCode(t *testing.T, err error) int {
+	t.Helper()
+	if err == nil {
+		return 0
+	}
+	var exitErr *exec.ExitError
+	require.ErrorAs(t, err, &exitErr)
+	return exitErr.ExitCode()
+}
+
+func TestServer_E2E_FileAndEnvConfiguration(t *testing.T) {
+	httpPort, grpcPort := freePort(t), freePort(t)
+
+	// Le port gRPC vient du fichier, le port HTTP de l'environnement, qui doit
+	// l'emporter sur la valeur du fichier.
+	configFile := writeConfig(t, fmt.Sprintf(`
 environment: test
 server:
-  host: "127.0.0.1"
-  http_port: %d
+  http_port: 1
   grpc_port: %d
   shutdown_timeout: 3s
 log:
-  level: "debug"
-  format: "json"
-`, httpPort, grpcPort)
-	require.NoError(t, os.WriteFile(configFile, []byte(yamlContent), 0o600))
+  level: debug
+  format: json
+`, grpcPort))
+	cmd, exited := startServer(t, []string{fmt.Sprintf("FORGENET_SERVER_HTTP_PORT=%d", httpPort)}, "--config", configFile)
 
-	// Lancement du binaire en sous-processus
-	cmd := exec.Command(binPath, "--config", configFile)
-	cmd.Dir = "../.."
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err = cmd.Start()
-	require.NoError(t, err)
-
-	serverExited := make(chan error, 1)
-	go func() {
-		serverExited <- cmd.Wait()
-	}()
-
-	// Attente de démarrage du serveur HTTP
 	httpAddr := fmt.Sprintf("http://127.0.0.1:%d", httpPort)
-	httpClient := &http.Client{Timeout: 1 * time.Second}
-
-	var httpReady bool
-	for i := 0; i < 20; i++ {
-		resp, err := httpClient.Get(httpAddr + "/healthz")
-		if err == nil && resp.StatusCode == http.StatusOK {
-			resp.Body.Close()
-			httpReady = true
-			break
+	client := &http.Client{Timeout: time.Second}
+	require.Eventually(t, func() bool {
+		resp, err := client.Get(httpAddr + "/healthz")
+		if err != nil {
+			return false
 		}
-		if resp != nil {
-			resp.Body.Close()
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-	require.True(t, httpReady, "Le serveur HTTP n'a pas répondu dans le temps imparti")
+		_ = resp.Body.Close()
+		return resp.StatusCode == http.StatusOK
+	}, 5*time.Second, 50*time.Millisecond, "le serveur HTTP n'a pas démarré")
 
-	// 1. Validation de l'endpoint HTTP /healthz
-	resp, err := httpClient.Get(httpAddr + "/healthz")
-	require.NoError(t, err)
-	defer resp.Body.Close()
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	t.Run("healthz", func(t *testing.T) {
+		resp, err := client.Get(httpAddr + "/healthz")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		var body transportHTTP.HealthResponse
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+		assert.Equal(t, "SERVING", body.Status)
+	})
 
-	var healthResp transportHTTP.HealthResponse
-	err = json.NewDecoder(resp.Body).Decode(&healthResp)
-	require.NoError(t, err)
-	assert.Equal(t, "SERVING", healthResp.Status)
+	t.Run("version", func(t *testing.T) {
+		resp, err := client.Get(httpAddr + "/version")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		var info version.BuildInfo
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&info))
+		assert.Equal(t, version.Version, info.Version)
+	})
 
-	// 2. Validation de l'endpoint HTTP /version
-	respVersion, err := httpClient.Get(httpAddr + "/version")
-	require.NoError(t, err)
-	defer respVersion.Body.Close()
-	assert.Equal(t, http.StatusOK, respVersion.StatusCode)
+	t.Run("grpc health", func(t *testing.T) {
+		conn, err := grpc.NewClient(fmt.Sprintf("127.0.0.1:%d", grpcPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		require.NoError(t, err)
+		defer func() { _ = conn.Close() }()
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		resp, err := grpcHealth.NewHealthClient(conn).Check(ctx, &grpcHealth.HealthCheckRequest{})
+		require.NoError(t, err)
+		assert.Equal(t, grpcHealth.HealthCheckResponse_SERVING, resp.GetStatus())
+	})
 
-	var versionInfo version.BuildInfo
-	err = json.NewDecoder(respVersion.Body).Decode(&versionInfo)
-	require.NoError(t, err)
-	assert.Equal(t, version.Version, versionInfo.Version)
-
-	// 3. Validation de l'endpoint gRPC Health
-	grpcAddr := fmt.Sprintf("127.0.0.1:%d", grpcPort)
-	conn, err := grpc.NewClient(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err)
-	defer conn.Close()
-
-	grpcClient := grpcHealth.NewHealthClient(conn)
-	grpcCtx, grpcCancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer grpcCancel()
-
-	grpcResp, err := grpcClient.Check(grpcCtx, &grpcHealth.HealthCheckRequest{})
-	require.NoError(t, err)
-	assert.Equal(t, grpcHealth.HealthCheckResponse_SERVING, grpcResp.GetStatus())
-
-	// 4. Test d'arrêt gracieux via SIGTERM
-	err = cmd.Process.Signal(syscall.SIGTERM)
-	require.NoError(t, err)
-
+	require.NoError(t, cmd.Process.Signal(syscall.SIGTERM))
 	select {
-	case waitErr := <-serverExited:
-		assert.NoError(t, waitErr, "Le serveur doit s'arrêter proprement avec un code de retour 0 sur SIGTERM")
+	case err := <-exited:
+		assert.Equal(t, 0, exitCode(t, err), "SIGTERM doit donner un arrêt propre")
 	case <-time.After(5 * time.Second):
-		t.Fatal("Le serveur ne s'est pas arrêté dans le délai de grâce")
+		t.Fatal("le serveur ne s'est pas arrêté dans le délai de grâce")
 	}
 }
 
-func TestServer_PortOccupied_ExitsNonZero(t *testing.T) {
-	tempDir := t.TempDir()
-	binPath := filepath.Join(tempDir, "forgenet-server-port-test")
-
-	buildCmd := exec.Command("go", "build", "-o", binPath, "./cmd/forgenet-server")
-	buildCmd.Dir = "../.."
-	out, err := buildCmd.CombinedOutput()
-	require.NoError(t, err, string(out))
-
-	// On réserve délibérément un port pour simuler un conflit
-	occupiedListener, err := net.Listen("tcp", "127.0.0.1:0")
+func TestServer_ExitsNonZero(t *testing.T) {
+	occupied, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	defer func() {
-		_ = occupiedListener.Close()
-	}()
-	occupiedPort := occupiedListener.Addr().(*net.TCPAddr).Port
+	defer func() { _ = occupied.Close() }()
 
-	freeGRPCPort := getFreePort(t)
-
-	configFile := filepath.Join(tempDir, "conflict-config.yaml")
-	yamlContent := fmt.Sprintf(`
-environment: test
+	cases := map[string]string{
+		"port déjà occupé": fmt.Sprintf(`
 server:
-  host: "127.0.0.1"
   http_port: %d
   grpc_port: %d
   shutdown_timeout: 1s
-log:
-  level: "error"
-  format: "json"
-`, occupiedPort, freeGRPCPort)
-	require.NoError(t, os.WriteFile(configFile, []byte(yamlContent), 0o600))
+`, occupied.Addr().(*net.TCPAddr).Port, freePort(t)),
+		"YAML invalide": "server: [cassé\n",
+	}
 
-	cmd := exec.Command(binPath, "--config", configFile)
-	cmd.Dir = "../.."
-
-	err = cmd.Start()
-	require.NoError(t, err)
-
-	waitErr := cmd.Wait()
-	require.Error(t, waitErr, "Le binaire doit échouer si le port d'écoute est déjà occupé")
-
-	var exitErr *exec.ExitError
-	require.ErrorAs(t, waitErr, &exitErr)
-	assert.Equal(t, 1, exitErr.ExitCode(), "Le code de sortie doit être égal à 1 lors d'un échec de bind de port")
+	for name, content := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, exited := startServer(t, nil, "--config", writeConfig(t, content))
+			select {
+			case err := <-exited:
+				assert.Equal(t, 1, exitCode(t, err))
+			case <-time.After(5 * time.Second):
+				t.Fatal("le serveur aurait dû s'arrêter en erreur")
+			}
+		})
+	}
 }

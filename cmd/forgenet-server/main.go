@@ -3,11 +3,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
@@ -18,33 +19,52 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/version"
 )
 
+// main se contente de traduire l'erreur de run en code de sortie : toute la
+// logique vit dans run, pour que ses defer s'exécutent avant os.Exit.
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if err := run(ctx, os.Args[1:], os.Stdout); err != nil {
+		if !errors.Is(err, errAlreadyReported) {
+			fmt.Fprintf(os.Stderr, "forgenet-server : %v\n", err)
+		}
+		stop()
+		os.Exit(1)
+	}
+}
+
+// errAlreadyReported signale une erreur déjà écrite dans le journal structuré.
+var errAlreadyReported = errors.New("erreur déjà journalisée")
+
+// run lit les options, charge la configuration et sert jusqu'à l'annulation de ctx.
+func run(ctx context.Context, args []string, stdout io.Writer) error {
+	flags := flag.NewFlagSet("forgenet-server", flag.ContinueOnError)
 	var (
 		configPath  string
 		showVersion bool
 	)
-
-	flag.StringVar(&configPath, "config", "", "Chemin vers le fichier de configuration (YAML)")
-	flag.StringVar(&configPath, "c", "", "Chemin vers le fichier de configuration (raccourci)")
-	flag.BoolVar(&showVersion, "version", false, "Affiche la version du binaire et quitte")
-	flag.BoolVar(&showVersion, "v", false, "Affiche la version du binaire (raccourci)")
-	flag.Parse()
+	flags.StringVar(&configPath, "config", "", "Chemin vers le fichier de configuration (YAML)")
+	flags.StringVar(&configPath, "c", "", "Chemin vers le fichier de configuration (raccourci)")
+	flags.BoolVar(&showVersion, "version", false, "Affiche la version du binaire et quitte")
+	flags.BoolVar(&showVersion, "v", false, "Affiche la version du binaire (raccourci)")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
 
 	if showVersion {
 		info := version.Get()
-		fmt.Printf("forgenet-server %s (%s, %s, %s)\n", info.Version, info.GitCommit, info.BuildDate, info.GoVersion)
-		os.Exit(0)
+		_, err := fmt.Fprintf(stdout, "forgenet-server %s (%s, %s, %s)\n", info.Version, info.GitCommit, info.BuildDate, info.GoVersion)
+		return err
 	}
 
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Erreur lors de l'initialisation de la configuration : %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	logger := logging.New(cfg.Log)
 	buildInfo := version.Get()
-
 	logger.Info().
 		Str("version", buildInfo.Version).
 		Str("commit", buildInfo.GitCommit).
@@ -53,73 +73,17 @@ func main() {
 		Str("grpc_addr", cfg.Server.GRPCAddress()).
 		Msg("démarrage de ForgeNet Server")
 
-	// Service de santé partagé (liveness / readiness)
 	healthService := health.NewService()
-
-	// Initialisation des transports HTTP et gRPC sans logique métier
-	httpServer := transportHTTP.NewServer(cfg.Server, healthService, logger)
-	grpcServer := transportGRPC.NewServer(cfg.Server, healthService, logger)
-
-	// Contexte d'écoute des signaux d'arrêt système
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-	defer stop()
-
-	errChan := make(chan error, 2)
-
-	// Démarrage du serveur HTTP
-	go func() {
-		if err := httpServer.Start(); err != nil {
-			errChan <- fmt.Errorf("serveur HTTP : %w", err)
-		}
-	}()
-
-	// Démarrage du serveur gRPC
-	go func() {
-		if err := grpcServer.Start(); err != nil {
-			errChan <- fmt.Errorf("serveur gRPC : %w", err)
-		}
-	}()
-
-	// Attente d'un signal d'arrêt ou d'une défaillance réseau
-	var fatalErr error
-	select {
-	case <-ctx.Done():
-		logger.Info().Msg("signal d'arrêt reçu, initialisation de la fermeture gracieuse...")
-	case err := <-errChan:
-		logger.Error().Err(err).Msg("défaillance inattendue d'un serveur de transport")
-		fatalErr = err
+	servers := []server{
+		{name: "HTTP", transport: transportHTTP.NewServer(cfg.Server, healthService, logger)},
+		{name: "gRPC", transport: transportGRPC.NewServer(cfg.Server, healthService, logger)},
 	}
 
-	// 1. Bascule de l'état de santé en NOT_SERVING pour drainer le trafic entrant
-	healthService.SetServing(false)
-
-	// 2. Contexte d'arrêt gracieux avec timeout configuré
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
-	defer shutdownCancel()
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			logger.Error().Err(err).Msg("erreur lors de l'arrêt gracieux du serveur HTTP")
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		if err := grpcServer.Shutdown(shutdownCtx); err != nil {
-			logger.Error().Err(err).Msg("erreur lors de l'arrêt gracieux du serveur gRPC")
-		}
-	}()
-
-	wg.Wait()
-
-	if fatalErr != nil {
-		logger.Error().Err(fatalErr).Msg("fermeture du serveur suite à une défaillance critique")
-		os.Exit(1)
+	if err := serve(ctx, servers, healthService, cfg.Server, logger); err != nil {
+		logger.Error().Err(err).Msg("arrêt du serveur suite à une défaillance")
+		return errAlreadyReported
 	}
 
-	logger.Info().Msg("serveurs HTTP et gRPC arrêtés proprement. Au revoir.")
+	logger.Info().Msg("serveurs arrêtés proprement")
+	return nil
 }
