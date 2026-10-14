@@ -52,16 +52,10 @@ func scanAuditEvent(row scanner) (*store.AuditEvent, error) {
 	var (
 		e                    store.AuditEvent
 		userID, ip, metadata sql.NullString
-		timestamp            string
 	)
-	if err := row.Scan(&e.ID, &userID, &e.Action, &e.Resource, &ip, &metadata, &timestamp); err != nil {
+	if err := row.Scan(&e.ID, &userID, &e.Action, &e.Resource, &ip, &metadata, &e.Timestamp); err != nil {
 		return nil, wrapReadError(err, "lecture de l'événement d'audit")
 	}
-
 	e.UserID, e.IPAddress, e.Metadata = userID.String, ip.String, metadata.String
-	var err error
-	if e.Timestamp, err = parseTime(timestamp); err != nil {
-		return nil, err
-	}
 	return &e, nil
 }

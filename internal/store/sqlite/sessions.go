@@ -70,30 +70,18 @@ func (s *sessionsStore) DeleteExpiredSessions(ctx context.Context) error {
 
 func scanSession(row scanner) (*store.Session, error) {
 	var (
-		sess                 store.Session
-		role                 string
-		expiresAt, createdAt string
-		lastUsed             sql.NullString
+		sess     store.Session
+		role     string
+		lastUsed sql.NullTime
 	)
 	err := row.Scan(&sess.ID, &sess.UserID, &sess.TokenHash, &sess.Name, &role,
-		&expiresAt, &createdAt, &lastUsed, &sess.Revoked)
+		&sess.ExpiresAt, &sess.CreatedAt, &lastUsed, &sess.Revoked)
 	if err != nil {
 		return nil, wrapReadError(err, "lecture de la session")
 	}
-
 	sess.Role = store.Role(role)
-	if sess.ExpiresAt, err = parseTime(expiresAt); err != nil {
-		return nil, err
-	}
-	if sess.CreatedAt, err = parseTime(createdAt); err != nil {
-		return nil, err
-	}
 	if lastUsed.Valid {
-		t, err := parseTime(lastUsed.String)
-		if err != nil {
-			return nil, err
-		}
-		sess.LastUsedAt = &t
+		sess.LastUsedAt = &lastUsed.Time
 	}
 	return &sess, nil
 }

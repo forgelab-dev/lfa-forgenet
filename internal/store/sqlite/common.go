@@ -13,9 +13,12 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 )
 
-// timeLayout fixe la largeur des horodatages stockés en TEXT. RFC3339Nano retire
+// timeLayout fixe la largeur des horodatages écrits en TEXT. RFC3339Nano retire
 // les zéros de fin : « 05.5Z » se classerait alors avant « 05Z » et fausserait
 // les ORDER BY et les comparaisons d'expiration faites par SQLite.
+//
+// La lecture n'a pas de pendant : le pilote convertit lui-même en time.Time les
+// colonnes déclarées TIMESTAMP, qui se lisent donc directement dans un time.Time.
 const timeLayout = "2006-01-02T15:04:05.000000000Z07:00"
 
 // scanner est commun à *sql.Row et *sql.Rows.
@@ -25,14 +28,6 @@ type scanner interface {
 
 func formatTime(t time.Time) string {
 	return t.UTC().Format(timeLayout)
-}
-
-func parseTime(s string) (time.Time, error) {
-	t, err := time.Parse(time.RFC3339Nano, s)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("horodatage illisible %q : %w", s, err)
-	}
-	return t.UTC(), nil
 }
 
 // isConstraintError reconnaît une violation d'unicité par son code SQLite, et

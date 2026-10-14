@@ -58,6 +58,7 @@ func TestTimestamps_SubSecondOrdering(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, events, 2)
 	assert.Equal(t, "a-demi", events[0].ID, "l'événement le plus récent doit venir en premier")
+	assert.True(t, events[0].Timestamp.Equal(base.Add(500*time.Millisecond)), "la date relue doit être identique à la date écrite")
 
 	user := &store.User{ID: "u1", Username: "u1", Email: "u1@example.test", PasswordHash: "h", Role: store.RoleMember}
 	require.NoError(t, st.Users().CreateUser(ctx, user))

@@ -84,21 +84,12 @@ func (s *usersStore) CountUsers(ctx context.Context) (int64, error) {
 
 func scanUser(row scanner) (*store.User, error) {
 	var (
-		u                    store.User
-		role                 string
-		createdAt, updatedAt string
+		u    store.User
+		role string
 	)
-	if err := row.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &role, &createdAt, &updatedAt); err != nil {
+	if err := row.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &role, &u.CreatedAt, &u.UpdatedAt); err != nil {
 		return nil, wrapReadError(err, "lecture de l'utilisateur")
 	}
-
-	var err error
 	u.Role = store.Role(role)
-	if u.CreatedAt, err = parseTime(createdAt); err != nil {
-		return nil, err
-	}
-	if u.UpdatedAt, err = parseTime(updatedAt); err != nil {
-		return nil, err
-	}
 	return &u, nil
 }
