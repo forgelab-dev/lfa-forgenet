@@ -13,7 +13,7 @@ import (
 var (
 	// ErrUnauthenticated est retourné lorsqu'aucun jeton valide n'est présent dans le contexte.
 	ErrUnauthenticated = errors.New("authentification requise")
-	// ErrForbidden est retourné lorsque l'utilisateur ne possède pas le rôle RBAC suffisant.
+	// ErrForbidden est retourné lorsqu'une opération exige un rôle plus élevé que celui de l'appelant.
 	ErrForbidden = errors.New("accès interdit : privilèges insuffisants")
 )
 
@@ -41,20 +41,4 @@ func WithUserContext(ctx context.Context, claims *Claims) context.Context {
 func UserFromContext(ctx context.Context) (*Claims, bool) {
 	claims, ok := ctx.Value(claimsContextKey).(*Claims)
 	return claims, ok && claims != nil
-}
-
-// RequireRole vérifie que l'utilisateur présent dans le contexte possède l'un des rôles autorisés.
-func RequireRole(ctx context.Context, allowedRoles ...store.Role) error {
-	claims, ok := UserFromContext(ctx)
-	if !ok {
-		return ErrUnauthenticated
-	}
-
-	for _, role := range allowedRoles {
-		if claims.Role == role {
-			return nil
-		}
-	}
-
-	return ErrForbidden
 }

@@ -45,6 +45,8 @@ const (
 	DefaultTokenTTL = 24 * time.Hour
 	// DefaultAPITokenTTL est la durée de validité par défaut des tokens API (30 jours).
 	DefaultAPITokenTTL = 30 * 24 * time.Hour
+	// MinJWTSecretLength est la longueur minimale du secret JWT en production.
+	MinJWTSecretLength = 32
 )
 
 // ServerConfig contient les paramètres réseau et timeouts des serveurs HTTP et gRPC.
@@ -167,8 +169,9 @@ func (c *Config) Validate() error {
 	if c.Auth.APITokenTTL <= 0 {
 		return fmt.Errorf("le api_token_ttl d'authentification doit être strictement positif")
 	}
-	if c.Environment == "production" && len(c.Auth.JWTSecret) < 16 {
-		return fmt.Errorf("en production, auth.jwt_secret doit comporter au moins 16 caractères")
+	// HS256 demande une clé d'au moins 256 bits (RFC 7518, §3.2).
+	if c.Environment == "production" && len(c.Auth.JWTSecret) < MinJWTSecretLength {
+		return fmt.Errorf("en production, auth.jwt_secret doit comporter au moins %d caractères", MinJWTSecretLength)
 	}
 
 	validLogLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}

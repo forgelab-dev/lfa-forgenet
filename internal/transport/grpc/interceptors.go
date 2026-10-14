@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -53,7 +52,9 @@ func RecoveryUnaryInterceptor(logger zerolog.Logger) grpc.UnaryServerInterceptor
 					Str("grpc_method", info.FullMethod).
 					Interface("panic", r).
 					Msg("panique interceptée dans un handler gRPC")
-				err = status.Errorf(codes.Internal, "erreur interne du serveur : %v", fmt.Sprint(r))
+				// Le contenu de la panique reste dans le journal : il peut révéler
+				// des détails internes et n'aide pas le client.
+				err = status.Error(codes.Internal, "erreur interne du serveur")
 			}
 		}()
 

@@ -7,14 +7,19 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/audit"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
+	"github.com/forgelab-dev/lfa-forgenet/internal/ids"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 )
+
+// ErrInvalidRole est retourné lorsqu'un compte est créé sans rôle reconnu.
+var ErrInvalidRole = errors.New("rôle inconnu (valeurs acceptées : admin, member)")
 
 // Result regroupe les données retournées lors d'une connexion réussie.
 type Result struct {
@@ -38,9 +43,11 @@ type authService struct {
 	auditor audit.Auditor
 }
 
-// NewService instancie le service d'authentification et de contrôle d'accès.
+// NewService instancie le service d'authentification. Sans secret configuré
+// (développement, tests), un secret aléatoire de 256 bits est tiré : les
+// sessions ne survivent alors pas à un redémarrage. La configuration impose un
+// secret en production.
 func NewService(st store.Store, cfg config.AuthConfig, auditor audit.Auditor) Service {
-	// Si aucun secret n'est spécifié (dev/test), génération d'un secret aléatoire de 256 bits
 	if cfg.JWTSecret == "" {
 		b := make([]byte, 32)
 		_, _ = rand.Read(b)
@@ -52,23 +59,23 @@ func NewService(st store.Store, cfg config.AuthConfig, auditor audit.Auditor) Se
 	if cfg.APITokenTTL <= 0 {
 		cfg.APITokenTTL = config.DefaultAPITokenTTL
 	}
-
-	return &authService{
-		store:   st,
-		cfg:     cfg,
-		auditor: auditor,
-	}
+	return &authService{store: st, cfg: cfg, auditor: auditor}
 }
 
+// Register crée un compte avec le rôle demandé. Aucun rôle n'est accordé
+// implicitement : le premier administrateur est créé par la commande
+// « forgenet-server user create » sur la machine, pas par la première
+// personne qui atteint l'API.
 func (s *authService) Register(ctx context.Context, username, email, password string, role store.Role) (*store.User, error) {
 	username = strings.TrimSpace(username)
 	email = strings.TrimSpace(strings.ToLower(email))
-
-	if username == "" {
+	switch {
+	case username == "":
 		return nil, errors.New("le nom d'utilisateur est obligatoire")
-	}
-	if email == "" {
+	case email == "":
 		return nil, errors.New("l'adresse email est obligatoire")
+	case !role.IsValid():
+		return nil, ErrInvalidRole
 	}
 
 	hashedPassword, err := HashPassword(password)
@@ -76,45 +83,31 @@ func (s *authService) Register(ctx context.Context, username, email, password st
 		return nil, err
 	}
 
-	userCount, err := s.store.Users().CountUsers(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("comptage des utilisateurs : %w", err)
-	}
-
-	// Bootstrap de la première installation : le premier utilisateur est obligatoirement administrateur
-	assignedRole := role
-	if userCount == 0 {
-		assignedRole = store.RoleAdmin
-	} else if !assignedRole.IsValid() {
-		assignedRole = store.RoleMember
-	}
-
-	userID := generateID("usr")
 	now := time.Now().UTC()
-
 	user := &store.User{
-		ID:           userID,
+		ID:           ids.New("usr"),
 		Username:     username,
 		Email:        email,
 		PasswordHash: hashedPassword,
-		Role:         assignedRole,
+		Role:         role,
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-
 	if err := s.store.Users().CreateUser(ctx, user); err != nil {
 		return nil, err
 	}
 
-	if s.auditor != nil {
-		_ = s.auditor.Log(ctx, "user.register", fmt.Sprintf("user:%s", user.ID), map[string]any{
-			"username": user.Username,
-			"role":     string(user.Role),
-		})
-	}
-
+	s.audit(ctx, "", "user.register", "user:"+user.ID, map[string]any{"username": user.Username, "role": string(user.Role)})
 	return user, nil
 }
+
+// dummyHash sert à comparer un mot de passe quand l'identifiant est inconnu :
+// la réponse prend alors le même temps qu'un mauvais mot de passe, et la durée
+// ne révèle pas quels comptes existent.
+var dummyHash = sync.OnceValue(func() string {
+	h, _ := HashPassword("forgenet-compte-inexistant")
+	return h
+})
 
 func (s *authService) Login(ctx context.Context, usernameOrEmail, password string) (*Result, error) {
 	usernameOrEmail = strings.TrimSpace(usernameOrEmail)
@@ -122,95 +115,62 @@ func (s *authService) Login(ctx context.Context, usernameOrEmail, password strin
 		return nil, ErrInvalidCredentials
 	}
 
-	var user *store.User
-	var err error
-
-	if strings.Contains(usernameOrEmail, "@") {
-		user, err = s.store.Users().GetUserByEmail(ctx, strings.ToLower(usernameOrEmail))
-	} else {
-		user, err = s.store.Users().GetUserByUsername(ctx, usernameOrEmail)
+	user, err := s.findUser(ctx, usernameOrEmail)
+	if errors.Is(err, store.ErrNotFound) {
+		_ = CheckPassword(dummyHash(), password)
+		return nil, ErrInvalidCredentials
 	}
-
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return nil, ErrInvalidCredentials
-		}
-		return nil, fmt.Errorf("recherche utilisateur : %w", err)
+		return nil, err
 	}
-
 	if err := CheckPassword(user.PasswordHash, password); err != nil {
-		if s.auditor != nil {
-			_ = s.auditor.Log(ctx, "auth.login_failed", fmt.Sprintf("user:%s", user.ID), map[string]any{
-				"reason": "mot de passe incorrect",
-			})
-		}
+		s.audit(ctx, user.ID, "auth.login_failed", "user:"+user.ID, map[string]any{"reason": "mot de passe incorrect"})
 		return nil, ErrInvalidCredentials
 	}
 
-	// Création d'une session JWT en base
-	sessionID := generateID("sess")
+	// L'identifiant de session est connu avant la signature : il est porté
+	// par le JWT et sert à vérifier sa révocation.
 	now := time.Now().UTC()
-	expiresAt := now.Add(s.cfg.TokenTTL)
-
-	claims := Claims{
+	session := s.newSession(user, ids.New("sess"), "Session Web/CLI", user.Role, now, s.cfg.TokenTTL)
+	signedToken, err := SignJWT(Claims{
 		UserID:    user.ID,
 		Username:  user.Username,
 		Role:      user.Role,
-		SessionID: sessionID,
+		SessionID: session.ID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   user.ID,
 			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			ID:        sessionID,
+			ExpiresAt: jwt.NewNumericDate(session.ExpiresAt),
+			ID:        session.ID,
 		},
-	}
-
-	signedToken, err := SignJWT(claims, s.cfg.JWTSecret)
+	}, s.cfg.JWTSecret)
 	if err != nil {
 		return nil, fmt.Errorf("génération du JWT : %w", err)
 	}
 
-	session := &store.Session{
-		ID:        sessionID,
-		UserID:    user.ID,
-		TokenHash: HashToken(signedToken),
-		Name:      "Web/CLI Session",
-		Role:      user.Role,
-		ExpiresAt: expiresAt,
-		CreatedAt: now,
+	session.TokenHash = HashToken(signedToken)
+	if err := s.saveSession(ctx, session, "auth.login_success"); err != nil {
+		return nil, err
 	}
-
-	if err := s.store.Sessions().CreateSession(ctx, session); err != nil {
-		return nil, fmt.Errorf("enregistrement de session : %w", err)
-	}
-
-	if s.auditor != nil {
-		enrichedCtx := audit.WithAuditContext(ctx, user.ID, audit.IPFromContext(ctx))
-		_ = s.auditor.Log(enrichedCtx, "auth.login_success", fmt.Sprintf("user:%s", user.ID), map[string]any{
-			"session_id": sessionID,
-		})
-	}
-
-	return &Result{
-		Token:     signedToken,
-		User:      user,
-		ExpiresAt: expiresAt,
-	}, nil
+	return &Result{Token: signedToken, User: user, ExpiresAt: session.ExpiresAt}, nil
 }
 
+// CreateAPIToken crée un jeton API. Son rôle ne peut pas dépasser celui de
+// l'utilisateur : un membre qui demande un jeton admin est refusé.
 func (s *authService) CreateAPIToken(ctx context.Context, userID, name string, role store.Role, ttl time.Duration) (string, *store.Session, error) {
-	if ttl <= 0 {
-		ttl = s.cfg.APITokenTTL
-	}
-
 	user, err := s.store.Users().GetUserByID(ctx, userID)
 	if err != nil {
 		return "", nil, fmt.Errorf("utilisateur introuvable : %w", err)
 	}
 
-	assignedRole := role
-	if !assignedRole.IsValid() {
-		assignedRole = user.Role
+	if !role.IsValid() {
+		role = user.Role
+	}
+	if !user.Role.Grants(role) {
+		return "", nil, ErrForbidden
+	}
+	if ttl <= 0 {
+		ttl = s.cfg.APITokenTTL
 	}
 
 	plainToken, tokenHash, err := GenerateAPIToken()
@@ -218,106 +178,127 @@ func (s *authService) CreateAPIToken(ctx context.Context, userID, name string, r
 		return "", nil, err
 	}
 
-	now := time.Now().UTC()
-	expiresAt := now.Add(ttl)
-	sessionID := generateID("tok")
-
-	session := &store.Session{
-		ID:        sessionID,
-		UserID:    user.ID,
-		TokenHash: tokenHash,
-		Name:      name,
-		Role:      assignedRole,
-		ExpiresAt: expiresAt,
-		CreatedAt: now,
+	session := s.newSession(user, ids.New("tok"), name, role, time.Now().UTC(), ttl)
+	session.TokenHash = tokenHash
+	if err := s.saveSession(ctx, session, "token.create"); err != nil {
+		return "", nil, err
 	}
-
-	if err := s.store.Sessions().CreateSession(ctx, session); err != nil {
-		return "", nil, fmt.Errorf("persistance du token API : %w", err)
-	}
-
-	if s.auditor != nil {
-		enrichedCtx := audit.WithAuditContext(ctx, user.ID, audit.IPFromContext(ctx))
-		_ = s.auditor.Log(enrichedCtx, "token.create", fmt.Sprintf("token:%s", sessionID), map[string]any{
-			"name": name,
-			"role": string(assignedRole),
-		})
-	}
-
 	return plainToken, session, nil
 }
 
+// ValidateToken accepte un jeton API (fgn_…) ou un JWT, puis vérifie dans tous
+// les cas la session en base : elle doit exister, ne pas être révoquée ni
+// expirée. Toute erreur de lecture refuse le jeton (échec fermé).
 func (s *authService) ValidateToken(ctx context.Context, tokenString string) (*Claims, error) {
 	tokenString = strings.TrimSpace(tokenString)
 	if tokenString == "" {
 		return nil, ErrUnauthenticated
 	}
 
-	// 1. Si le token commence par fgn_, c'est un token API persistant
+	tokenHash := HashToken(tokenString)
+	var (
+		session *store.Session
+		err     error
+	)
 	if IsAPIToken(tokenString) {
-		tokenHash := HashToken(tokenString)
-		session, err := s.store.Sessions().GetSessionByTokenHash(ctx, tokenHash)
-		if err != nil {
-			if errors.Is(err, store.ErrNotFound) {
-				return nil, ErrInvalidToken
-			}
-			return nil, fmt.Errorf("recherche de session : %w", err)
+		session, err = s.store.Sessions().GetSessionByTokenHash(ctx, tokenHash)
+	} else {
+		var claims *Claims
+		if claims, err = ParseAndVerifyJWT(tokenString, s.cfg.JWTSecret); err != nil {
+			return nil, err
 		}
-
-		if !session.IsActive() {
-			return nil, ErrExpiredToken
-		}
-
-		user, err := s.store.Users().GetUserByID(ctx, session.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("utilisateur introuvable : %w", err)
-		}
-
-		// Mise à jour de last_used_at
-		bgCtx := context.WithoutCancel(ctx)
-		go func(sessID string) {
-			_ = s.store.Sessions().TouchSession(bgCtx, sessID, time.Now().UTC())
-		}(session.ID)
-
-		return &Claims{
-			UserID:    user.ID,
-			Username:  user.Username,
-			Role:      session.Role,
-			SessionID: session.ID,
-		}, nil
-	}
-
-	// 2. Sinon, validation du JWT
-	claims, err := ParseAndVerifyJWT(tokenString, s.cfg.JWTSecret)
-	if err != nil {
-		return nil, err
-	}
-
-	// Vérification de non-révocation si session_id est présente
-	if claims.SessionID != "" {
-		sess, err := s.store.Sessions().GetSessionByID(ctx, claims.SessionID)
-		if err == nil && sess.Revoked {
+		session, err = s.store.Sessions().GetSessionByID(ctx, claims.SessionID)
+		// Un JWT valide doit être celui enregistré pour sa session.
+		if err == nil && session.TokenHash != tokenHash {
 			return nil, ErrInvalidToken
 		}
 	}
+	if err != nil {
+		return nil, lookupError(err, "session")
+	}
 
-	return claims, nil
+	return s.claimsForSession(ctx, session)
+}
+
+// claimsForSession construit l'identité d'une session active. Le rôle retenu est
+// le plus bas entre celui du jeton et celui, actuel, de l'utilisateur : une
+// rétrogradation prend effet sans attendre l'expiration du jeton.
+func (s *authService) claimsForSession(ctx context.Context, session *store.Session) (*Claims, error) {
+	if session.Revoked {
+		return nil, ErrInvalidToken
+	}
+	if session.IsExpired() {
+		return nil, ErrExpiredToken
+	}
+
+	user, err := s.store.Users().GetUserByID(ctx, session.UserID)
+	if err != nil {
+		return nil, lookupError(err, "utilisateur")
+	}
+
+	// last_used_at est indicatif : son écriture ne doit pas ralentir l'appel.
+	bgCtx := context.WithoutCancel(ctx)
+	go func() { _ = s.store.Sessions().TouchSession(bgCtx, session.ID, time.Now().UTC()) }()
+
+	return &Claims{
+		UserID:    user.ID,
+		Username:  user.Username,
+		Role:      store.Lowest(session.Role, user.Role),
+		SessionID: session.ID,
+	}, nil
 }
 
 func (s *authService) RevokeSession(ctx context.Context, sessionID string) error {
 	if err := s.store.Sessions().RevokeSession(ctx, sessionID); err != nil {
 		return err
 	}
-
-	if s.auditor != nil {
-		_ = s.auditor.Log(ctx, "session.revoke", fmt.Sprintf("session:%s", sessionID), nil)
-	}
-
+	s.audit(ctx, audit.UserIDFromContext(ctx), "session.revoke", "session:"+sessionID, nil)
 	return nil
 }
 
-func generateID(prefix string) string {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return fmt.Sprintf("%s_%s", prefix, hex.EncodeToString(b))
+func (s *authService) findUser(ctx context.Context, usernameOrEmail string) (*store.User, error) {
+	if strings.Contains(usernameOrEmail, "@") {
+		return s.store.Users().GetUserByEmail(ctx, strings.ToLower(usernameOrEmail))
+	}
+	return s.store.Users().GetUserByUsername(ctx, usernameOrEmail)
+}
+
+func (s *authService) newSession(user *store.User, id, name string, role store.Role, now time.Time, ttl time.Duration) *store.Session {
+	return &store.Session{
+		ID:        id,
+		UserID:    user.ID,
+		Name:      name,
+		Role:      role,
+		ExpiresAt: now.Add(ttl),
+		CreatedAt: now,
+	}
+}
+
+func (s *authService) saveSession(ctx context.Context, session *store.Session, action string) error {
+	if err := s.store.Sessions().CreateSession(ctx, session); err != nil {
+		return fmt.Errorf("enregistrement de la session : %w", err)
+	}
+	s.audit(ctx, session.UserID, action, "session:"+session.ID, map[string]any{"name": session.Name, "role": string(session.Role)})
+	return nil
+}
+
+// audit journalise une action sensible. Un échec d'écriture est déjà consigné
+// par l'auditeur et ne bloque pas l'opération.
+func (s *authService) audit(ctx context.Context, userID, action, resource string, metadata map[string]any) {
+	if s.auditor == nil {
+		return
+	}
+	if userID != "" {
+		ctx = audit.WithAuditContext(ctx, userID, audit.IPFromContext(ctx))
+	}
+	_ = s.auditor.Log(ctx, action, resource, metadata)
+}
+
+// lookupError traduit une absence en jeton invalide ; toute autre erreur
+// (base indisponible…) est remontée telle quelle et refuse aussi le jeton.
+func lookupError(err error, what string) error {
+	if errors.Is(err, store.ErrNotFound) {
+		return ErrInvalidToken
+	}
+	return fmt.Errorf("lecture %s : %w", what, err)
 }
