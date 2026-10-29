@@ -1,0 +1,20 @@
+# Stack de référence des tests d'intégration : un service web avec sonde de
+# santé, un cache avec un volume nommé, et une variable que le fichier tente de
+# lire dans l'environnement du serveur.
+services:
+  web:
+    image: nginx:alpine
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 1s
+      timeout: 2s
+      retries: 20
+  cache:
+    image: redis:7-alpine
+    environment:
+      FUITE: ${FORGENET_TEST_SECRET:-absent}
+    volumes:
+      - donnees:/data
+
+volumes:
+  donnees:

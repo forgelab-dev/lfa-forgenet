@@ -104,7 +104,7 @@ jobs:
       - name: Lint Go
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.13.2
+          version: v2.15.0
 
       - name: Vet, build & test (si code Go présent)
         run: |
