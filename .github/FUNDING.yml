@@ -2,8 +2,9 @@
 # Docs : https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
 #
 # - github : profil GitHub Sponsors de l'organisation ForgeLab (soutien mensuel ou ponctuel)
-# - custom : page de don LucidForge Africa regroupant FedaPay, Kkiapay et PayPal.
+# - custom : page de don commune de LucidForge Africa, ForgeNet présélectionné : Mobile Money
+#   ou carte en FCFA (FedaPay, KkiaPay…), PayPal en dollars.
 #   Un seul lien maîtrisé : changer de passerelle ne demandera pas de modifier ce fichier.
 
 github: [forgelab-dev]
-custom: ["https://forgenet.lucidforgeafrica.com/soutenir"]
+custom: ["https://don.lucidforgeafrica.com/forgenet"]
