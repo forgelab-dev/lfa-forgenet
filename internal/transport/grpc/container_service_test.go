@@ -73,13 +73,17 @@ func (f *fakeEngine) Logs(_ context.Context, _ string, _ orchestrator.LogOptions
 // testServer démarre un vrai serveur gRPC (garde et politique compris) devant
 // le faux moteur, avec un compte admin et un compte membre.
 type testServer struct {
+	conn        *grpc.ClientConn
 	containers  forgenetv1.ContainerServiceClient
 	adminToken  string
 	memberToken string
 	store       store.Store
 }
 
-func startTestServer(t *testing.T, engine orchestrator.Engine) *testServer {
+// registerFunc ajoute un service au serveur de test, avec sa base et son audit.
+type registerFunc func(srv *grpc.Server, st store.Store, auditor audit.Auditor)
+
+func startTestServer(t *testing.T, engine orchestrator.Engine, register ...registerFunc) *testServer {
 	t.Helper()
 	ctx := context.Background()
 	st, err := sqlite.Open(ctx, config.DatabaseConfig{Path: ":memory:", BusyTimeout: 2 * time.Second})
@@ -98,6 +102,9 @@ func startTestServer(t *testing.T, engine orchestrator.Engine) *testServer {
 
 	srv := transportGRPC.NewServer(config.ServerConfig{}, health.NewService(), auth.NewGuard(authSvc, auth.DefaultPolicy(), zerolog.Nop()), zerolog.Nop())
 	forgenetv1.RegisterContainerServiceServer(srv.GRPCServer(), transportGRPC.NewContainerServiceServer(engine, auditor, zerolog.Nop()))
+	for _, r := range register {
+		r(srv.GRPCServer(), st, auditor)
+	}
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	srv.SetListener(ln)
@@ -109,6 +116,7 @@ func startTestServer(t *testing.T, engine orchestrator.Engine) *testServer {
 	t.Cleanup(func() { _ = conn.Close() })
 
 	return &testServer{
+		conn:        conn,
 		containers:  forgenetv1.NewContainerServiceClient(conn),
 		adminToken:  token("admin", store.RoleAdmin),
 		memberToken: token("membre", store.RoleMember),
