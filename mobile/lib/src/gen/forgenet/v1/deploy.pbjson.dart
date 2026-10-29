@@ -663,3 +663,26 @@ final $typed_data.Uint8List streamDeploymentResponseDescriptor =
     $convert.base64Decode(
         'ChhTdHJlYW1EZXBsb3ltZW50UmVzcG9uc2USNwoKZGVwbG95bWVudBgBIAEoCzIXLmZvcmdlbm'
         'V0LnYxLkRlcGxveW1lbnRSCmRlcGxveW1lbnQ=');
+
+@$core.Deprecated('Use deleteStackRequestDescriptor instead')
+const DeleteStackRequest$json = {
+  '1': 'DeleteStackRequest',
+  '2': [
+    {'1': 'project_id', '3': 1, '4': 1, '5': 9, '10': 'projectId'},
+    {'1': 'delete_volumes', '3': 2, '4': 1, '5': 8, '10': 'deleteVolumes'},
+  ],
+};
+
+/// Descriptor for `DeleteStackRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteStackRequestDescriptor = $convert.base64Decode(
+    'ChJEZWxldGVTdGFja1JlcXVlc3QSHQoKcHJvamVjdF9pZBgBIAEoCVIJcHJvamVjdElkEiUKDm'
+    'RlbGV0ZV92b2x1bWVzGAIgASgIUg1kZWxldGVWb2x1bWVz');
+
+@$core.Deprecated('Use deleteStackResponseDescriptor instead')
+const DeleteStackResponse$json = {
+  '1': 'DeleteStackResponse',
+};
+
+/// Descriptor for `DeleteStackResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteStackResponseDescriptor =
+    $convert.base64Decode('ChNEZWxldGVTdGFja1Jlc3BvbnNl');

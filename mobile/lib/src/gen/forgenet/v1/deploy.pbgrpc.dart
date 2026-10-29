@@ -93,6 +93,15 @@ class DeploymentServiceClient extends $grpc.Client {
         options: options);
   }
 
+  /// DeleteStack arrête et supprime la stack en service d'un projet : conteneurs et réseaux, et volumes sur demande.
+  /// L'historique des déploiements est gardé. Refusé (FAILED_PRECONDITION) pendant un déploiement du projet.
+  $grpc.ResponseFuture<$0.DeleteStackResponse> deleteStack(
+    $0.DeleteStackRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$deleteStack, request, options: options);
+  }
+
   // method descriptors
 
   static final _$createDeployment = $grpc.ClientMethod<
@@ -130,6 +139,11 @@ class DeploymentServiceClient extends $grpc.Client {
       '/forgenet.v1.DeploymentService/StreamDeployment',
       ($0.StreamDeploymentRequest value) => value.writeToBuffer(),
       $0.StreamDeploymentResponse.fromBuffer);
+  static final _$deleteStack =
+      $grpc.ClientMethod<$0.DeleteStackRequest, $0.DeleteStackResponse>(
+          '/forgenet.v1.DeploymentService/DeleteStack',
+          ($0.DeleteStackRequest value) => value.writeToBuffer(),
+          $0.DeleteStackResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('forgenet.v1.DeploymentService')
@@ -200,6 +214,15 @@ abstract class DeploymentServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.StreamDeploymentRequest.fromBuffer(value),
         ($0.StreamDeploymentResponse value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.DeleteStackRequest, $0.DeleteStackResponse>(
+            'DeleteStack',
+            deleteStack_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.DeleteStackRequest.fromBuffer(value),
+            ($0.DeleteStackResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.CreateDeploymentResponse> createDeployment_Pre(
@@ -264,4 +287,12 @@ abstract class DeploymentServiceBase extends $grpc.Service {
 
   $async.Stream<$0.StreamDeploymentResponse> streamDeployment(
       $grpc.ServiceCall call, $0.StreamDeploymentRequest request);
+
+  $async.Future<$0.DeleteStackResponse> deleteStack_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.DeleteStackRequest> $request) async {
+    return deleteStack($call, await $request);
+  }
+
+  $async.Future<$0.DeleteStackResponse> deleteStack(
+      $grpc.ServiceCall call, $0.DeleteStackRequest request);
 }
