@@ -1,6 +1,6 @@
 # ADR-0003 : les stacks Compose passent par la commande `docker compose`
 
-- Statut : proposé
+- Statut : accepté (revue de la PR #31, 29/10/2026)
 - Date : 2026-10-29
 - Contexte : ticket #7, deuxième PR (moteur `internal/orchestrator/compose`)
 
@@ -51,8 +51,8 @@ la stack qu'il décrit. Trois façons de faire :
 - Les erreurs viennent de la sortie de la commande : le moteur les renvoie
   telles quelles, sans les interpréter.
 - Un fichier Compose donne un accès complet à l'hôte (montages, mode
-  privilégié). Seuls les administrateurs pourront déployer une stack (service
-  `deploy`, PR suivante) ; une politique plus fine (refuser `privileged`, les
-  montages de l'hôte) demande une nouvelle décision.
+  privilégié). **Décision du 29/10 : seuls les administrateurs déploient une
+  stack** (service `deploy`, ADR-0004). Une politique plus fine (refuser
+  `privileged`, les montages de l'hôte) demande une nouvelle décision.
 - Les sources dont le fichier s'appuie sur des fichiers voisins (`build`,
   `env_file`) ne sont pas prises en charge : elles viendront avec les sources Git.
