@@ -161,7 +161,7 @@ ForgeNet is built in West Africa on a modest budget. If it's useful to you:
 
 - ⭐ **Star the repo** — free, and it's what makes us visible
 - 💜 **[GitHub Sponsors](https://github.com/sponsors/forgelab-dev)** — monthly or one-time support, 0% platform fees
-- 📱 **[Donate](https://forgenet.lucidforgeafrica.com/soutenir)** — PayPal for international supporters, or FedaPay/Kkiapay in XOF (Orange Money, MTN MoMo, Moov, card)
+- 📱 **[Donate](https://don.lucidforgeafrica.com/forgenet)** — PayPal in US dollars for international supporters, or mobile money and card in XOF (FedaPay, KkiaPay)
 - 🗣 **Spread the word** — a blog post, a tweet, a demo to your team
 
 ## 📄 License

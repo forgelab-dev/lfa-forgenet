@@ -160,7 +160,7 @@ ForgeNet est développé en Afrique de l'Ouest avec des moyens modestes. Si le p
 
 - ⭐ **Mettez une étoile** — c'est gratuit et c'est ce qui nous rend visibles
 - 💜 **[GitHub Sponsors](https://github.com/sponsors/forgelab-dev)** — soutien mensuel ou ponctuel, 0 % de frais de plateforme
-- 📱 **[Faire un don](https://forgenet.lucidforgeafrica.com/soutenir)** — FedaPay ou Kkiapay en FCFA (Orange Money, MTN MoMo, Moov, carte), ou PayPal depuis l'international
+- 📱 **[Faire un don](https://don.lucidforgeafrica.com/forgenet)** — Mobile Money ou carte en FCFA (FedaPay, KkiaPay), ou PayPal en dollars depuis l'international
 - 🗣 **Parlez-en** — un article, un tweet, une démo à votre équipe
 
 ## 📄 Licence

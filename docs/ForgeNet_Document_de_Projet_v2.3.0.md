@@ -205,7 +205,7 @@ Génère du cash sans opérer le moindre serveur pour un client :
 - Bénéfice secondaire réel : la transparence budgétaire est un argument face aux sponsors institutionnels et aux prospects Enterprise qui évaluent la pérennité du projet
 - À réserver aux cas où la transparence budgétaire est elle-même un argument de vente, pas comme canal par défaut
 
-**Mise en œuvre** : une page de don **`https://forgenet.lucidforgeafrica.com/soutenir`** regroupant FedaPay, Kkiapay et PayPal, et le profil GitHub Sponsors de `forgelab-dev`, tous deux référencés dans `.github/FUNDING.yml` (clés `github:` et `custom:`) — le bouton "Sponsor" en haut de la page GitHub propose ainsi les deux options.
+**Mise en œuvre** : une page de don **`https://don.lucidforgeafrica.com/forgenet`** regroupant FedaPay, Kkiapay et PayPal (page commune de LucidForge Africa, ForgeNet présélectionné), et le profil GitHub Sponsors de `forgelab-dev`, tous deux référencés dans `.github/FUNDING.yml` (clés `github:` et `custom:`) — le bouton "Sponsor" en haut de la page GitHub propose ainsi les deux options.
 
 Un seul lien maîtrisé plutôt que trois liens de prestataires : changer de passerelle, en ajouter une ou en retirer une ne demandera aucune modification du dépôt ni de nouvelle release. Aucun développement lourd, activable dès la Phase 0 — c'est d'ailleurs l'une des raisons de la bascule vers GitHub : ce canal y est natif et sans frais.
 
