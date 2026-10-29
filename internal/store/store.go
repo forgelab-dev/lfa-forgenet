@@ -1,5 +1,5 @@
 // Package store définit les interfaces et modèles de persistance de ForgeNet.
-// Ces interfaces abstraient le stockage des utilisateurs, sessions, RBAC et journal d'audit,
+// Ces interfaces abstraient le stockage des utilisateurs, sessions, RBAC, journal d'audit et déploiements,
 // permettant une implémentation SQLite par défaut et une extension ultérieure vers PostgreSQL sans impacter le domaine.
 package store
 
@@ -14,6 +14,8 @@ var (
 	ErrNotFound = errors.New("ressource non trouvée")
 	// ErrConflict est retourné lorsqu'une contrainte d'unicité est violée (ex: username ou email déjà existant).
 	ErrConflict = errors.New("conflit d'unicité sur la ressource")
+	// ErrInvalidTransition est retourné quand la machine à états d'un déploiement interdit le changement demandé.
+	ErrInvalidTransition = errors.New("transition d'état interdite")
 )
 
 // Role définit les permissions RBAC d'un utilisateur ou d'un token.
@@ -96,6 +98,102 @@ type AuditEvent struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+// DeploymentSourceType indique d'où vient ce qu'un déploiement met en service.
+type DeploymentSourceType string
+
+const (
+	// SourceCompose déploie une stack décrite par un fichier Docker Compose.
+	SourceCompose DeploymentSourceType = "compose"
+	// SourceGit construit puis déploie le contenu d'un dépôt Git.
+	SourceGit DeploymentSourceType = "git"
+	// SourceImage déploie une image Docker déjà construite.
+	SourceImage DeploymentSourceType = "image"
+)
+
+// IsValid vérifie que le type de source est connu.
+func (t DeploymentSourceType) IsValid() bool {
+	switch t {
+	case SourceCompose, SourceGit, SourceImage:
+		return true
+	}
+	return false
+}
+
+// DeploymentState est l'état d'un déploiement dans son cycle de vie.
+//
+// Le store a ses propres valeurs plutôt que l'énumération protobuf : la
+// persistance ne dépend pas du contrat réseau, que la couche transport traduit.
+type DeploymentState string
+
+// États du cycle de vie, dans l'ordre de deploy.proto.
+const (
+	DeploymentPending        DeploymentState = "pending"
+	DeploymentBuilding       DeploymentState = "building"
+	DeploymentDeploying      DeploymentState = "deploying"
+	DeploymentHealthChecking DeploymentState = "health_checking"
+	DeploymentSuccess        DeploymentState = "success"
+	DeploymentFailed         DeploymentState = "failed"
+	DeploymentCancelled      DeploymentState = "cancelled"
+	DeploymentRollingBack    DeploymentState = "rolling_back"
+	DeploymentRolledBack     DeploymentState = "rolled_back"
+)
+
+// deploymentTransitions reprend les transitions autorisées par deploy.proto.
+// Un état absent des clés est final.
+var deploymentTransitions = map[DeploymentState][]DeploymentState{
+	DeploymentPending:        {DeploymentBuilding, DeploymentCancelled},
+	DeploymentBuilding:       {DeploymentDeploying, DeploymentFailed, DeploymentCancelled},
+	DeploymentDeploying:      {DeploymentHealthChecking, DeploymentFailed, DeploymentCancelled},
+	DeploymentHealthChecking: {DeploymentSuccess, DeploymentFailed, DeploymentRollingBack},
+	DeploymentRollingBack:    {DeploymentRolledBack, DeploymentFailed},
+}
+
+// IsValid vérifie que l'état est l'un des états du cycle de vie.
+func (s DeploymentState) IsValid() bool {
+	switch s {
+	case DeploymentPending, DeploymentBuilding, DeploymentDeploying, DeploymentHealthChecking,
+		DeploymentSuccess, DeploymentFailed, DeploymentCancelled, DeploymentRollingBack, DeploymentRolledBack:
+		return true
+	}
+	return false
+}
+
+// IsTerminal indique qu'aucune transition ne part plus de cet état.
+func (s DeploymentState) IsTerminal() bool {
+	_, hasNext := deploymentTransitions[s]
+	return s.IsValid() && !hasNext
+}
+
+// CanTransitionTo indique si le passage de s à next est autorisé.
+func (s DeploymentState) CanTransitionTo(next DeploymentState) bool {
+	for _, allowed := range deploymentTransitions[s] {
+		if allowed == next {
+			return true
+		}
+	}
+	return false
+}
+
+// Deployment représente une opération de déploiement et son état.
+type Deployment struct {
+	ID         string               `json:"id"`
+	ProjectID  string               `json:"project_id"`
+	SourceType DeploymentSourceType `json:"source_type"`
+	// SourceContent garde la source telle que reçue : le fichier Compose, ou la
+	// description d'une source Git ou image.
+	SourceContent        string          `json:"source_content"`
+	State                DeploymentState `json:"state"`
+	ErrorMessage         string          `json:"error_message,omitempty"`
+	TargetEnv            string          `json:"target_env"`
+	PreviousDeploymentID string          `json:"previous_deployment_id,omitempty"`
+	TriggeredBy          string          `json:"triggered_by"` // ex: "user:123", "system:auto-rollback"
+	// RequestID est la clé d'idempotence fournie par le client ; vide si aucune.
+	RequestID  string     `json:"request_id,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+	FinishedAt *time.Time `json:"finished_at,omitempty"`
+}
+
 // UserStore définit les opérations de persistance sur les utilisateurs.
 type UserStore interface {
 	CreateUser(ctx context.Context, user *User) error
@@ -124,11 +222,27 @@ type AuditStore interface {
 	List(ctx context.Context, limit, offset int) ([]*AuditEvent, error)
 }
 
+// DeploymentStore définit les opérations de persistance sur les déploiements.
+type DeploymentStore interface {
+	// CreateDeployment renvoie ErrConflict si la clé d'idempotence est déjà prise.
+	CreateDeployment(ctx context.Context, d *Deployment) error
+	GetDeployment(ctx context.Context, id string) (*Deployment, error)
+	GetDeploymentByRequestID(ctx context.Context, requestID string) (*Deployment, error)
+	// ListDeployments liste du plus récent au plus ancien ; projectID vide liste tout.
+	ListDeployments(ctx context.Context, projectID string, limit, offset int) ([]*Deployment, error)
+	// TransitionDeployment fait passer le déploiement de from à to, avec errMsg
+	// pour un échec. Il renvoie ErrInvalidTransition si la machine à états
+	// l'interdit, et ErrConflict si l'état n'est plus from (une annulation et
+	// l'exécuteur qui avancent en même temps).
+	TransitionDeployment(ctx context.Context, id string, from, to DeploymentState, errMsg string) (*Deployment, error)
+}
+
 // Store est l'interface globale du registre de persistance.
 type Store interface {
 	Users() UserStore
 	Sessions() SessionStore
 	Audit() AuditStore
+	Deployments() DeploymentStore
 	Ping(ctx context.Context) error
 	Close() error
 }
