@@ -183,6 +183,14 @@ message StreamDeploymentResponse {
   Deployment deployment = 1; // Renvoyer l'objet complet simplifie la mise à jour côté client
 }
 
+message DeleteStackRequest {
+  string project_id = 1;
+  // Supprime aussi les volumes nommés de la stack, c'est-à-dire les données de l'application.
+  bool delete_volumes = 2;
+}
+
+message DeleteStackResponse {}
+
 // --- SERVICE ---
 
 // DeploymentService gère le cycle de vie asynchrone des déploiements des applications.
@@ -207,4 +215,8 @@ service DeploymentService {
 
   // StreamDeployment transmet en streaming les mises à jour complètes de l'état du déploiement.
   rpc StreamDeployment(StreamDeploymentRequest) returns (stream StreamDeploymentResponse);
+
+  // DeleteStack arrête et supprime la stack en service d'un projet : conteneurs et réseaux, et volumes sur demande.
+  // L'historique des déploiements est gardé. Refusé (FAILED_PRECONDITION) pendant un déploiement du projet.
+  rpc DeleteStack(DeleteStackRequest) returns (DeleteStackResponse);
 }

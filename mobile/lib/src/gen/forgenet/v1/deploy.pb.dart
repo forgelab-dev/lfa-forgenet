@@ -2041,6 +2041,118 @@ class StreamDeploymentResponse extends $pb.GeneratedMessage {
   Deployment ensureDeployment() => $_ensure(0);
 }
 
+class DeleteStackRequest extends $pb.GeneratedMessage {
+  factory DeleteStackRequest({
+    $core.String? projectId,
+    $core.bool? deleteVolumes,
+  }) {
+    final result = DeleteStackRequest._();
+    if (projectId != null) result.projectId = projectId;
+    if (deleteVolumes != null) result.deleteVolumes = deleteVolumes;
+    return result;
+  }
+
+  DeleteStackRequest._();
+
+  factory DeleteStackRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DeleteStackRequest()..mergeFromBuffer(data, registry);
+  factory DeleteStackRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DeleteStackRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteStackRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: DeleteStackRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'projectId')
+    ..aOB(2, _omitFieldNames ? '' : 'deleteVolumes')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteStackRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteStackRequest copyWith(void Function(DeleteStackRequest) updates) =>
+      super.copyWith((message) => updates(message as DeleteStackRequest))
+          as DeleteStackRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use DeleteStackRequest() / DeleteStackRequest.new instead')
+  static DeleteStackRequest create() => DeleteStackRequest._();
+  static $pb.GeneratedMessage $_createMessage() => DeleteStackRequest._();
+  @$core.override
+  DeleteStackRequest createEmptyInstance() => DeleteStackRequest._();
+  @$core.pragma('dart2js:noInline')
+  static DeleteStackRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteStackRequest>(
+          DeleteStackRequest.$_createMessage);
+  static DeleteStackRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get projectId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set projectId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProjectId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProjectId() => $_clearField(1);
+
+  /// Supprime aussi les volumes nommés de la stack, c'est-à-dire les données de l'application.
+  @$pb.TagNumber(2)
+  $core.bool get deleteVolumes => $_getBF(1);
+  @$pb.TagNumber(2)
+  set deleteVolumes($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDeleteVolumes() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDeleteVolumes() => $_clearField(2);
+}
+
+class DeleteStackResponse extends $pb.GeneratedMessage {
+  factory DeleteStackResponse() => DeleteStackResponse._();
+
+  DeleteStackResponse._();
+
+  factory DeleteStackResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DeleteStackResponse()..mergeFromBuffer(data, registry);
+  factory DeleteStackResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DeleteStackResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteStackResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: DeleteStackResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteStackResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteStackResponse copyWith(void Function(DeleteStackResponse) updates) =>
+      super.copyWith((message) => updates(message as DeleteStackResponse))
+          as DeleteStackResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use DeleteStackResponse() / DeleteStackResponse.new instead')
+  static DeleteStackResponse create() => DeleteStackResponse._();
+  static $pb.GeneratedMessage $_createMessage() => DeleteStackResponse._();
+  @$core.override
+  DeleteStackResponse createEmptyInstance() => DeleteStackResponse._();
+  @$core.pragma('dart2js:noInline')
+  static DeleteStackResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteStackResponse>(
+          DeleteStackResponse.$_createMessage);
+  static DeleteStackResponse? _defaultInstance;
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

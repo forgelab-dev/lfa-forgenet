@@ -1580,6 +1580,95 @@ func (x *StreamDeploymentResponse) GetDeployment() *Deployment {
 	return nil
 }
 
+type DeleteStackRequest struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	// Supprime aussi les volumes nommés de la stack, c'est-à-dire les données de l'application.
+	DeleteVolumes bool `protobuf:"varint,2,opt,name=delete_volumes,json=deleteVolumes,proto3" json:"delete_volumes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteStackRequest) Reset() {
+	*x = DeleteStackRequest{}
+	mi := &file_forgenet_v1_deploy_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteStackRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteStackRequest) ProtoMessage() {}
+
+func (x *DeleteStackRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_deploy_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteStackRequest.ProtoReflect.Descriptor instead.
+func (*DeleteStackRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_deploy_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *DeleteStackRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *DeleteStackRequest) GetDeleteVolumes() bool {
+	if x != nil {
+		return x.DeleteVolumes
+	}
+	return false
+}
+
+type DeleteStackResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteStackResponse) Reset() {
+	*x = DeleteStackResponse{}
+	mi := &file_forgenet_v1_deploy_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteStackResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteStackResponse) ProtoMessage() {}
+
+func (x *DeleteStackResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_deploy_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteStackResponse.ProtoReflect.Descriptor instead.
+func (*DeleteStackResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_deploy_proto_rawDescGZIP(), []int{26}
+}
+
 var File_forgenet_v1_deploy_proto protoreflect.FileDescriptor
 
 const file_forgenet_v1_deploy_proto_rawDesc = "" +
@@ -1699,7 +1788,12 @@ const file_forgenet_v1_deploy_proto_rawDesc = "" +
 	"\x18StreamDeploymentResponse\x127\n" +
 	"\n" +
 	"deployment\x18\x01 \x01(\v2\x17.forgenet.v1.DeploymentR\n" +
-	"deployment*\xd6\x02\n" +
+	"deployment\"Z\n" +
+	"\x12DeleteStackRequest\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12%\n" +
+	"\x0edelete_volumes\x18\x02 \x01(\bR\rdeleteVolumes\"\x15\n" +
+	"\x13DeleteStackResponse*\xd6\x02\n" +
 	"\x0fDeploymentState\x12 \n" +
 	"\x1cDEPLOYMENT_STATE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18DEPLOYMENT_STATE_PENDING\x10\x01\x12\x1d\n" +
@@ -1710,7 +1804,7 @@ const file_forgenet_v1_deploy_proto_rawDesc = "" +
 	"\x17DEPLOYMENT_STATE_FAILED\x10\x06\x12\x1e\n" +
 	"\x1aDEPLOYMENT_STATE_CANCELLED\x10\a\x12!\n" +
 	"\x1dDEPLOYMENT_STATE_ROLLING_BACK\x10\b\x12 \n" +
-	"\x1cDEPLOYMENT_STATE_ROLLED_BACK\x10\t2\xc4\x05\n" +
+	"\x1cDEPLOYMENT_STATE_ROLLED_BACK\x10\t2\x96\x06\n" +
 	"\x11DeploymentService\x12_\n" +
 	"\x10CreateDeployment\x12$.forgenet.v1.CreateDeploymentRequest\x1a%.forgenet.v1.CreateDeploymentResponse\x12V\n" +
 	"\rGetDeployment\x12!.forgenet.v1.GetDeploymentRequest\x1a\".forgenet.v1.GetDeploymentResponse\x12\\\n" +
@@ -1718,7 +1812,8 @@ const file_forgenet_v1_deploy_proto_rawDesc = "" +
 	"\x10CancelDeployment\x12$.forgenet.v1.CancelDeploymentRequest\x1a%.forgenet.v1.CancelDeploymentResponse\x12e\n" +
 	"\x12RollbackDeployment\x12&.forgenet.v1.RollbackDeploymentRequest\x1a'.forgenet.v1.RollbackDeploymentResponse\x12m\n" +
 	"\x14StreamDeploymentLogs\x12(.forgenet.v1.StreamDeploymentLogsRequest\x1a).forgenet.v1.StreamDeploymentLogsResponse0\x01\x12a\n" +
-	"\x10StreamDeployment\x12$.forgenet.v1.StreamDeploymentRequest\x1a%.forgenet.v1.StreamDeploymentResponse0\x01BEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
+	"\x10StreamDeployment\x12$.forgenet.v1.StreamDeploymentRequest\x1a%.forgenet.v1.StreamDeploymentResponse0\x01\x12P\n" +
+	"\vDeleteStack\x12\x1f.forgenet.v1.DeleteStackRequest\x1a .forgenet.v1.DeleteStackResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
 
 var (
 	file_forgenet_v1_deploy_proto_rawDescOnce sync.Once
@@ -1733,7 +1828,7 @@ func file_forgenet_v1_deploy_proto_rawDescGZIP() []byte {
 }
 
 var file_forgenet_v1_deploy_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_forgenet_v1_deploy_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_forgenet_v1_deploy_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_forgenet_v1_deploy_proto_goTypes = []any{
 	(DeploymentState)(0),                 // 0: forgenet.v1.DeploymentState
 	(*RecreateStrategy)(nil),             // 1: forgenet.v1.RecreateStrategy
@@ -1761,8 +1856,10 @@ var file_forgenet_v1_deploy_proto_goTypes = []any{
 	(*StreamDeploymentLogsResponse)(nil), // 23: forgenet.v1.StreamDeploymentLogsResponse
 	(*StreamDeploymentRequest)(nil),      // 24: forgenet.v1.StreamDeploymentRequest
 	(*StreamDeploymentResponse)(nil),     // 25: forgenet.v1.StreamDeploymentResponse
-	(*timestamppb.Timestamp)(nil),        // 26: google.protobuf.Timestamp
-	(LogStream)(0),                       // 27: forgenet.v1.LogStream
+	(*DeleteStackRequest)(nil),           // 26: forgenet.v1.DeleteStackRequest
+	(*DeleteStackResponse)(nil),          // 27: forgenet.v1.DeleteStackResponse
+	(*timestamppb.Timestamp)(nil),        // 28: google.protobuf.Timestamp
+	(LogStream)(0),                       // 29: forgenet.v1.LogStream
 }
 var file_forgenet_v1_deploy_proto_depIdxs = []int32{
 	1,  // 0: forgenet.v1.StrategyConfig.recreate:type_name -> forgenet.v1.RecreateStrategy
@@ -1775,11 +1872,11 @@ var file_forgenet_v1_deploy_proto_depIdxs = []int32{
 	9,  // 7: forgenet.v1.Deployment.source:type_name -> forgenet.v1.DeploymentSource
 	0,  // 8: forgenet.v1.Deployment.state:type_name -> forgenet.v1.DeploymentState
 	5,  // 9: forgenet.v1.Deployment.strategy:type_name -> forgenet.v1.StrategyConfig
-	26, // 10: forgenet.v1.Deployment.created_at:type_name -> google.protobuf.Timestamp
-	26, // 11: forgenet.v1.Deployment.updated_at:type_name -> google.protobuf.Timestamp
-	26, // 12: forgenet.v1.Deployment.finished_at:type_name -> google.protobuf.Timestamp
-	26, // 13: forgenet.v1.DeploymentLogEntry.emitted_at:type_name -> google.protobuf.Timestamp
-	27, // 14: forgenet.v1.DeploymentLogEntry.stream:type_name -> forgenet.v1.LogStream
+	28, // 10: forgenet.v1.Deployment.created_at:type_name -> google.protobuf.Timestamp
+	28, // 11: forgenet.v1.Deployment.updated_at:type_name -> google.protobuf.Timestamp
+	28, // 12: forgenet.v1.Deployment.finished_at:type_name -> google.protobuf.Timestamp
+	28, // 13: forgenet.v1.DeploymentLogEntry.emitted_at:type_name -> google.protobuf.Timestamp
+	29, // 14: forgenet.v1.DeploymentLogEntry.stream:type_name -> forgenet.v1.LogStream
 	9,  // 15: forgenet.v1.CreateDeploymentRequest.source:type_name -> forgenet.v1.DeploymentSource
 	5,  // 16: forgenet.v1.CreateDeploymentRequest.strategy:type_name -> forgenet.v1.StrategyConfig
 	10, // 17: forgenet.v1.CreateDeploymentResponse.deployment:type_name -> forgenet.v1.Deployment
@@ -1787,8 +1884,8 @@ var file_forgenet_v1_deploy_proto_depIdxs = []int32{
 	10, // 19: forgenet.v1.ListDeploymentsResponse.deployments:type_name -> forgenet.v1.Deployment
 	10, // 20: forgenet.v1.CancelDeploymentResponse.deployment:type_name -> forgenet.v1.Deployment
 	10, // 21: forgenet.v1.RollbackDeploymentResponse.deployment:type_name -> forgenet.v1.Deployment
-	26, // 22: forgenet.v1.StreamDeploymentLogsRequest.since:type_name -> google.protobuf.Timestamp
-	27, // 23: forgenet.v1.StreamDeploymentLogsRequest.stream:type_name -> forgenet.v1.LogStream
+	28, // 22: forgenet.v1.StreamDeploymentLogsRequest.since:type_name -> google.protobuf.Timestamp
+	29, // 23: forgenet.v1.StreamDeploymentLogsRequest.stream:type_name -> forgenet.v1.LogStream
 	11, // 24: forgenet.v1.StreamDeploymentLogsResponse.log_entry:type_name -> forgenet.v1.DeploymentLogEntry
 	10, // 25: forgenet.v1.StreamDeploymentResponse.deployment:type_name -> forgenet.v1.Deployment
 	12, // 26: forgenet.v1.DeploymentService.CreateDeployment:input_type -> forgenet.v1.CreateDeploymentRequest
@@ -1798,15 +1895,17 @@ var file_forgenet_v1_deploy_proto_depIdxs = []int32{
 	20, // 30: forgenet.v1.DeploymentService.RollbackDeployment:input_type -> forgenet.v1.RollbackDeploymentRequest
 	22, // 31: forgenet.v1.DeploymentService.StreamDeploymentLogs:input_type -> forgenet.v1.StreamDeploymentLogsRequest
 	24, // 32: forgenet.v1.DeploymentService.StreamDeployment:input_type -> forgenet.v1.StreamDeploymentRequest
-	13, // 33: forgenet.v1.DeploymentService.CreateDeployment:output_type -> forgenet.v1.CreateDeploymentResponse
-	15, // 34: forgenet.v1.DeploymentService.GetDeployment:output_type -> forgenet.v1.GetDeploymentResponse
-	17, // 35: forgenet.v1.DeploymentService.ListDeployments:output_type -> forgenet.v1.ListDeploymentsResponse
-	19, // 36: forgenet.v1.DeploymentService.CancelDeployment:output_type -> forgenet.v1.CancelDeploymentResponse
-	21, // 37: forgenet.v1.DeploymentService.RollbackDeployment:output_type -> forgenet.v1.RollbackDeploymentResponse
-	23, // 38: forgenet.v1.DeploymentService.StreamDeploymentLogs:output_type -> forgenet.v1.StreamDeploymentLogsResponse
-	25, // 39: forgenet.v1.DeploymentService.StreamDeployment:output_type -> forgenet.v1.StreamDeploymentResponse
-	33, // [33:40] is the sub-list for method output_type
-	26, // [26:33] is the sub-list for method input_type
+	26, // 33: forgenet.v1.DeploymentService.DeleteStack:input_type -> forgenet.v1.DeleteStackRequest
+	13, // 34: forgenet.v1.DeploymentService.CreateDeployment:output_type -> forgenet.v1.CreateDeploymentResponse
+	15, // 35: forgenet.v1.DeploymentService.GetDeployment:output_type -> forgenet.v1.GetDeploymentResponse
+	17, // 36: forgenet.v1.DeploymentService.ListDeployments:output_type -> forgenet.v1.ListDeploymentsResponse
+	19, // 37: forgenet.v1.DeploymentService.CancelDeployment:output_type -> forgenet.v1.CancelDeploymentResponse
+	21, // 38: forgenet.v1.DeploymentService.RollbackDeployment:output_type -> forgenet.v1.RollbackDeploymentResponse
+	23, // 39: forgenet.v1.DeploymentService.StreamDeploymentLogs:output_type -> forgenet.v1.StreamDeploymentLogsResponse
+	25, // 40: forgenet.v1.DeploymentService.StreamDeployment:output_type -> forgenet.v1.StreamDeploymentResponse
+	27, // 41: forgenet.v1.DeploymentService.DeleteStack:output_type -> forgenet.v1.DeleteStackResponse
+	34, // [34:42] is the sub-list for method output_type
+	26, // [26:34] is the sub-list for method input_type
 	26, // [26:26] is the sub-list for extension type_name
 	26, // [26:26] is the sub-list for extension extendee
 	0,  // [0:26] is the sub-list for field type_name
@@ -1835,7 +1934,7 @@ func file_forgenet_v1_deploy_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forgenet_v1_deploy_proto_rawDesc), len(file_forgenet_v1_deploy_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   25,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

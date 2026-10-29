@@ -14,8 +14,10 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/audit"
 	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
+	"github.com/forgelab-dev/lfa-forgenet/internal/deploy"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	"github.com/forgelab-dev/lfa-forgenet/internal/logging"
+	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/compose"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/docker"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
 	transportGRPC "github.com/forgelab-dev/lfa-forgenet/internal/transport/grpc"
@@ -116,9 +118,21 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	healthService.RegisterReadinessChecker("docker", health.CheckFunc(engine.Ping))
 	forgenetv1.RegisterContainerServiceServer(grpcServer.GRPCServer(), transportGRPC.NewContainerServiceServer(engine, auditor, logger))
 
+	// Les stacks Compose visent le même démon que les conteneurs (ADR-0003).
+	stacks, err := compose.New(cfg.Docker)
+	if err != nil {
+		return err
+	}
+	healthService.RegisterReadinessChecker("compose", health.CheckFunc(stacks.Ping))
+	deployments := deploy.New(db.Deployments(), stacks, auditor, logger)
+	forgenetv1.RegisterDeploymentServiceServer(grpcServer.GRPCServer(), transportGRPC.NewDeploymentServiceServer(deployments, logger))
+
+	// L'exécuteur des déploiements s'arrête avec les serveurs : celui en cours
+	// a le délai de grâce pour finir (ADR-0004).
 	servers := []server{
 		{name: "HTTP", transport: transportHTTP.NewServer(cfg.Server, cfg.Health, healthService, logger)},
 		{name: "gRPC", transport: grpcServer},
+		{name: "déploiements", transport: deployments},
 	}
 
 	if err := serve(ctx, servers, healthService, cfg.Server, logger); err != nil {

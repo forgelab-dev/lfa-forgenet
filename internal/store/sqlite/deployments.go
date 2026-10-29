@@ -92,6 +92,14 @@ func (s *deploymentsStore) ListDeployments(ctx context.Context, projectID string
 		selectDeployment+` WHERE project_id = ?`+order, projectID, limit, offset)
 }
 
+func (s *deploymentsStore) ListDeploymentsByState(ctx context.Context, state store.DeploymentState, limit int) ([]*store.Deployment, error) {
+	if limit <= 0 {
+		limit = defaultDeploymentPageSize
+	}
+	return queryAll(ctx, s.db, "liste des déploiements par état", scanDeployment,
+		selectDeployment+` WHERE state = ? ORDER BY created_at ASC, id ASC LIMIT ?`, string(state), limit)
+}
+
 func (s *deploymentsStore) TransitionDeployment(ctx context.Context, id string, from, to store.DeploymentState, errMsg string) (*store.Deployment, error) {
 	if !from.CanTransitionTo(to) {
 		return nil, fmt.Errorf("%w : %s vers %s", store.ErrInvalidTransition, from, to)

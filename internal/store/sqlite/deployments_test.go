@@ -182,3 +182,32 @@ func TestDeploymentStore_PreviousDeploymentMustExist(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "d1", got.PreviousDeploymentID)
 }
+
+func TestDeploymentStore_ListByStateOldestFirst(t *testing.T) {
+	st := newTestStore(t)
+	ctx := context.Background()
+	base := time.Now().UTC().Truncate(time.Second)
+
+	for i, id := range []string{"d1", "d2", "d3"} {
+		d := newDeployment(id, "p1")
+		d.CreatedAt = base.Add(time.Duration(i) * time.Second)
+		require.NoError(t, st.Deployments().CreateDeployment(ctx, d))
+	}
+	_, err := st.Deployments().TransitionDeployment(ctx, "d2", store.DeploymentPending, store.DeploymentBuilding, "")
+	require.NoError(t, err)
+
+	pending, err := st.Deployments().ListDeploymentsByState(ctx, store.DeploymentPending, 10)
+	require.NoError(t, err)
+	require.Len(t, pending, 2)
+	assert.Equal(t, "d1", pending[0].ID, "le plus ancien passe en premier")
+	assert.Equal(t, "d3", pending[1].ID)
+
+	building, err := st.Deployments().ListDeploymentsByState(ctx, store.DeploymentBuilding, 10)
+	require.NoError(t, err)
+	require.Len(t, building, 1)
+	assert.Equal(t, "d2", building[0].ID)
+
+	one, err := st.Deployments().ListDeploymentsByState(ctx, store.DeploymentPending, 1)
+	require.NoError(t, err)
+	assert.Len(t, one, 1)
+}

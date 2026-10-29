@@ -26,6 +26,7 @@ const (
 	DeploymentService_RollbackDeployment_FullMethodName   = "/forgenet.v1.DeploymentService/RollbackDeployment"
 	DeploymentService_StreamDeploymentLogs_FullMethodName = "/forgenet.v1.DeploymentService/StreamDeploymentLogs"
 	DeploymentService_StreamDeployment_FullMethodName     = "/forgenet.v1.DeploymentService/StreamDeployment"
+	DeploymentService_DeleteStack_FullMethodName          = "/forgenet.v1.DeploymentService/DeleteStack"
 )
 
 // DeploymentServiceClient is the client API for DeploymentService service.
@@ -48,6 +49,9 @@ type DeploymentServiceClient interface {
 	StreamDeploymentLogs(ctx context.Context, in *StreamDeploymentLogsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamDeploymentLogsResponse], error)
 	// StreamDeployment transmet en streaming les mises à jour complètes de l'état du déploiement.
 	StreamDeployment(ctx context.Context, in *StreamDeploymentRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamDeploymentResponse], error)
+	// DeleteStack arrête et supprime la stack en service d'un projet : conteneurs et réseaux, et volumes sur demande.
+	// L'historique des déploiements est gardé. Refusé (FAILED_PRECONDITION) pendant un déploiement du projet.
+	DeleteStack(ctx context.Context, in *DeleteStackRequest, opts ...grpc.CallOption) (*DeleteStackResponse, error)
 }
 
 type deploymentServiceClient struct {
@@ -146,6 +150,16 @@ func (c *deploymentServiceClient) StreamDeployment(ctx context.Context, in *Stre
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type DeploymentService_StreamDeploymentClient = grpc.ServerStreamingClient[StreamDeploymentResponse]
 
+func (c *deploymentServiceClient) DeleteStack(ctx context.Context, in *DeleteStackRequest, opts ...grpc.CallOption) (*DeleteStackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteStackResponse)
+	err := c.cc.Invoke(ctx, DeploymentService_DeleteStack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DeploymentServiceServer is the server API for DeploymentService service.
 // All implementations must embed UnimplementedDeploymentServiceServer
 // for forward compatibility.
@@ -166,6 +180,9 @@ type DeploymentServiceServer interface {
 	StreamDeploymentLogs(*StreamDeploymentLogsRequest, grpc.ServerStreamingServer[StreamDeploymentLogsResponse]) error
 	// StreamDeployment transmet en streaming les mises à jour complètes de l'état du déploiement.
 	StreamDeployment(*StreamDeploymentRequest, grpc.ServerStreamingServer[StreamDeploymentResponse]) error
+	// DeleteStack arrête et supprime la stack en service d'un projet : conteneurs et réseaux, et volumes sur demande.
+	// L'historique des déploiements est gardé. Refusé (FAILED_PRECONDITION) pendant un déploiement du projet.
+	DeleteStack(context.Context, *DeleteStackRequest) (*DeleteStackResponse, error)
 	mustEmbedUnimplementedDeploymentServiceServer()
 }
 
@@ -196,6 +213,9 @@ func (UnimplementedDeploymentServiceServer) StreamDeploymentLogs(*StreamDeployme
 }
 func (UnimplementedDeploymentServiceServer) StreamDeployment(*StreamDeploymentRequest, grpc.ServerStreamingServer[StreamDeploymentResponse]) error {
 	return status.Error(codes.Unimplemented, "method StreamDeployment not implemented")
+}
+func (UnimplementedDeploymentServiceServer) DeleteStack(context.Context, *DeleteStackRequest) (*DeleteStackResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteStack not implemented")
 }
 func (UnimplementedDeploymentServiceServer) mustEmbedUnimplementedDeploymentServiceServer() {}
 func (UnimplementedDeploymentServiceServer) testEmbeddedByValue()                           {}
@@ -330,6 +350,24 @@ func _DeploymentService_StreamDeployment_Handler(srv interface{}, stream grpc.Se
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type DeploymentService_StreamDeploymentServer = grpc.ServerStreamingServer[StreamDeploymentResponse]
 
+func _DeploymentService_DeleteStack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteStackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeploymentServiceServer).DeleteStack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DeploymentService_DeleteStack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeploymentServiceServer).DeleteStack(ctx, req.(*DeleteStackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DeploymentService_ServiceDesc is the grpc.ServiceDesc for DeploymentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -356,6 +394,10 @@ var DeploymentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RollbackDeployment",
 			Handler:    _DeploymentService_RollbackDeployment_Handler,
+		},
+		{
+			MethodName: "DeleteStack",
+			Handler:    _DeploymentService_DeleteStack_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
