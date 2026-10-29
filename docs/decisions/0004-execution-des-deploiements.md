@@ -1,6 +1,6 @@
 # ADR-0004 : exécution des déploiements et service `deploy`
 
-- Statut : proposé
+- Statut : accepté (revue de la PR #32, 29/10/2026)
 - Date : 2026-10-29
 - Contexte : ticket #7, troisième PR (service gRPC `deploy`)
 
