@@ -16,10 +16,11 @@ import (
 )
 
 type sqliteStore struct {
-	db       *sql.DB
-	users    store.UserStore
-	sessions store.SessionStore
-	audit    store.AuditStore
+	db          *sql.DB
+	users       store.UserStore
+	sessions    store.SessionStore
+	audit       store.AuditStore
+	deployments store.DeploymentStore
 }
 
 // Open initialise une connexion à la base SQLite, applique les migrations requises et retourne un store prêt à l'emploi.
@@ -72,6 +73,7 @@ func Open(ctx context.Context, cfg config.DatabaseConfig) (store.Store, error) {
 	s.users = newUsersStore(db)
 	s.sessions = newSessionsStore(db)
 	s.audit = newAuditStore(db)
+	s.deployments = newDeploymentsStore(db)
 
 	return s, nil
 }
@@ -86,6 +88,10 @@ func (s *sqliteStore) Sessions() store.SessionStore {
 
 func (s *sqliteStore) Audit() store.AuditStore {
 	return s.audit
+}
+
+func (s *sqliteStore) Deployments() store.DeploymentStore {
+	return s.deployments
 }
 
 // Ping vérifie que la base de données est accessible.
