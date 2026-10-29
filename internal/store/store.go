@@ -230,6 +230,9 @@ type DeploymentStore interface {
 	GetDeploymentByRequestID(ctx context.Context, requestID string) (*Deployment, error)
 	// ListDeployments liste du plus récent au plus ancien ; projectID vide liste tout.
 	ListDeployments(ctx context.Context, projectID string, limit, offset int) ([]*Deployment, error)
+	// ListDeploymentsByState liste les déploiements d'un état, du plus ancien au
+	// plus récent : c'est l'ordre dans lequel l'exécuteur les traite.
+	ListDeploymentsByState(ctx context.Context, state DeploymentState, limit int) ([]*Deployment, error)
 	// TransitionDeployment fait passer le déploiement de from à to, avec errMsg
 	// pour un échec. Il renvoie ErrInvalidTransition si la machine à états
 	// l'interdit, et ErrConflict si l'état n'est plus from (une annulation et
