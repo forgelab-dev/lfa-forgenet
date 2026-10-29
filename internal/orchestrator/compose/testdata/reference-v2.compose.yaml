@@ -1,0 +1,13 @@
+# Mise à jour de la stack de référence : web est inchangé, cache disparaît et
+# worker apparaît.
+services:
+  web:
+    image: nginx:alpine
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 1s
+      timeout: 2s
+      retries: 20
+  worker:
+    image: alpine:3.21
+    command: ["sleep", "3600"]
