@@ -34,6 +34,9 @@ type fakeClient struct {
 	logs        []byte
 	removedID   string
 	forceRemove bool
+	statsOpts   client.ContainerStatsOptions
+	stats       string
+	running     int
 }
 
 func (f *fakeClient) ContainerInspect(context.Context, string, client.ContainerInspectOptions) (client.ContainerInspectResult, error) {
