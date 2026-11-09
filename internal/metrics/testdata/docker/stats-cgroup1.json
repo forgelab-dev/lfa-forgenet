@@ -1,0 +1,34 @@
+{
+  "id": "fedcba987654",
+  "read": "2026-11-09T10:00:00Z",
+  "cpu_stats": {
+    "cpu_usage": {"total_usage": 3000000000, "percpu_usage": [1500000000, 1500000000, 0, 0], "usage_in_kernelmode": 400000000, "usage_in_usermode": 2600000000},
+    "system_cpu_usage": 50000000000
+  },
+  "precpu_stats": {
+    "cpu_usage": {"total_usage": 2000000000, "percpu_usage": [1000000000, 1000000000, 0, 0]},
+    "system_cpu_usage": 40000000000
+  },
+  "memory_stats": {
+    "usage": 300000000,
+    "limit": 1000000000,
+    "stats": {"cache": 120000000, "total_inactive_file": 100000000, "inactive_file": 1}
+  },
+  "blkio_stats": {
+    "io_service_bytes_recursive": [
+      {"major": 8, "minor": 0, "op": "Read", "value": 4096},
+      {"major": 8, "minor": 0, "op": "Write", "value": 8192},
+      {"major": 8, "minor": 0, "op": "Sync", "value": 99},
+      {"major": 8, "minor": 0, "op": "Total", "value": 12288}
+    ],
+    "io_serviced_recursive": [
+      {"major": 8, "minor": 0, "op": "Read", "value": 1},
+      {"major": 8, "minor": 0, "op": "Write", "value": 2},
+      {"major": 8, "minor": 0, "op": "Total", "value": 3}
+    ]
+  },
+  "networks": {
+    "eth0": {"rx_bytes": 1000, "rx_packets": 10, "rx_errors": 1, "tx_bytes": 500, "tx_packets": 5, "tx_errors": 0},
+    "eth1": {"rx_bytes": 200, "rx_packets": 2, "rx_errors": 0, "tx_bytes": 100, "tx_packets": 1, "tx_errors": 3}
+  }
+}
