@@ -67,8 +67,7 @@ func (s *AuthServiceServer) Login(ctx context.Context, req *forgenetv1.LoginRequ
 		s.limiter.fail(key)
 		return nil, status.Error(codes.Unauthenticated, "identifiant ou mot de passe incorrect")
 	case err != nil:
-		s.logger.Error().Err(err).Msg("ouverture de session impossible")
-		return nil, status.Error(codes.Unavailable, "connexion momentanément indisponible")
+		return nil, s.unavailable(err, "ouverture de session impossible", "connexion momentanément indisponible")
 	}
 	s.limiter.reset(key)
 
@@ -86,8 +85,7 @@ func (s *AuthServiceServer) Logout(ctx context.Context, _ *forgenetv1.LogoutRequ
 		return nil, status.Error(codes.Unauthenticated, "authentification requise")
 	}
 	if err := s.auth.RevokeSession(ctx, claims.SessionID); err != nil {
-		s.logger.Error().Err(err).Msg("révocation de session impossible")
-		return nil, status.Error(codes.Unavailable, "déconnexion momentanément indisponible")
+		return nil, s.unavailable(err, "révocation de session impossible", "déconnexion momentanément indisponible")
 	}
 	return &forgenetv1.LogoutResponse{}, nil
 }
@@ -104,10 +102,21 @@ func (s *AuthServiceServer) GetCurrentUser(ctx context.Context, _ *forgenetv1.Ge
 		return nil, status.Error(codes.Unauthenticated, "compte introuvable")
 	}
 	if err != nil {
-		s.logger.Error().Err(err).Msg("lecture du compte impossible")
-		return nil, status.Error(codes.Unavailable, "compte momentanément indisponible")
+		return nil, s.unavailable(err, "lecture du compte impossible", "compte momentanément indisponible")
 	}
 	return &forgenetv1.GetCurrentUserResponse{User: toUser(user, claims.Role)}, nil
+}
+
+// unavailable traduit une panne de la base en UNAVAILABLE, journalisée. Un
+// appel abandonné par le client (page quittée, onglet fermé) n'est pas une
+// panne : il garde son code (CANCELED, DEADLINE_EXCEEDED) et n'encombre pas le
+// journal des erreurs.
+func (s *AuthServiceServer) unavailable(err error, logMsg, clientMsg string) error {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return status.FromContextError(err).Err()
+	}
+	s.logger.Error().Err(err).Msg(logMsg)
+	return status.Error(codes.Unavailable, clientMsg)
 }
 
 func toUser(u *store.User, role store.Role) *forgenetv1.User {
