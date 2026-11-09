@@ -1,6 +1,6 @@
 # ADR-0005 : métriques en direct par WebSocket
 
-- Statut : proposé (revue de la PR du ticket #11)
+- Statut : accepté (revue de la PR #38, 09/11/2026)
 - Date : 2026-11-09
 - Contexte : ticket #11, métriques par hôte et par conteneur
 
