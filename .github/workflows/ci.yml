@@ -157,6 +157,12 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      - name: Tests (Vitest)
+        run: npm test
+
+      - name: Build
+        run: npx vite build
+
   mobile:
     needs: changes
     if: needs.changes.outputs.mobile == 'true'
