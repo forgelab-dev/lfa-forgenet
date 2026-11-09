@@ -1,6 +1,6 @@
 # ADR-0006 : le navigateur parle à l'API par Connect
 
-- Statut : proposé
+- Statut : accepté (revue de la PR #39, 09/11/2026)
 - Date : 2026-11-09
 - Contexte : ticket #9 (dashboard web), à trancher avant son code
 
