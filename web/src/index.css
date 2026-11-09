@@ -1,1 +1,101 @@
 @import 'tailwindcss';
+/* Polices servies par le dashboard lui-même : un serveur auto-hébergé ne doit
+   dépendre d'aucun service tiers pour afficher son interface. */
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource-variable/jetbrains-mono';
+
+/*
+ * Direction « salle des machines » : surfaces d'acier bleui (teinte 255),
+ * un seul accent, l'or de LucidForge, réservé à l'action principale, au focus
+ * et à l'élément actif. Les états (marche, alerte, panne) ont leurs couleurs
+ * propres et ne réutilisent jamais l'accent.
+ */
+@theme {
+  --font-sans: 'Bricolage Grotesque Variable', ui-sans-serif, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --color-iron-950: oklch(0.155 0.012 255);
+  --color-iron-900: oklch(0.19 0.014 255);
+  --color-iron-850: oklch(0.225 0.015 255);
+  --color-iron-800: oklch(0.27 0.016 255);
+  --color-iron-700: oklch(0.34 0.017 255);
+  --color-iron-500: oklch(0.55 0.018 255);
+  --color-iron-300: oklch(0.76 0.014 255);
+  --color-iron-100: oklch(0.95 0.006 255);
+
+  --color-gold-300: oklch(0.86 0.12 88);
+  --color-gold-400: oklch(0.78 0.15 85);
+  --color-gold-500: oklch(0.72 0.15 82);
+  --color-gold-950: oklch(0.24 0.05 80);
+
+  --color-ok-400: oklch(0.78 0.14 155);
+  --color-warn-400: oklch(0.8 0.13 65);
+  --color-danger-400: oklch(0.72 0.16 25);
+  --color-danger-950: oklch(0.24 0.06 25);
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-iron-950 font-sans text-iron-100 antialiased;
+    font-optical-sizing: auto;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold-400);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-gold-400);
+    color: var(--color-iron-950);
+  }
+}
+
+/* Trame gravée du panneau de connexion : un quadrillage fin, comme une plaque
+   d'acier tracée, qui s'efface vers le bas. */
+@utility engraved {
+  background-image:
+    linear-gradient(to bottom, transparent, var(--color-iron-950) 85%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 31px,
+      color-mix(in oklch, var(--color-iron-700) 45%, transparent) 31px 32px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 31px,
+      color-mix(in oklch, var(--color-iron-700) 45%, transparent) 31px 32px
+    );
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@utility animate-rise {
+  animation: rise 480ms var(--ease-out-quart) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
