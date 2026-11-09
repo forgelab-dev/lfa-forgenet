@@ -1,11 +1,12 @@
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { AuthService } from '../../gen/forgenet/v1/auth_pb';
 import { ContainerService } from '../../gen/forgenet/v1/container_pb';
-import { bearerInterceptor, createApiClients } from './client';
+import { createApiClients, sessionInterceptors } from './client';
 
 /** Un faux serveur qui n'accepte que le jeton « bon-jeton ». */
-function fakeServer(token: string | undefined) {
+function fakeServer(token: string | undefined, onSessionExpired = () => {}) {
   return createRouterTransport(
     ({ service }) => {
       service(ContainerService, {
@@ -21,8 +22,13 @@ function fakeServer(token: string | undefined) {
           }
         },
       });
+      service(AuthService, {
+        login() {
+          throw new ConnectError('identifiant ou mot de passe incorrect', Code.Unauthenticated);
+        },
+      });
     },
-    { transport: { interceptors: [bearerInterceptor(() => token)] } }
+    { transport: { interceptors: sessionInterceptors({ token: () => token, onSessionExpired }) } }
   );
 }
 
@@ -52,5 +58,25 @@ describe('clients de l’API', () => {
     }
 
     expect(lines).toEqual(['c1:un', 'c1:deux']);
+  });
+
+  it('signale la fin de session quand le serveur refuse le jeton présenté', async () => {
+    const onExpired = vi.fn();
+    const api = createApiClients(fakeServer('jeton-revoque', onExpired));
+
+    await expect(api.containers.listContainers({})).rejects.toBeInstanceOf(ConnectError);
+
+    expect(onExpired).toHaveBeenCalledOnce();
+  });
+
+  it('ne prend pas un mot de passe refusé pour une fin de session', async () => {
+    const onExpired = vi.fn();
+    const api = createApiClients(fakeServer(undefined, onExpired));
+
+    await expect(api.auth.login({ login: 'mike', password: 'faux' })).rejects.toMatchObject({
+      code: Code.Unauthenticated,
+    });
+
+    expect(onExpired).not.toHaveBeenCalled();
   });
 });
