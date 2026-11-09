@@ -109,6 +109,7 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	auditor := audit.NewAuditor(db.Audit(), logger)
 	authService := auth.NewService(db, cfg.Auth, auditor)
 	grpcServer := transportGRPC.NewServer(cfg.Server, healthService, auth.NewGuard(authService, auth.DefaultPolicy(), logger), logger)
+	forgenetv1.RegisterAuthServiceServer(grpcServer.GRPCServer(), transportGRPC.NewAuthServiceServer(authService, db.Users(), logger))
 
 	// Le client ne se connecte pas encore ici : une erreur signale une
 	// configuration invalide, et l'indisponibilité du démon se lit dans /readyz.

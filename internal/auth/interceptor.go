@@ -29,16 +29,20 @@ type Policy struct {
 	MinRole map[string]store.Role
 }
 
-// DefaultPolicy est la politique du serveur : seules les sondes de santé sont
-// publiques. Les membres consultent ; agir sur un conteneur (démarrer,
-// arrêter, redémarrer) reste réservé aux admins, par défaut.
+// DefaultPolicy est la politique du serveur : seules les sondes de santé et
+// l'ouverture de session sont publiques. Les membres consultent ; agir sur
+// un conteneur (démarrer, arrêter, redémarrer) reste réservé aux admins, par
+// défaut.
 func DefaultPolicy() Policy {
 	return Policy{
 		Public: map[string]bool{
-			grpcHealth.Health_Check_FullMethodName: true,
-			grpcHealth.Health_Watch_FullMethodName: true,
+			grpcHealth.Health_Check_FullMethodName:      true,
+			grpcHealth.Health_Watch_FullMethodName:      true,
+			forgenetv1.AuthService_Login_FullMethodName: true,
 		},
 		MinRole: map[string]store.Role{
+			forgenetv1.AuthService_Logout_FullMethodName:                   store.RoleMember,
+			forgenetv1.AuthService_GetCurrentUser_FullMethodName:           store.RoleMember,
 			forgenetv1.ContainerService_ListContainers_FullMethodName:      store.RoleMember,
 			forgenetv1.ContainerService_GetContainer_FullMethodName:        store.RoleMember,
 			forgenetv1.ContainerService_StreamContainerLogs_FullMethodName: store.RoleMember,
