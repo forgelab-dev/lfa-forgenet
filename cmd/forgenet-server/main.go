@@ -17,11 +17,13 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/deploy"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	"github.com/forgelab-dev/lfa-forgenet/internal/logging"
+	"github.com/forgelab-dev/lfa-forgenet/internal/metrics"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/compose"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/docker"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
 	transportGRPC "github.com/forgelab-dev/lfa-forgenet/internal/transport/grpc"
 	transportHTTP "github.com/forgelab-dev/lfa-forgenet/internal/transport/http"
+	"github.com/forgelab-dev/lfa-forgenet/internal/transport/ws"
 	"github.com/forgelab-dev/lfa-forgenet/internal/version"
 	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
 )
@@ -129,8 +131,22 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 
 	// L'exécuteur des déploiements s'arrête avec les serveurs : celui en cours
 	// a le délai de grâce pour finir (ADR-0004).
+	// Les métriques en direct partent par WebSocket : un navigateur ne lit
+	// pas un flux gRPC. Chaque flux a ses collecteurs (relevé précédent).
+	httpServer := transportHTTP.NewServer(cfg.Server, cfg.Health, healthService, logger)
+	metricsStreams := ws.NewMetricsHandler(ws.Config{
+		Auth: authService,
+		NewHost: func() ws.HostCollector {
+			return metrics.NewHostCollector(metrics.GopsutilProbe{}, engine, cfg.Metrics.StoragePath)
+		},
+		NewContainer: func(id string) ws.ContainerCollector { return metrics.NewContainerCollector(engine, id) },
+		Logger:       logger,
+	})
+	metricsStreams.RegisterRoutes(httpServer.Mux())
+	httpServer.OnShutdown(metricsStreams.Close)
+
 	servers := []server{
-		{name: "HTTP", transport: transportHTTP.NewServer(cfg.Server, cfg.Health, healthService, logger)},
+		{name: "HTTP", transport: httpServer},
 		{name: "gRPC", transport: grpcServer},
 		{name: "déploiements", transport: deployments},
 	}

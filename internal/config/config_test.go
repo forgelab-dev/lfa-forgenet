@@ -204,3 +204,20 @@ func TestLoad_HealthExposeDetails(t *testing.T) {
 	_, err = config.Load("")
 	require.ErrorContains(t, err, "health.expose_details")
 }
+
+func TestLoad_MetricsStoragePath(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.Equal(t, "/", cfg.Metrics.StoragePath)
+
+	t.Setenv("FORGENET_METRICS_STORAGE_PATH", "/var/lib/forgenet")
+	cfg, err = config.Load("")
+	require.NoError(t, err)
+	assert.Equal(t, "/var/lib/forgenet", cfg.Metrics.StoragePath)
+
+	t.Setenv("FORGENET_METRICS_STORAGE_PATH", "relatif")
+	_, err = config.Load("")
+	require.ErrorContains(t, err, "metrics.storage_path")
+}
