@@ -243,3 +243,10 @@ type fakeStream struct {
 }
 
 func (f *fakeStream) Context() context.Context { return f.ctx }
+
+func TestBearerToken(t *testing.T) {
+	assert.Equal(t, "abc", auth.BearerToken("Bearer abc"))
+	assert.Equal(t, "abc", auth.BearerToken("  bearer   abc "))
+	assert.Equal(t, "Basic abc", auth.BearerToken("Basic abc"), "autre schéma : refusé ensuite comme jeton invalide")
+	assert.Empty(t, auth.BearerToken(""))
+}

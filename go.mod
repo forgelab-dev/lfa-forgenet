@@ -3,6 +3,9 @@ module github.com/forgelab-dev/lfa-forgenet
 go 1.26.10
 
 require (
+	connectrpc.com/connect/v2 v2.0.2
+	connectrpc.com/vanguard v0.5.0
+	github.com/coder/websocket v1.8.15
 	github.com/containerd/errdefs v1.0.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/moby/moby/api v1.56.1
@@ -21,7 +24,6 @@ require (
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/coder/websocket v1.8.15 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.8.2 // indirect

@@ -29,16 +29,20 @@ type Policy struct {
 	MinRole map[string]store.Role
 }
 
-// DefaultPolicy est la politique du serveur : seules les sondes de santé sont
-// publiques. Les membres consultent ; agir sur un conteneur (démarrer,
-// arrêter, redémarrer) reste réservé aux admins, par défaut.
+// DefaultPolicy est la politique du serveur : seules les sondes de santé et
+// l'ouverture de session sont publiques. Les membres consultent ; agir sur
+// un conteneur (démarrer, arrêter, redémarrer) reste réservé aux admins, par
+// défaut.
 func DefaultPolicy() Policy {
 	return Policy{
 		Public: map[string]bool{
-			grpcHealth.Health_Check_FullMethodName: true,
-			grpcHealth.Health_Watch_FullMethodName: true,
+			grpcHealth.Health_Check_FullMethodName:      true,
+			grpcHealth.Health_Watch_FullMethodName:      true,
+			forgenetv1.AuthService_Login_FullMethodName: true,
 		},
 		MinRole: map[string]store.Role{
+			forgenetv1.AuthService_Logout_FullMethodName:                   store.RoleMember,
+			forgenetv1.AuthService_GetCurrentUser_FullMethodName:           store.RoleMember,
 			forgenetv1.ContainerService_ListContainers_FullMethodName:      store.RoleMember,
 			forgenetv1.ContainerService_GetContainer_FullMethodName:        store.RoleMember,
 			forgenetv1.ContainerService_StreamContainerLogs_FullMethodName: store.RoleMember,
@@ -96,15 +100,27 @@ func (w *wrappedStream) Context() context.Context {
 	return w.ctx
 }
 
-// authorize renvoie le contexte enrichi de l'identité de l'appelant, ou une
-// erreur gRPC au message générique : le détail (jeton expiré, base
-// indisponible…) reste dans le journal du serveur.
+// authorize applique Authorize à un appel gRPC : jeton lu dans les
+// métadonnées, adresse du client lue dans le pair.
 func (g *Guard) authorize(ctx context.Context, method string) (context.Context, error) {
+	clientAddr := ""
+	if p, ok := peer.FromContext(ctx); ok && p.Addr != nil {
+		clientAddr = p.Addr.String()
+	}
+	return g.Authorize(ctx, method, bearerToken(ctx), clientAddr)
+}
+
+// Authorize décide pour toutes les portes du serveur (gRPC, Connect) : il
+// renvoie le contexte enrichi de l'identité de l'appelant, ou une erreur
+// gRPC au message générique. Le détail (jeton expiré, base
+// indisponible…) reste dans le journal du serveur. method est le nom complet
+// « /paquet.Service/Méthode », le même dans les deux protocoles.
+func (g *Guard) Authorize(ctx context.Context, method, token, clientAddr string) (context.Context, error) {
 	if g.policy.Public[method] {
 		return ctx, nil
 	}
 
-	claims, err := g.auth.ValidateToken(ctx, bearerToken(ctx))
+	claims, err := g.auth.ValidateToken(ctx, token)
 	if err != nil {
 		if IsCredentialError(err) {
 			return nil, status.Error(codes.Unauthenticated, "authentification requise ou jeton invalide")
@@ -117,12 +133,17 @@ func (g *Guard) authorize(ctx context.Context, method string) (context.Context, 
 		return nil, status.Error(codes.PermissionDenied, "droits insuffisants pour cette opération")
 	}
 
-	clientIP := ""
-	if p, ok := peer.FromContext(ctx); ok && p.Addr != nil {
-		clientIP = p.Addr.String()
-	}
 	ctx = WithUserContext(ctx, claims)
-	return audit.WithAuditContext(ctx, claims.UserID, clientIP), nil
+	return audit.WithAuditContext(ctx, claims.UserID, clientAddr), nil
+}
+
+// BearerToken extrait le jeton d'une valeur d'en-tête « Bearer <jeton> ».
+func BearerToken(header string) string {
+	token := strings.TrimSpace(header)
+	if len(token) > len("bearer ") && strings.EqualFold(token[:len("bearer ")], "bearer ") {
+		token = strings.TrimSpace(token[len("bearer "):])
+	}
+	return token
 }
 
 func bearerToken(ctx context.Context) string {
@@ -131,11 +152,7 @@ func bearerToken(ctx context.Context) string {
 	if len(values) == 0 {
 		return ""
 	}
-	token := strings.TrimSpace(values[0])
-	if len(token) > len("bearer ") && strings.EqualFold(token[:len("bearer ")], "bearer ") {
-		token = strings.TrimSpace(token[len("bearer "):])
-	}
-	return token
+	return BearerToken(values[0])
 }
 
 // IsCredentialError distingue un jeton absent, invalide ou expiré (la faute de

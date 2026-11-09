@@ -11,6 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"google.golang.org/grpc"
+
 	"github.com/forgelab-dev/lfa-forgenet/internal/audit"
 	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
@@ -21,6 +23,7 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/compose"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/docker"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
+	"github.com/forgelab-dev/lfa-forgenet/internal/transport/connectapi"
 	transportGRPC "github.com/forgelab-dev/lfa-forgenet/internal/transport/grpc"
 	transportHTTP "github.com/forgelab-dev/lfa-forgenet/internal/transport/http"
 	"github.com/forgelab-dev/lfa-forgenet/internal/transport/ws"
@@ -108,7 +111,8 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 
 	auditor := audit.NewAuditor(db.Audit(), logger)
 	authService := auth.NewService(db, cfg.Auth, auditor)
-	grpcServer := transportGRPC.NewServer(cfg.Server, healthService, auth.NewGuard(authService, auth.DefaultPolicy(), logger), logger)
+	guard := auth.NewGuard(authService, auth.DefaultPolicy(), logger)
+	grpcServer := transportGRPC.NewServer(cfg.Server, healthService, guard, logger)
 
 	// Le client ne se connecte pas encore ici : une erreur signale une
 	// configuration invalide, et l'indisponibilité du démon se lit dans /readyz.
@@ -118,7 +122,6 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	}
 	defer func() { _ = engine.Close() }()
 	healthService.RegisterReadinessChecker("docker", health.CheckFunc(engine.Ping))
-	forgenetv1.RegisterContainerServiceServer(grpcServer.GRPCServer(), transportGRPC.NewContainerServiceServer(engine, auditor, logger))
 
 	// Les stacks Compose visent le même démon que les conteneurs (ADR-0003).
 	stacks, err := compose.New(cfg.Docker)
@@ -127,13 +130,23 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	}
 	healthService.RegisterReadinessChecker("compose", health.CheckFunc(stacks.Ping))
 	deployments := deploy.New(db.Deployments(), stacks, auditor, logger)
-	forgenetv1.RegisterDeploymentServiceServer(grpcServer.GRPCServer(), transportGRPC.NewDeploymentServiceServer(deployments, logger))
 
-	// L'exécuteur des déploiements s'arrête avec les serveurs : celui en cours
-	// a le délai de grâce pour finir (ADR-0004).
+	// Les mêmes services sont servis par deux portes : gRPC (CLI, mobile) et
+	// Connect sur le serveur HTTP (dashboard), avec le même garde (ADR-0006).
+	httpServer := transportHTTP.NewServer(cfg.Server, cfg.Health, healthService, logger)
+	connectAPI := connectapi.New(guard, logger)
+	authAPI := transportGRPC.NewAuthServiceServer(authService, db.Users(), logger)
+	containerAPI := transportGRPC.NewContainerServiceServer(engine, auditor, logger)
+	deploymentAPI := transportGRPC.NewDeploymentServiceServer(deployments, logger)
+	for _, registrar := range []grpc.ServiceRegistrar{grpcServer.GRPCServer(), connectAPI.Registrar()} {
+		forgenetv1.RegisterAuthServiceServer(registrar, authAPI)
+		forgenetv1.RegisterContainerServiceServer(registrar, containerAPI)
+		forgenetv1.RegisterDeploymentServiceServer(registrar, deploymentAPI)
+	}
+	connectAPI.Mount(httpServer.Mux())
+
 	// Les métriques en direct partent par WebSocket : un navigateur ne lit
 	// pas un flux gRPC. Chaque flux a ses collecteurs (relevé précédent).
-	httpServer := transportHTTP.NewServer(cfg.Server, cfg.Health, healthService, logger)
 	metricsStreams := ws.NewMetricsHandler(ws.Config{
 		Auth: authService,
 		NewHost: func() ws.HostCollector {
@@ -145,6 +158,8 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	metricsStreams.RegisterRoutes(httpServer.Mux())
 	httpServer.OnShutdown(metricsStreams.Close)
 
+	// L'exécuteur des déploiements s'arrête avec les serveurs : celui en cours
+	// a le délai de grâce pour finir (ADR-0004).
 	servers := []server{
 		{name: "HTTP", transport: httpServer},
 		{name: "gRPC", transport: grpcServer},
