@@ -106,7 +106,7 @@ func (g *Guard) authorize(ctx context.Context, method string) (context.Context, 
 
 	claims, err := g.auth.ValidateToken(ctx, bearerToken(ctx))
 	if err != nil {
-		if isCredentialError(err) {
+		if IsCredentialError(err) {
 			return nil, status.Error(codes.Unauthenticated, "authentification requise ou jeton invalide")
 		}
 		g.logger.Error().Err(err).Str("grpc_method", method).Msg("vérification du jeton impossible")
@@ -138,6 +138,8 @@ func bearerToken(ctx context.Context) string {
 	return token
 }
 
-func isCredentialError(err error) bool {
+// IsCredentialError distingue un jeton absent, invalide ou expiré (la faute de
+// l'appelant) d'une vérification impossible (base indisponible…).
+func IsCredentialError(err error) bool {
 	return errors.Is(err, ErrUnauthenticated) || errors.Is(err, ErrInvalidToken) || errors.Is(err, ErrExpiredToken)
 }

@@ -63,6 +63,13 @@ func (s *Server) Mux() *http.ServeMux {
 	return s.mux
 }
 
+// OnShutdown enregistre f, appelée au début de l'arrêt gracieux. Shutdown ne
+// ferme pas les connexions détournées (WebSocket) : leur gestionnaire s'en
+// charge ici.
+func (s *Server) OnShutdown(f func()) {
+	s.httpServer.RegisterOnShutdown(f)
+}
+
 // Start lance l'écoute HTTP. Si un listener personnalisé a été défini (ex: pour les tests), il est utilisé.
 func (s *Server) Start() error {
 	s.logger.Info().Str("addr", s.httpServer.Addr).Msg("démarrage du serveur HTTP")
