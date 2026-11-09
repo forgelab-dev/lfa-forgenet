@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -101,6 +102,15 @@ type DockerConfig struct {
 	PublishHost string `mapstructure:"publish_host"`
 }
 
+// MetricsConfig règle la collecte des métriques de l'hôte.
+type MetricsConfig struct {
+	// StoragePath désigne le système de fichiers dont l'occupation est
+	// mesurée (« / » par défaut). Le /proc lu est celui de la variable
+	// HOST_PROC de gopsutil, sinon /proc : dans un conteneur, y monter le
+	// /proc de l'hôte, sans quoi le serveur ne mesure que son conteneur.
+	StoragePath string `mapstructure:"storage_path"`
+}
+
 // Valeurs de health.expose_details.
 const (
 	// ExposeDetailsAlways montre toujours la cause d'une indisponibilité.
@@ -130,6 +140,7 @@ type Config struct {
 	Auth        AuthConfig     `mapstructure:"auth"`
 	Docker      DockerConfig   `mapstructure:"docker"`
 	Health      HealthConfig   `mapstructure:"health"`
+	Metrics     MetricsConfig  `mapstructure:"metrics"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -210,6 +221,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("docker.publish_host doit être une adresse IP : %q", c.Docker.PublishHost)
 	}
 
+	if !filepath.IsAbs(c.Metrics.StoragePath) {
+		return fmt.Errorf("metrics.storage_path doit être un chemin absolu : %q", c.Metrics.StoragePath)
+	}
+
 	switch c.Health.ExposeDetails {
 	case ExposeDetailsAlways, ExposeDetailsLocal, ExposeDetailsNever:
 	default:
@@ -257,4 +272,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("docker.publish_host", DefaultHost)
 
 	v.SetDefault("health.expose_details", ExposeDetailsLocal)
+
+	v.SetDefault("metrics.storage_path", "/")
 }

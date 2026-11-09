@@ -13,6 +13,7 @@ import (
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/ids"
+	"github.com/forgelab-dev/lfa-forgenet/internal/metrics"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/docker"
 )
@@ -59,6 +60,16 @@ func TestEngine_RealDockerLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, containsID(listed, created.ID))
 
+	running, err := engine.CountRunning(ctx)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, running, 1)
+	stats, err := engine.Stats(ctx, created.ID, true)
+	require.NoError(t, err)
+	measured := metrics.FromStats(stats, stats.PreCPUStats)
+	assert.NotZero(t, measured.CPU.OnlineCPUs, "nombre de cœurs lu par le démon")
+	assert.NotZero(t, measured.Memory.LimitBytes, "limite mémoire lue par le démon")
+	assert.Equal(t, created.ID, measured.ContainerID)
+
 	require.Eventually(t, func() bool {
 		var logs strings.Builder
 		_ = engine.Logs(ctx, created.ID, orchestrator.LogOptions{Stdout: true, Stderr: true},
@@ -76,6 +87,8 @@ func TestEngine_RealDockerLifecycle(t *testing.T) {
 
 	require.NoError(t, engine.Remove(ctx, created.ID, false))
 	_, err = engine.Get(ctx, created.ID)
+	assert.ErrorIs(t, err, orchestrator.ErrNotFound)
+	_, err = engine.Stats(ctx, created.ID, false)
 	assert.ErrorIs(t, err, orchestrator.ErrNotFound)
 }
 
