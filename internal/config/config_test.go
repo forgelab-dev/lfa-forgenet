@@ -256,9 +256,11 @@ func TestLoad_ProxyValidation(t *testing.T) {
 		env  map[string]string
 		want string
 	}{
-		"réseau":    {map[string]string{"FORGENET_PROXY_NETWORK": "mon réseau"}, "proxy.network"},
-		"conteneur": {map[string]string{"FORGENET_PROXY_CADDY_CONTAINER": "caddy;rm"}, "proxy.caddy_container"},
-		"port":      {map[string]string{"FORGENET_PROXY_HTTP_PORT": "70000"}, "proxy.http_port"},
+		"réseau":               {map[string]string{"FORGENET_PROXY_NETWORK": "mon réseau"}, "proxy.network"},
+		"conteneur":            {map[string]string{"FORGENET_PROXY_CADDY_CONTAINER": "caddy;rm"}, "proxy.caddy_container"},
+		"port":                 {map[string]string{"FORGENET_PROXY_HTTP_PORT": "70000"}, "proxy.http_port"},
+		"dashboard sans cible": {map[string]string{"FORGENET_PROXY_DASHBOARD_HOST": "forgenet.example.org"}, "proxy.dashboard_upstream"},
+		"cible sans dashboard": {map[string]string{"FORGENET_PROXY_DASHBOARD_UPSTREAM": "forgenet-server:8080"}, "proxy.dashboard_host"},
 		"local en production": {map[string]string{
 			"FORGENET_PROXY_LOCAL_CERTS": "true", "FORGENET_ENVIRONMENT": "production",
 			"FORGENET_AUTH_JWT_SECRET": "super-secret-production-key-32bytes",
@@ -276,6 +278,13 @@ func TestLoad_ProxyValidation(t *testing.T) {
 		})
 	}
 
+	t.Run("dashboard sans proxy", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("FORGENET_PROXY_DASHBOARD_HOST", "forgenet.example.org")
+		_, err := config.Load("")
+		require.ErrorContains(t, err, "proxy.enabled")
+	})
+
 	// Désactivé, le proxy n'est pas vérifié : une valeur inutilisée ne bloque pas le démarrage.
 	t.Run("désactivé", func(t *testing.T) {
 		t.Chdir(t.TempDir())
@@ -283,4 +292,21 @@ func TestLoad_ProxyValidation(t *testing.T) {
 		_, err := config.Load("")
 		require.NoError(t, err)
 	})
+}
+
+func TestLoad_WebRoot(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.Empty(t, cfg.Web.Root, "sans dossier, le serveur ne sert que l'API")
+
+	t.Setenv("FORGENET_WEB_ROOT", "/usr/share/forgenet/web")
+	cfg, err = config.Load("")
+	require.NoError(t, err)
+	assert.Equal(t, "/usr/share/forgenet/web", cfg.Web.Root)
+
+	t.Setenv("FORGENET_WEB_ROOT", "web/dist")
+	_, err = config.Load("")
+	require.ErrorContains(t, err, "web.root")
 }

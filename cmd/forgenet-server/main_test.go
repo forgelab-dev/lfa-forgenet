@@ -97,6 +97,8 @@ func exitCode(t *testing.T, err error) int {
 
 func TestServer_E2E_FileAndEnvConfiguration(t *testing.T) {
 	httpPort, grpcPort := freePort(t), freePort(t)
+	webRoot := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(webRoot, "index.html"), []byte("<title>ForgeNet</title>"), 0o600))
 
 	// Le port gRPC vient du fichier, le port HTTP de l'environnement, qui doit
 	// l'emporter sur la valeur du fichier.
@@ -109,7 +111,9 @@ server:
 log:
   level: debug
   format: json
-`, grpcPort))
+web:
+  root: %s
+`, grpcPort, webRoot))
 	cmd, exited := startServer(t, []string{fmt.Sprintf("FORGENET_SERVER_HTTP_PORT=%d", httpPort)}, "--config", configFile)
 
 	httpAddr := fmt.Sprintf("http://127.0.0.1:%d", httpPort)
@@ -149,6 +153,21 @@ log:
 		var info version.BuildInfo
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&info))
 		assert.Equal(t, version.Version, info.Version)
+	})
+
+	t.Run("dashboard et API à la même origine", func(t *testing.T) {
+		resp, err := client.Get(httpAddr + "/domaines")
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Contains(t, resp.Header.Get("Content-Security-Policy"), "default-src 'self'")
+
+		// Les routes de l'API restent servies par l'API, jamais par la page.
+		api, err := client.Post(httpAddr+"/forgenet.v1.ContainerService/ListContainers", "application/json", strings.NewReader("{}"))
+		require.NoError(t, err)
+		defer func() { _ = api.Body.Close() }()
+		assert.Equal(t, http.StatusUnauthorized, api.StatusCode)
+		assert.Empty(t, api.Header.Get("Content-Security-Policy"))
 	})
 
 	t.Run("grpc health", func(t *testing.T) {
@@ -198,6 +217,25 @@ server:
 proxy:
   enabled: true
   admin_address: 0.0.0.0:2019
+`, freePort(t), freePort(t)),
+		"dossier du dashboard sans build": fmt.Sprintf(`
+server:
+  http_port: %d
+  grpc_port: %d
+  shutdown_timeout: 1s
+web:
+  root: %s
+`, freePort(t), freePort(t), t.TempDir()),
+		"cible du dashboard invalide": fmt.Sprintf(`
+server:
+  http_port: %d
+  grpc_port: %d
+  shutdown_timeout: 1s
+proxy:
+  enabled: true
+  admin_address: 127.0.0.1:2019
+  dashboard_host: forgenet.example.org
+  dashboard_upstream: "forgenet-server:8080\nrespond"
 `, freePort(t), freePort(t)),
 	}
 

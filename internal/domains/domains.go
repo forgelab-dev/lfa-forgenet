@@ -73,6 +73,9 @@ type Config struct {
 	Network string
 	// CaddyContainer, s'il est fixé, est branché sur ce réseau à la réconciliation.
 	CaddyContainer string
+	// DashboardHost est le nom de domaine du dashboard (ADR-0009) : réservé,
+	// il ne peut pas être relié à une application.
+	DashboardHost string
 }
 
 // AddRequest décrit un domaine à ajouter.
@@ -167,6 +170,9 @@ func (s *Service) add(ctx context.Context, req AddRequest) (*store.Domain, error
 	host, err := NormalizeHost(req.Host)
 	if err != nil {
 		return nil, fmt.Errorf("%w : %w", ErrInvalid, err)
+	}
+	if s.cfg.DashboardHost != "" && host == s.cfg.DashboardHost {
+		return nil, fmt.Errorf("%w : %s est réservé au dashboard de ForgeNet", ErrInvalid, host)
 	}
 	if err := checkTarget(req.ProjectID, req.Service, req.Port); err != nil {
 		return nil, err

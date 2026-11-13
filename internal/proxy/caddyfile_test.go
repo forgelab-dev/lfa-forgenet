@@ -49,6 +49,26 @@ func TestRender_LocalCertificates(t *testing.T) {
 	golden(t, "local.caddyfile", got)
 }
 
+func TestRender_Dashboard(t *testing.T) {
+	s := productionSettings
+	s.Dashboard = &Route{Host: "forgenet.example.org", Upstream: Upstream{Container: "forgenet-server", Port: 8080}}
+	got, err := Render(s, []Route{{Host: "www.example.org", Upstream: Upstream{Container: "vitrine-web-1", Port: 80}}})
+	require.NoError(t, err)
+	golden(t, "dashboard.caddyfile", got)
+}
+
+func TestParseUpstream(t *testing.T) {
+	u, err := ParseUpstream("forgenet-server:8080")
+	require.NoError(t, err)
+	assert.Equal(t, Upstream{Container: "forgenet-server", Port: 8080}, u)
+
+	for _, bad := range []string{"", "forgenet-server", "forgenet-server:", ":8080", "a:0", "a:65536", "a:80:81", "a b:80", "a:8080\n"} {
+		u, err := ParseUpstream(bad)
+		assert.ErrorIs(t, err, ErrInvalidUpstream, bad)
+		assert.Zero(t, u, bad)
+	}
+}
+
 func TestRender_NoRoutes(t *testing.T) {
 	got, err := Render(Settings{AdminAddress: "unix//run/forgenet/caddy-admin.sock"}, nil)
 	require.NoError(t, err)
@@ -81,6 +101,14 @@ func TestRender_Rejects(t *testing.T) {
 			ErrDuplicateHost},
 		{"domaine invalide", productionSettings, []Route{{Host: "a.org {\n}\n:80", Upstream: ok}}, ErrInvalidHost},
 		{"cible invalide", productionSettings, []Route{{Host: "a.example.org", Upstream: Upstream{Container: "app\nrespond", Port: 80}}}, ErrInvalidUpstream},
+		{"application sur le domaine du dashboard",
+			Settings{AdminAddress: "127.0.0.1:2019", Dashboard: &Route{Host: "a.example.org", Upstream: ok}},
+			[]Route{{Host: "a.example.org", Upstream: Upstream{Container: "b", Port: 80}}},
+			ErrDuplicateHost},
+		{"dashboard sur un domaine invalide",
+			Settings{AdminAddress: "127.0.0.1:2019", Dashboard: &Route{Host: "a.org\nrespond", Upstream: ok}}, nil, ErrInvalidHost},
+		{"dashboard vers une cible invalide",
+			Settings{AdminAddress: "127.0.0.1:2019", Dashboard: &Route{Host: "a.example.org", Upstream: Upstream{Container: "x}", Port: 80}}}, nil, ErrInvalidUpstream},
 		{"administration exposée", Settings{AdminAddress: "0.0.0.0:2019"}, nil, ErrInvalidAdminAddress},
 		{"administration absente", Settings{}, nil, ErrInvalidAdminAddress},
 		{"courriel invalide", Settings{AdminAddress: "127.0.0.1:2019", Email: "a@b.io\n}"}, nil, ErrInvalidEmail},

@@ -89,6 +89,24 @@ func (u Upstream) Validate() error {
 	return nil
 }
 
+// ParseUpstream lit une cible écrite « conteneur:port », telle qu'elle figure
+// dans la configuration du serveur.
+func ParseUpstream(s string) (Upstream, error) {
+	container, rawPort, ok := strings.Cut(s, ":")
+	if !ok {
+		return Upstream{}, fmt.Errorf("%w : %q (attendu : conteneur:port)", ErrInvalidUpstream, s)
+	}
+	port, err := strconv.Atoi(rawPort)
+	if err != nil {
+		return Upstream{}, fmt.Errorf("%w : port %q", ErrInvalidUpstream, rawPort)
+	}
+	u := Upstream{Container: container, Port: port}
+	if err := u.Validate(); err != nil {
+		return Upstream{}, err
+	}
+	return u, nil
+}
+
 // validateEmail n'accepte qu'une adresse nue (sans nom affiché) faite de
 // caractères ordinaires.
 func validateEmail(email string) error {

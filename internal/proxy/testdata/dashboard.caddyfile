@@ -1,0 +1,14 @@
+# Généré par ForgeNet à chaque changement de domaine : ne pas modifier à la main.
+{
+	admin unix//run/forgenet/caddy-admin.sock|0220
+	email ops@example.org
+}
+
+forgenet.example.org {
+	header Strict-Transport-Security max-age=31536000
+	reverse_proxy forgenet-server:8080
+}
+
+www.example.org {
+	reverse_proxy vitrine-web-1:80
+}

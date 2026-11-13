@@ -181,6 +181,17 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	metricsStreams.RegisterRoutes(httpServer.Mux())
 	httpServer.OnShutdown(metricsStreams.Close)
 
+	// Le dashboard compilé est servi à la même origine que l'API (ADR-0006,
+	// ADR-0009) ; sans web.root, comme en développement, l'API seule.
+	if cfg.Web.Root != "" {
+		dashboard, err := transportHTTP.NewDashboardHandler(cfg.Web.Root)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = dashboard.Close() }()
+		dashboard.RegisterRoutes(httpServer.Mux())
+	}
+
 	// L'exécuteur des déploiements s'arrête avec les serveurs : celui en cours
 	// a le délai de grâce pour finir (ADR-0004).
 	servers := []server{
@@ -214,16 +225,27 @@ func newDomainService(cfg *config.Config, db store.Store, engine *docker.Engine,
 	if copyPath == "" {
 		copyPath = filepath.Join(filepath.Dir(cfg.Database.Path), "Caddyfile")
 	}
-	manager, err := proxy.NewManager(proxy.Settings{
+	settings := proxy.Settings{
 		AdminAddress: cfg.Proxy.AdminAddress,
 		Email:        cfg.Proxy.Email,
 		LocalCerts:   cfg.Proxy.LocalCerts,
 		HTTPPort:     cfg.Proxy.HTTPPort,
 		HTTPSPort:    cfg.Proxy.HTTPSPort,
-	}, copyPath, logger)
+	}
+	if cfg.Proxy.DashboardHost != "" {
+		upstream, err := proxy.ParseUpstream(cfg.Proxy.DashboardUpstream)
+		if err != nil {
+			return nil, fmt.Errorf("configuration du reverse proxy : proxy.dashboard_upstream : %w", err)
+		}
+		settings.Dashboard = &proxy.Route{Host: cfg.Proxy.DashboardHost, Upstream: upstream}
+	}
+	manager, err := proxy.NewManager(settings, copyPath, logger)
 	if err != nil {
 		return nil, fmt.Errorf("configuration du reverse proxy : %w", err)
 	}
-	return domains.New(db.Domains(), manager, engine, stacks, auditor,
-		domains.Config{Network: cfg.Proxy.Network, CaddyContainer: cfg.Proxy.CaddyContainer}, logger), nil
+	return domains.New(db.Domains(), manager, engine, stacks, auditor, domains.Config{
+		Network:        cfg.Proxy.Network,
+		CaddyContainer: cfg.Proxy.CaddyContainer,
+		DashboardHost:  cfg.Proxy.DashboardHost,
+	}, logger), nil
 }
