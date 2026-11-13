@@ -33,10 +33,12 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 - **Conteneurs Docker** : lister, déployer, arrêter et redémarrer.
 - **Stacks Docker Compose** : déploiements mis en file, exécutés un par un et repris au redémarrage du serveur.
 - **Métriques en direct** : processeur, mémoire, réseau et disque de l'hôte et de chaque conteneur, diffusés par WebSocket.
-- **Dashboard web** : connexion, vue d'ensemble et liste des conteneurs. Les autres sections sont marquées « bientôt ».
+- **Reverse proxy Caddy** : HTTPS automatique (Let's Encrypt) et domaines reliés aux applications, gérés depuis le dashboard.
+- **Dashboard web** : connexion, vue d'ensemble, conteneurs et domaines. Les autres sections sont marquées « bientôt ».
+- **Installation** : [`deploy/install.sh`](deploy/install.sh) pour Debian et Ubuntu, avec l'image du serveur et Caddy durcis ; elle attend la publication de la première image.
 - **Contrat d'API** : services gRPC définis dans [`api/proto`](api/proto), servis aussi en Connect et gRPC-Web pour le navigateur, avec des clients générés en TypeScript et en Dart.
 
-**Pas encore construit** : reverse proxy Caddy et HTTPS automatique, Marketplace, installation en une commande, assistant IA local, sauvegardes, migration depuis les autres PaaS, et l'application mobile, dont seul le client d'API généré existe. Les choix d'architecture sont expliqués dans [`docs/decisions/`](docs/decisions/).
+**Pas encore construit** : Marketplace, assistant IA local, sauvegardes, migration depuis les autres PaaS, et l'application mobile, dont seul le client d'API généré existe. Les choix d'architecture sont expliqués dans [`docs/decisions/`](docs/decisions/).
 
 ---
 
@@ -74,21 +76,29 @@ Vos données de production — logs, métriques, secrets, bases — finissent ch
 
 > ⚠️ Non fonctionnel avant la première release — voir [État du projet](#-état-du-projet).
 
+Sur un serveur Debian ou Ubuntu, en root :
+
 ```bash
-curl -fsSL https://forgenet.lucidforgeafrica.com/install.sh | sh
+curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/main/deploy/install.sh
+less install.sh   # relisez un script avant de le lancer en root
+sudo bash install.sh --domain forgenet.exemple.org --email vous@exemple.org
 ```
 
-Le script installe le Core Engine, Caddy et le dashboard. Ouvrez ensuite `https://<votre-serveur>` et suivez l'assistant de configuration.
+Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écrit `/opt/forgenet`, démarre le serveur et Caddy, puis crée le premier administrateur. Il se relance sans risque, par exemple pour ajouter un domaine ou changer de version (`bash install.sh --help`).
 
-**Prérequis** — Linux x86_64 ou ARM64, Docker 24+, 2 Go de RAM (4 Go recommandés avec le moteur IA activé).
+**Sans domaine**, le dashboard n'écoute que sur le serveur : ouvrez-le par un tunnel SSH, `ssh -N -L 8080:127.0.0.1:8080 utilisateur@serveur`, puis `http://localhost:8080`. Les raisons de ce choix sont dans l'[ADR-0009](docs/decisions/0009-service-du-dashboard-en-production.md).
+
+**Prérequis** — Debian ou Ubuntu, x86_64 ou ARM64, 2 Go de RAM, ports 80 et 443 libres.
 
 <details>
-<summary>Installation via Docker Compose</summary>
+<summary>Installation manuelle avec Docker Compose</summary>
 
 ```bash
 git clone https://github.com/forgelab-dev/lfa-forgenet.git
 cd lfa-forgenet/deploy
+cp .env.example .env && chmod 600 .env   # puis remplissez-le
 docker compose up -d
+docker compose exec server forgenet-server user create --username admin --email vous@exemple.org
 ```
 
 </details>
