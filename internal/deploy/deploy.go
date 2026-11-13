@@ -355,8 +355,13 @@ func (s *Service) deleteStack(ctx context.Context, projectID string, removeVolum
 	return s.stacks.Remove(ctx, StackName(projectID), removeVolumes)
 }
 
+// ValidProjectID indique si id peut identifier un projet.
+func ValidProjectID(id string) bool {
+	return projectIDPattern.MatchString(id)
+}
+
 func validateProjectID(id string) error {
-	if !projectIDPattern.MatchString(id) {
+	if !ValidProjectID(id) {
 		return fmt.Errorf("%w : identifiant de projet %q (minuscules, chiffres, « _ » et « - », 63 caractères au plus)", ErrInvalid, id)
 	}
 	return nil
