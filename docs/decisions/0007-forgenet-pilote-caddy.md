@@ -1,6 +1,6 @@
 # ADR-0007 : ForgeNet pilote Caddy par son API d'administration
 
-- Statut : proposé
+- Statut : accepté (revue de la PR #44, 13/11/2026)
 - Date : 2026-11-13
 - Contexte : ticket #10 (reverse proxy Caddy), à trancher avant son code
 
