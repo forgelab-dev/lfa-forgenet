@@ -46,6 +46,10 @@ func DefaultPolicy() Policy {
 			forgenetv1.ContainerService_ListContainers_FullMethodName:      store.RoleMember,
 			forgenetv1.ContainerService_GetContainer_FullMethodName:        store.RoleMember,
 			forgenetv1.ContainerService_StreamContainerLogs_FullMethodName: store.RoleMember,
+			// Les domaines ne portent aucun secret : les membres les voient
+			// comme ils voient les conteneurs ; les modifier reste réservé aux
+			// administrateurs (ADR-0008).
+			forgenetv1.DomainService_ListDomains_FullMethodName: store.RoleMember,
 		},
 	}
 }

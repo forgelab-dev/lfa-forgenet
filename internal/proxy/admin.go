@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -20,6 +21,9 @@ const (
 	// maxResponse borne la réponse lue de l'API d'administration.
 	maxResponse = 1 << 20
 )
+
+// ErrUnavailable indique que l'API d'administration de Caddy ne répond pas.
+var ErrUnavailable = errors.New("API d'administration de Caddy injoignable")
 
 // Warning est un avertissement de Caddy sur le Caddyfile, qui ne l'empêche pas
 // d'être appliqué.
@@ -87,7 +91,7 @@ func (c *AdminClient) Load(ctx context.Context, caddyfile []byte) ([]Warning, er
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("API d'administration de Caddy injoignable : %w", err)
+		return nil, fmt.Errorf("%w : %w", ErrUnavailable, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponse))

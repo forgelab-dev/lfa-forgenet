@@ -9,19 +9,24 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/audit"
 	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/deploy"
+	"github.com/forgelab-dev/lfa-forgenet/internal/domains"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	"github.com/forgelab-dev/lfa-forgenet/internal/logging"
 	"github.com/forgelab-dev/lfa-forgenet/internal/metrics"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/compose"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/docker"
+	"github.com/forgelab-dev/lfa-forgenet/internal/proxy"
+	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
 	"github.com/forgelab-dev/lfa-forgenet/internal/transport/connectapi"
 	transportGRPC "github.com/forgelab-dev/lfa-forgenet/internal/transport/grpc"
@@ -129,7 +134,23 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 	healthService.RegisterReadinessChecker("compose", health.CheckFunc(stacks.Ping))
-	deployments := deploy.New(db.Deployments(), stacks, auditor, logger)
+
+	// Les domaines n'existent qu'avec le reverse proxy activé. Après chaque
+	// déploiement réussi, les services qui ont un domaine sont rebranchés sur
+	// le réseau partagé avec Caddy, leurs conteneurs ayant pu être recréés (ADR-0008).
+	domainService, err := newDomainService(cfg, db, engine, stacks, auditor, logger)
+	if err != nil {
+		return err
+	}
+	var deployOpts []deploy.Option
+	if domainService != nil {
+		deployOpts = append(deployOpts, deploy.WithAfterDeploy(func(ctx context.Context, projectID string) {
+			if err := domainService.Reattach(ctx, projectID); err != nil {
+				logger.Warn().Err(err).Str("project_id", projectID).Msg("domaines non rebranchés après le déploiement")
+			}
+		}))
+	}
+	deployments := deploy.New(db.Deployments(), stacks, auditor, logger, deployOpts...)
 
 	// Les mêmes services sont servis par deux portes : gRPC (CLI, mobile) et
 	// Connect sur le serveur HTTP (dashboard), avec le même garde (ADR-0006).
@@ -138,10 +159,12 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	authAPI := transportGRPC.NewAuthServiceServer(authService, db.Users(), logger)
 	containerAPI := transportGRPC.NewContainerServiceServer(engine, auditor, logger)
 	deploymentAPI := transportGRPC.NewDeploymentServiceServer(deployments, logger)
+	domainAPI := transportGRPC.NewDomainServiceServer(domainService, logger)
 	for _, registrar := range []grpc.ServiceRegistrar{grpcServer.GRPCServer(), connectAPI.Registrar()} {
 		forgenetv1.RegisterAuthServiceServer(registrar, authAPI)
 		forgenetv1.RegisterContainerServiceServer(registrar, containerAPI)
 		forgenetv1.RegisterDeploymentServiceServer(registrar, deploymentAPI)
+		forgenetv1.RegisterDomainServiceServer(registrar, domainAPI)
 	}
 	connectAPI.Mount(httpServer.Mux())
 
@@ -165,6 +188,11 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 		{name: "gRPC", transport: grpcServer},
 		{name: "déploiements", transport: deployments},
 	}
+	if domainService != nil {
+		// Réconcilie Caddy, le réseau et les conteneurs au démarrage, et
+		// recommence tant que Caddy ou Docker ne répondent pas.
+		servers = append(servers, server{name: "domaines", transport: domainService})
+	}
 
 	if err := serve(ctx, servers, healthService, cfg.Server, logger); err != nil {
 		logger.Error().Err(err).Msg("arrêt du serveur suite à une défaillance")
@@ -173,4 +201,29 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 
 	logger.Info().Msg("serveurs arrêtés proprement")
 	return nil
+}
+
+// newDomainService prépare le service des domaines, ou renvoie nil quand le
+// reverse proxy est désactivé. Une adresse d'administration exposée ou un
+// courriel invalide empêchent le démarrage (ADR-0007).
+func newDomainService(cfg *config.Config, db store.Store, engine *docker.Engine, stacks *compose.Engine, auditor audit.Auditor, logger zerolog.Logger) (*domains.Service, error) {
+	if !cfg.Proxy.Enabled {
+		return nil, nil
+	}
+	copyPath := cfg.Proxy.CaddyfilePath
+	if copyPath == "" {
+		copyPath = filepath.Join(filepath.Dir(cfg.Database.Path), "Caddyfile")
+	}
+	manager, err := proxy.NewManager(proxy.Settings{
+		AdminAddress: cfg.Proxy.AdminAddress,
+		Email:        cfg.Proxy.Email,
+		LocalCerts:   cfg.Proxy.LocalCerts,
+		HTTPPort:     cfg.Proxy.HTTPPort,
+		HTTPSPort:    cfg.Proxy.HTTPSPort,
+	}, copyPath, logger)
+	if err != nil {
+		return nil, fmt.Errorf("configuration du reverse proxy : %w", err)
+	}
+	return domains.New(db.Domains(), manager, engine, stacks, auditor,
+		domains.Config{Network: cfg.Proxy.Network, CaddyContainer: cfg.Proxy.CaddyContainer}, logger), nil
 }

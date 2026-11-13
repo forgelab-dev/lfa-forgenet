@@ -194,6 +194,18 @@ type Deployment struct {
 	FinishedAt *time.Time `json:"finished_at,omitempty"`
 }
 
+// Domain relie un nom de domaine au service d'un projet déployé : le reverse
+// proxy le sert et transmet son trafic au service (ADR-0008).
+type Domain struct {
+	ID        string    `json:"id"`
+	Host      string    `json:"host"` // normalisé : minuscules, punycode
+	ProjectID string    `json:"project_id"`
+	Service   string    `json:"service"` // service du fichier Compose
+	Port      int       `json:"port"`    // port du service dans son conteneur
+	CreatedBy string    `json:"created_by"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // UserStore définit les opérations de persistance sur les utilisateurs.
 type UserStore interface {
 	CreateUser(ctx context.Context, user *User) error
@@ -240,12 +252,24 @@ type DeploymentStore interface {
 	TransitionDeployment(ctx context.Context, id string, from, to DeploymentState, errMsg string) (*Deployment, error)
 }
 
+// DomainStore définit les opérations de persistance sur les domaines.
+type DomainStore interface {
+	// CreateDomain renvoie ErrConflict si le nom de domaine est déjà pris.
+	CreateDomain(ctx context.Context, d *Domain) error
+	GetDomain(ctx context.Context, id string) (*Domain, error)
+	// ListDomains liste par nom de domaine ; projectID vide liste tout.
+	ListDomains(ctx context.Context, projectID string) ([]*Domain, error)
+	// DeleteDomain renvoie ErrNotFound si le domaine n'existe pas.
+	DeleteDomain(ctx context.Context, id string) error
+}
+
 // Store est l'interface globale du registre de persistance.
 type Store interface {
 	Users() UserStore
 	Sessions() SessionStore
 	Audit() AuditStore
 	Deployments() DeploymentStore
+	Domains() DomainStore
 	Ping(ctx context.Context) error
 	Close() error
 }

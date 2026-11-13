@@ -188,6 +188,17 @@ server:
   shutdown_timeout: 1s
 `, occupied.Addr().(*net.TCPAddr).Port, freePort(t)),
 		"YAML invalide": "server: [cassé\n",
+		// L'API d'administration de Caddy n'a pas d'authentification : une
+		// adresse exposée empêche le démarrage (ADR-0007).
+		"administration de Caddy exposée": fmt.Sprintf(`
+server:
+  http_port: %d
+  grpc_port: %d
+  shutdown_timeout: 1s
+proxy:
+  enabled: true
+  admin_address: 0.0.0.0:2019
+`, freePort(t), freePort(t)),
 	}
 
 	for name, content := range cases {
