@@ -2,15 +2,11 @@ import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import { useEffect, useId, useState, type FormEvent } from 'react';
 
 import { Button } from '../../components/ui/Button';
+import { fieldClass as field } from '../../components/ui/field';
 import { ServerPlate } from '../../components/ui/ServerPlate';
 import { Wordmark } from '../../components/ui/Wordmark';
 import { describeError } from '../../lib/api/errors';
 import { useSession } from './session';
-
-const field =
-  'mt-1.5 block min-h-11 w-full rounded-md border bg-iron-950 px-3 text-base text-iron-100 ' +
-  'placeholder:text-iron-300/80 transition-colors duration-150 hover:border-iron-500 ' +
-  'focus-visible:border-gold-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400/35';
 
 export function LoginScreen() {
   const { state, login } = useSession();
