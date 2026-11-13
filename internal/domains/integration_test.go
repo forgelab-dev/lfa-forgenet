@@ -80,7 +80,7 @@ func TestDomains_RealStack(t *testing.T) {
 	})
 
 	// L'application, déployée comme le ferait le service des déploiements.
-	require.NoError(t, stacks.Deploy(ctx, stack, appStack("version 1")))
+	require.NoError(t, stacks.Deploy(ctx, stack, appStack("version 1"), nil))
 
 	// Caddy, hors du réseau partagé : la réconciliation doit l'y brancher.
 	dockerRun(ctx, t, "run", "-d", "--rm", "--name", caddy,
@@ -116,7 +116,7 @@ func TestDomains_RealStack(t *testing.T) {
 
 	// Un redéploiement modifié recrée le conteneur, hors du réseau partagé.
 	before := serviceContainer(ctx, t, stacks, stack)
-	require.NoError(t, stacks.Deploy(ctx, stack, appStack("version 2")))
+	require.NoError(t, stacks.Deploy(ctx, stack, appStack("version 2"), nil))
 	after := serviceContainer(ctx, t, stacks, stack)
 	require.NotEqual(t, before, after, "le conteneur a été recréé")
 	require.NoError(t, svc.Reattach(ctx, projectID))
@@ -124,7 +124,7 @@ func TestDomains_RealStack(t *testing.T) {
 
 	// Un redéploiement identique garde le conteneur et son branchement, sans
 	// rebranchement : Compose ne touche pas au réseau ajouté par ForgeNet.
-	require.NoError(t, stacks.Deploy(ctx, stack, appStack("version 2")))
+	require.NoError(t, stacks.Deploy(ctx, stack, appStack("version 2"), nil))
 	require.Equal(t, after, serviceContainer(ctx, t, stacks, stack))
 	body, err := get(ctx, client)
 	require.NoError(t, err)

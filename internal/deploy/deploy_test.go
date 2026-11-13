@@ -31,6 +31,7 @@ type fakeStacks struct {
 	services    []compose.Service
 	block       bool
 	deployed    []string
+	output      []string // lignes passées à la sortie de Deploy
 	removed     []string
 	started     chan struct{} // reçoit un signal à chaque Deploy
 }
@@ -48,11 +49,17 @@ func (f *fakeStacks) Validate(context.Context, []byte) error {
 	return f.validateErr
 }
 
-func (f *fakeStacks) Deploy(ctx context.Context, project string, _ []byte) error {
+func (f *fakeStacks) Deploy(ctx context.Context, project string, _ []byte, out compose.OutputFunc) error {
 	f.mu.Lock()
 	f.deployed = append(f.deployed, project)
-	block, err := f.block, f.deployErr
+	block, err, output := f.block, f.deployErr, f.output
 	f.mu.Unlock()
+	// La sortie imite celle de `docker compose up`, écrite sur stderr.
+	for _, line := range output {
+		if out != nil {
+			out(compose.Stderr, line)
+		}
+	}
 	f.started <- struct{}{}
 	if block {
 		<-ctx.Done()

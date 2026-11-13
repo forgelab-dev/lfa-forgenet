@@ -38,7 +38,7 @@ func (f *fakeStacks) Validate(context.Context, []byte) error {
 	return f.validateErr
 }
 
-func (f *fakeStacks) Deploy(context.Context, string, []byte) error { return nil }
+func (f *fakeStacks) Deploy(context.Context, string, []byte, compose.OutputFunc) error { return nil }
 
 func (f *fakeStacks) Remove(_ context.Context, project string, _ bool) error {
 	f.mu.Lock()

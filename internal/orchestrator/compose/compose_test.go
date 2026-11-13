@@ -52,7 +52,7 @@ func TestDeploy_ValidatesThenStartsAndWaits(t *testing.T) {
 	r := &fakeRunner{}
 	e := newEngine(t, config.DockerConfig{}, r)
 
-	require.NoError(t, e.Deploy(context.Background(), "prj_0a1b2c3d4e5f6a7b", []byte(stack)))
+	require.NoError(t, e.Deploy(context.Background(), "prj_0a1b2c3d4e5f6a7b", []byte(stack), nil))
 	require.Len(t, r.calls, 2)
 
 	assert.Equal(t, []string{"-p", "forgenet-validation", "-f", "-", "config", "--quiet"}, r.calls[0].Args)
@@ -76,7 +76,7 @@ func TestDeploy_RefusesBadProjectBeforeAnyCommand(t *testing.T) {
 	e := newEngine(t, config.DockerConfig{}, r)
 
 	for _, name := range []string{"", "Majuscules", "-tiret", "avec espace", "point.final"} {
-		err := e.Deploy(context.Background(), name, []byte(stack))
+		err := e.Deploy(context.Background(), name, []byte(stack), nil)
 		assert.ErrorIs(t, err, compose.ErrInvalidProject, "%q", name)
 	}
 	assert.Empty(t, r.calls)
@@ -88,7 +88,7 @@ func TestDeploy_InvalidFileDoesNotTouchTheStack(t *testing.T) {
 	}}
 	e := newEngine(t, config.DockerConfig{}, r)
 
-	err := e.Deploy(context.Background(), "prj_1", []byte(stack))
+	err := e.Deploy(context.Background(), "prj_1", []byte(stack), nil)
 	require.ErrorIs(t, err, compose.ErrInvalidFile)
 	assert.Contains(t, err.Error(), "services.web.image must be a string", "le message de Compose est gardé")
 	assert.Len(t, r.calls, 1, "up n'est pas lancé")
@@ -112,7 +112,7 @@ func TestValidate_ClassifiesErrors(t *testing.T) {
 func TestDeploy_StartFailureIsReturned(t *testing.T) {
 	failure := &compose.CommandError{Args: []string{"up"}, ExitCode: 1, Output: "container web is unhealthy"}
 	r := &fakeRunner{errs: map[string]error{"up": failure}}
-	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack))
+	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), nil)
 
 	var cmdErr *compose.CommandError
 	require.ErrorAs(t, err, &cmdErr)
@@ -199,4 +199,10 @@ func TestPing_ReportsUnavailable(t *testing.T) {
 	err := newEngine(t, config.DockerConfig{}, r).Ping(context.Background())
 	assert.True(t, errors.Is(err, compose.ErrUnavailable))
 	assert.Equal(t, []string{"version", "--short"}, r.calls[0].Args)
+}
+
+func TestCommandError_SummaryKeepsTheCause(t *testing.T) {
+	err := &compose.CommandError{Args: []string{"-p", "x", "up"}, ExitCode: 1, Output: " Image web Pulling \n Image web Error pull access denied\nError response from daemon: pull access denied for web\n"}
+	assert.Equal(t, "docker compose up : Error response from daemon: pull access denied for web", err.Summary())
+	assert.Contains(t, err.Error(), "Pulling", "Error garde toute la sortie")
 }
