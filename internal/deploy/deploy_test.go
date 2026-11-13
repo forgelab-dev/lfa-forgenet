@@ -211,6 +211,33 @@ func TestRun_DeploysToSuccessInOrder(t *testing.T) {
 	assert.Equal(t, []string{"forgenet-p1", "forgenet-p2"}, stacks.deployed, "une stack par projet, dans l'ordre de création")
 }
 
+func TestRun_AfterDeployFollowsSuccessOnly(t *testing.T) {
+	st := newStore(t)
+	stacks := newFakeStacks()
+	var mu sync.Mutex
+	var called []string
+	svc := newService(t, st, stacks, deploy.WithAfterDeploy(func(_ context.Context, projectID string) {
+		mu.Lock()
+		defer mu.Unlock()
+		called = append(called, projectID)
+	}))
+	ctx := context.Background()
+
+	ok, err := svc.Create(ctx, request("p1"))
+	require.NoError(t, err)
+	run(t, svc)
+	waitState(t, st, ok.ID, store.DeploymentSuccess)
+
+	stacks.set(func(f *fakeStacks) { f.deployErr = errors.New("docker compose up : code 1") })
+	failed, err := svc.Create(ctx, request("p2"))
+	require.NoError(t, err)
+	waitState(t, st, failed.ID, store.DeploymentFailed)
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, []string{"p1"}, called, "appelée après le succès de p1, pas après l'échec de p2")
+}
+
 func TestRun_FailuresAreRecorded(t *testing.T) {
 	cases := map[string]struct {
 		setup func(*fakeStacks)

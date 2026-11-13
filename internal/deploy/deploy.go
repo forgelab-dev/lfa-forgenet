@@ -88,6 +88,8 @@ type Service struct {
 	logger  zerolog.Logger
 	timeout time.Duration
 	poll    time.Duration
+	// afterDeploy est appelée après chaque déploiement réussi d'un projet.
+	afterDeploy func(ctx context.Context, projectID string)
 
 	wake chan struct{}
 
@@ -118,6 +120,13 @@ func WithTimeout(d time.Duration) Option { return func(s *Service) { s.timeout =
 
 // WithPollInterval règle la relecture de la file quand rien ne la réveille.
 func WithPollInterval(d time.Duration) Option { return func(s *Service) { s.poll = d } }
+
+// WithAfterDeploy appelle f après chaque déploiement réussi, avec le projet :
+// par exemple pour rebrancher ses domaines sur des conteneurs recréés
+// (ADR-0008). f ne fait pas échouer le déploiement, déjà terminé.
+func WithAfterDeploy(f func(ctx context.Context, projectID string)) Option {
+	return func(s *Service) { s.afterDeploy = f }
+}
 
 // New crée le service ; Start lance l'exécution de la file.
 func New(st store.DeploymentStore, stacks Stacks, auditor audit.Auditor, logger zerolog.Logger, opts ...Option) *Service {

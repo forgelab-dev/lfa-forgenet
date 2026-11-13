@@ -202,6 +202,9 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 	}
 	if advance(store.DeploymentSuccess) {
 		log.Info().Msg("déploiement réussi")
+		if s.afterDeploy != nil {
+			s.afterDeploy(ctx, d.ProjectID)
+		}
 	}
 	return true
 }
