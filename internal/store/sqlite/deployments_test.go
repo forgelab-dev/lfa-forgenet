@@ -211,3 +211,55 @@ func TestDeploymentStore_ListByStateOldestFirst(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, one, 1)
 }
+
+func TestDeploymentStore_Logs(t *testing.T) {
+	st := newTestStore(t)
+	ctx := context.Background()
+	require.NoError(t, st.Deployments().CreateDeployment(ctx, newDeployment("d1", "p1")))
+	require.NoError(t, st.Deployments().CreateDeployment(ctx, newDeployment("d2", "p1")))
+
+	base := time.Date(2026, 11, 13, 15, 0, 0, 0, time.UTC)
+	line := func(id string, ns int, msg string) *store.DeploymentLog {
+		return &store.DeploymentLog{DeploymentID: id, EmittedAt: base.Add(time.Duration(ns)), Stream: store.LogStderr, Step: "deploy", Message: msg}
+	}
+	// Écrites dans le désordre et à une nanoseconde d'écart : la lecture suit emitted_at.
+	require.NoError(t, st.Deployments().AppendDeploymentLogs(ctx, []*store.DeploymentLog{
+		line("d1", 2, "trois"), line("d1", 0, "un"), line("d1", 1, "deux"), line("d2", 0, "autre"),
+	}))
+	require.NoError(t, st.Deployments().AppendDeploymentLogs(ctx, nil), "rien à écrire n'est pas une erreur")
+
+	messages := func(logs []*store.DeploymentLog) []string {
+		out := make([]string, 0, len(logs))
+		for _, l := range logs {
+			out = append(out, l.Message)
+		}
+		return out
+	}
+
+	all, err := st.Deployments().ListDeploymentLogs(ctx, "d1", time.Time{}, 0)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"un", "deux", "trois"}, messages(all), "le journal d'un seul déploiement, dans l'ordre")
+	assert.Equal(t, store.LogStderr, all[0].Stream)
+	assert.Equal(t, "deploy", all[0].Step)
+	assert.True(t, all[1].EmittedAt.Equal(base.Add(1)), "la nanoseconde est conservée : c'est le curseur de reprise")
+
+	after, err := st.Deployments().ListDeploymentLogs(ctx, "d1", all[0].EmittedAt, 0)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"deux", "trois"}, messages(after), "reprise strictement après le curseur")
+
+	page, err := st.Deployments().ListDeploymentLogs(ctx, "d1", time.Time{}, 2)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"un", "deux"}, messages(page))
+
+	require.ErrorIs(t, st.Deployments().AppendDeploymentLogs(ctx, []*store.DeploymentLog{line("d1", 0, "doublon")}), store.ErrConflict,
+		"une date ne sert qu'une fois par déploiement")
+	require.Error(t, st.Deployments().AppendDeploymentLogs(ctx, []*store.DeploymentLog{line("absent", 5, "orphelin")}),
+		"une ligne doit appartenir à un déploiement existant")
+	bad := line("d1", 9, "flux inconnu")
+	bad.Stream = "stdin"
+	require.Error(t, st.Deployments().AppendDeploymentLogs(ctx, []*store.DeploymentLog{bad}))
+
+	stillThree, err := st.Deployments().ListDeploymentLogs(ctx, "d1", time.Time{}, 0)
+	require.NoError(t, err)
+	assert.Len(t, stillThree, 3, "un lot refusé n'écrit rien")
+}

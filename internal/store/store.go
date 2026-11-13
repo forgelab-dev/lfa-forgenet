@@ -194,6 +194,27 @@ type Deployment struct {
 	FinishedAt *time.Time `json:"finished_at,omitempty"`
 }
 
+// LogStream est le flux de sortie d'une ligne de journal.
+type LogStream string
+
+const (
+	// LogStdout est la sortie standard.
+	LogStdout LogStream = "stdout"
+	// LogStderr est la sortie d'erreur ; docker compose y écrit aussi sa progression.
+	LogStderr LogStream = "stderr"
+)
+
+// DeploymentLog est une ligne du journal d'exécution d'un déploiement.
+type DeploymentLog struct {
+	DeploymentID string
+	// EmittedAt est unique pour un déploiement : il ordonne le journal et sert
+	// de curseur pour reprendre la lecture.
+	EmittedAt time.Time
+	Stream    LogStream
+	Step      string // ex: "validate", "deploy", "health_check", "result"
+	Message   string
+}
+
 // Domain relie un nom de domaine au service d'un projet déployé : le reverse
 // proxy le sert et transmet son trafic au service (ADR-0008).
 type Domain struct {
@@ -250,6 +271,11 @@ type DeploymentStore interface {
 	// l'interdit, et ErrConflict si l'état n'est plus from (une annulation et
 	// l'exécuteur qui avancent en même temps).
 	TransitionDeployment(ctx context.Context, id string, from, to DeploymentState, errMsg string) (*Deployment, error)
+	// AppendDeploymentLogs ajoute des lignes de journal, en une transaction.
+	AppendDeploymentLogs(ctx context.Context, logs []*DeploymentLog) error
+	// ListDeploymentLogs lit le journal d'un déploiement dans l'ordre, à partir
+	// de la première ligne strictement postérieure à after (zéro : depuis le début).
+	ListDeploymentLogs(ctx context.Context, deploymentID string, after time.Time, limit int) ([]*DeploymentLog, error)
 }
 
 // DomainStore définit les opérations de persistance sur les domaines.
