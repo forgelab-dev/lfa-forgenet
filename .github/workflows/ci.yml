@@ -223,6 +223,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # shellcheck est fourni par l'image ubuntu-latest des runners.
+      - name: Lint install script
+        run: shellcheck deploy/install.sh
+
       # Valeurs factices : on vérifie la syntaxe et l'interpolation, rien n'est lancé.
       - name: Validate compose file
         working-directory: deploy
