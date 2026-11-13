@@ -7,7 +7,7 @@
 Déployez, surveillez et orchestrez vos services — avec une IA d'administration qui tourne *en local*, sans qu'une seule ligne de log ne parte vers un cloud tiers.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Status](https://img.shields.io/badge/statut-pré--alpha-orange.svg)](#-état-du-projet)
@@ -22,9 +22,21 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 
 ## 🚧 État du projet
 
-> **Pré-alpha — en cours de construction.** Le code n'est pas encore utilisable en production et les commandes d'installation ci-dessous ne fonctionneront pas tant que la première release n'est pas publiée. Ce dépôt contient aujourd'hui la spécification, la matrice fonctionnelle et l'architecture cible.
+> **Pré-alpha — en cours de construction.** Le code n'est pas encore utilisable en production et les commandes d'installation ci-dessous ne fonctionneront pas tant que la première release n'est pas publiée. Elle est visée au jalon [J90](https://github.com/forgelab-dev/lfa-forgenet/milestone/3).
 >
 > ⭐ Mettez une étoile pour suivre l'avancement, ou consultez la [feuille de route](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet).
+
+**Ce qui fonctionne déjà**, en lançant le serveur et le dashboard depuis les sources :
+
+- **Serveur `forgenet-server`** (Go) : configuration, transports HTTP et gRPC, sondes de santé, stockage SQLite avec migrations.
+- **Comptes** : connexion par identifiant et mot de passe, rôles administrateur et membre, tentatives limitées, journal d'audit. Un compte se crée avec `forgenet-server user create`.
+- **Conteneurs Docker** : lister, déployer, arrêter et redémarrer.
+- **Stacks Docker Compose** : déploiements mis en file, exécutés un par un et repris au redémarrage du serveur.
+- **Métriques en direct** : processeur, mémoire, réseau et disque de l'hôte et de chaque conteneur, diffusés par WebSocket.
+- **Dashboard web** : connexion, vue d'ensemble et liste des conteneurs. Les autres sections sont marquées « bientôt ».
+- **Contrat d'API** : services gRPC définis dans [`api/proto`](api/proto), servis aussi en Connect et gRPC-Web pour le navigateur, avec des clients générés en TypeScript et en Dart.
+
+**Pas encore construit** : reverse proxy Caddy et HTTPS automatique, Marketplace, installation en une commande, assistant IA local, sauvegardes, migration depuis les autres PaaS, et l'application mobile, dont seul le client d'API généré existe. Les choix d'architecture sont expliqués dans [`docs/decisions/`](docs/decisions/).
 
 ---
 
@@ -103,7 +115,7 @@ ForgeNet existe pour ce qu'ils ne traitent pas :
 
 | Composant | Stack | Rôle |
 | --- | --- | --- |
-| **Core Engine** | Go, Gin/Echo, gRPC | Orchestration Docker, métriques (`gopsutil`), pilotage Caddy, appels IA |
+| **Core Engine** | Go, gRPC, Connect | Orchestration Docker, métriques (`gopsutil`), pilotage Caddy, appels IA |
 | **Dashboard Web** | React, Vite, Tailwind | Administration complète : marketplace, logs, domaines, bases |
 | **App Mobile** | Flutter | Supervision temps réel, alerting push, gestion de crise |
 | **Moteur IA** | Ollama (Llama 3, Mistral, CodeLlama) | Analyse de logs, audit sécurité, assistance — en local |
