@@ -221,3 +221,66 @@ func TestLoad_MetricsStoragePath(t *testing.T) {
 	_, err = config.Load("")
 	require.ErrorContains(t, err, "metrics.storage_path")
 }
+
+func TestLoad_ProxyDefaults(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.False(t, cfg.Proxy.Enabled, "sans Caddy installé, les domaines restent désactivés")
+	assert.Equal(t, config.DefaultProxyAdminAddress, cfg.Proxy.AdminAddress)
+	assert.Equal(t, config.DefaultProxyNetwork, cfg.Proxy.Network)
+	assert.Empty(t, cfg.Proxy.CaddyfilePath)
+	assert.False(t, cfg.Proxy.LocalCerts)
+}
+
+func TestLoad_ProxyFromEnvironment(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("FORGENET_PROXY_ENABLED", "true")
+	t.Setenv("FORGENET_PROXY_ADMIN_ADDRESS", "127.0.0.1:2019")
+	t.Setenv("FORGENET_PROXY_EMAIL", "ops@example.org")
+	t.Setenv("FORGENET_PROXY_CADDY_CONTAINER", "forgenet-caddy")
+	t.Setenv("FORGENET_PROXY_HTTPS_PORT", "8443")
+
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.True(t, cfg.Proxy.Enabled)
+	assert.Equal(t, "127.0.0.1:2019", cfg.Proxy.AdminAddress)
+	assert.Equal(t, "ops@example.org", cfg.Proxy.Email)
+	assert.Equal(t, "forgenet-caddy", cfg.Proxy.CaddyContainer)
+	assert.Equal(t, 8443, cfg.Proxy.HTTPSPort)
+}
+
+func TestLoad_ProxyValidation(t *testing.T) {
+	cases := map[string]struct {
+		env  map[string]string
+		want string
+	}{
+		"réseau":    {map[string]string{"FORGENET_PROXY_NETWORK": "mon réseau"}, "proxy.network"},
+		"conteneur": {map[string]string{"FORGENET_PROXY_CADDY_CONTAINER": "caddy;rm"}, "proxy.caddy_container"},
+		"port":      {map[string]string{"FORGENET_PROXY_HTTP_PORT": "70000"}, "proxy.http_port"},
+		"local en production": {map[string]string{
+			"FORGENET_PROXY_LOCAL_CERTS": "true", "FORGENET_ENVIRONMENT": "production",
+			"FORGENET_AUTH_JWT_SECRET": "super-secret-production-key-32bytes",
+		}, "proxy.local_certs"},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			t.Setenv("FORGENET_PROXY_ENABLED", "true")
+			for k, v := range c.env {
+				t.Setenv(k, v)
+			}
+			_, err := config.Load("")
+			require.ErrorContains(t, err, c.want)
+		})
+	}
+
+	// Désactivé, le proxy n'est pas vérifié : une valeur inutilisée ne bloque pas le démarrage.
+	t.Run("désactivé", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		t.Setenv("FORGENET_PROXY_NETWORK", "mon réseau")
+		_, err := config.Load("")
+		require.NoError(t, err)
+	})
+}

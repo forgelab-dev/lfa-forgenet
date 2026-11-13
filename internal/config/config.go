@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/netip"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -49,6 +50,11 @@ const (
 	DefaultAPITokenTTL = 30 * 24 * time.Hour
 	// MinJWTSecretLength est la longueur minimale du secret JWT en production.
 	MinJWTSecretLength = 32
+
+	// DefaultProxyAdminAddress est le socket de l'API d'administration de Caddy.
+	DefaultProxyAdminAddress = "unix//run/forgenet/caddy-admin.sock"
+	// DefaultProxyNetwork est le réseau Docker partagé entre Caddy et les applications.
+	DefaultProxyNetwork = "forgenet-edge"
 )
 
 // ServerConfig contient les paramètres réseau et timeouts des serveurs HTTP et gRPC.
@@ -131,6 +137,32 @@ type HealthConfig struct {
 	ExposeDetails string `mapstructure:"expose_details"`
 }
 
+// ProxyConfig règle le reverse proxy Caddy et les domaines (ADR-0007, ADR-0008).
+type ProxyConfig struct {
+	// Enabled active les domaines. Désactivé par défaut : sans Caddy installé,
+	// le service des domaines répond FAILED_PRECONDITION.
+	Enabled bool `mapstructure:"enabled"`
+	// AdminAddress est l'adresse de l'API d'administration de Caddy : un socket
+	// Unix (« unix//chemin », recommandé) ou une adresse de bouclage. Toute
+	// autre adresse est refusée au démarrage.
+	AdminAddress string `mapstructure:"admin_address"`
+	// Email reçoit les avis de l'autorité ACME (facultatif).
+	Email string `mapstructure:"email"`
+	// CaddyfilePath reçoit une copie de la configuration appliquée ; vide :
+	// « Caddyfile » dans le dossier de la base de données.
+	CaddyfilePath string `mapstructure:"caddyfile_path"`
+	// Network est le réseau Docker partagé entre Caddy et les applications.
+	Network string `mapstructure:"network"`
+	// CaddyContainer, s'il est fixé, est branché sur ce réseau au démarrage.
+	CaddyContainer string `mapstructure:"caddy_container"`
+	// LocalCerts fait signer les certificats par l'autorité interne de Caddy :
+	// pour les essais sans domaine public. Refusé en production.
+	LocalCerts bool `mapstructure:"local_certs"`
+	// HTTPPort et HTTPSPort changent les ports d'écoute de Caddy ; 0 garde 80 et 443.
+	HTTPPort  int `mapstructure:"http_port"`
+	HTTPSPort int `mapstructure:"https_port"`
+}
+
 // Config est la structure racine de la configuration ForgeNet.
 type Config struct {
 	Environment string         `mapstructure:"environment"` // "development", "staging", "production"
@@ -141,6 +173,7 @@ type Config struct {
 	Docker      DockerConfig   `mapstructure:"docker"`
 	Health      HealthConfig   `mapstructure:"health"`
 	Metrics     MetricsConfig  `mapstructure:"metrics"`
+	Proxy       ProxyConfig    `mapstructure:"proxy"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -231,6 +264,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("health.expose_details inconnu : %q (valeurs acceptées : always, local, never)", c.Health.ExposeDetails)
 	}
 
+	if err := c.Proxy.validate(c.Environment); err != nil {
+		return err
+	}
+
 	validLogLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
 	if !validLogLevels[strings.ToLower(c.Log.Level)] {
 		return fmt.Errorf("niveau de log inconnu : %q (valeurs acceptées: debug, info, warn, error)", c.Log.Level)
@@ -274,4 +311,41 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("health.expose_details", ExposeDetailsLocal)
 
 	v.SetDefault("metrics.storage_path", "/")
+
+	v.SetDefault("proxy.enabled", false)
+	v.SetDefault("proxy.admin_address", DefaultProxyAdminAddress)
+	v.SetDefault("proxy.email", "")
+	v.SetDefault("proxy.caddyfile_path", "")
+	v.SetDefault("proxy.network", DefaultProxyNetwork)
+	v.SetDefault("proxy.caddy_container", "")
+	v.SetDefault("proxy.local_certs", false)
+	v.SetDefault("proxy.http_port", 0)
+	v.SetDefault("proxy.https_port", 0)
+}
+
+// dockerName reprend la règle de Docker pour un nom de réseau ou de conteneur.
+var dockerName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$`)
+
+// validate vérifie la section proxy quand elle est active. L'adresse
+// d'administration et le courriel sont vérifiés par le paquet proxy au
+// démarrage, avec ses listes blanches (ADR-0007).
+func (p ProxyConfig) validate(environment string) error {
+	if !p.Enabled {
+		return nil
+	}
+	if !dockerName.MatchString(p.Network) {
+		return fmt.Errorf("proxy.network invalide : %q", p.Network)
+	}
+	if p.CaddyContainer != "" && !dockerName.MatchString(p.CaddyContainer) {
+		return fmt.Errorf("proxy.caddy_container invalide : %q", p.CaddyContainer)
+	}
+	if p.LocalCerts && environment == "production" {
+		return fmt.Errorf("proxy.local_certs est réservé aux essais : refusé en production")
+	}
+	for name, port := range map[string]int{"proxy.http_port": p.HTTPPort, "proxy.https_port": p.HTTPSPort} {
+		if port < 0 || port > 65535 {
+			return fmt.Errorf("%s invalide : %d (0 pour le port par défaut, ou 1 à 65535)", name, port)
+		}
+	}
+	return nil
 }
