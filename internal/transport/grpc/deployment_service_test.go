@@ -2,7 +2,9 @@ package grpc_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"sync"
 	"testing"
 	"time"
@@ -109,6 +111,23 @@ func TestDeploymentService_AdminOnly(t *testing.T) {
 		},
 		"DeleteStack": func(ctx context.Context) error {
 			_, err := ts.deployments.DeleteStack(ctx, &forgenetv1.DeleteStackRequest{ProjectId: "p2"})
+			return err
+		},
+		// Un flux rend son erreur à la première lecture.
+		"StreamDeployment": func(ctx context.Context) error {
+			stream, err := ts.deployments.StreamDeployment(ctx, &forgenetv1.StreamDeploymentRequest{DeploymentId: "dep_absent"})
+			if err != nil {
+				return err
+			}
+			_, err = stream.Recv()
+			return err
+		},
+		"StreamDeploymentLogs": func(ctx context.Context) error {
+			stream, err := ts.deployments.StreamDeploymentLogs(ctx, &forgenetv1.StreamDeploymentLogsRequest{DeploymentId: "dep_absent"})
+			if err != nil {
+				return err
+			}
+			_, err = stream.Recv()
 			return err
 		},
 	}
@@ -261,4 +280,56 @@ func TestDeploymentService_ActionsAreAudited(t *testing.T) {
 	ts.stacks.mu.Lock()
 	defer ts.stacks.mu.Unlock()
 	assert.Equal(t, []string{"forgenet-p1"}, ts.stacks.removed)
+}
+
+// recvAll lit un flux jusqu'à sa fin et rend ce qu'il a reçu.
+func recvAll[T any](t *testing.T, recv func() (T, error)) []T {
+	t.Helper()
+	var out []T
+	for {
+		msg, err := recv()
+		if errors.Is(err, io.EOF) {
+			return out
+		}
+		require.NoError(t, err)
+		out = append(out, msg)
+	}
+}
+
+func TestDeploymentService_StreamsStateAndLogs(t *testing.T) {
+	ts := startDeploymentServer(t, true)
+	ctx, cancel := context.WithTimeout(as(ts.adminToken), 10*time.Second)
+	defer cancel()
+
+	created, err := ts.deployments.CreateDeployment(ctx, composeRequest("boutique"))
+	require.NoError(t, err)
+	id := created.GetDeployment().GetId()
+
+	states, err := ts.deployments.StreamDeployment(ctx, &forgenetv1.StreamDeploymentRequest{DeploymentId: id})
+	require.NoError(t, err)
+	updates := recvAll(t, states.Recv)
+	require.NotEmpty(t, updates)
+	assert.Equal(t, forgenetv1.DeploymentState_DEPLOYMENT_STATE_SUCCESS, updates[len(updates)-1].GetDeployment().GetState(),
+		"le flux se termine sur l'état final")
+
+	logs, err := ts.deployments.StreamDeploymentLogs(ctx, &forgenetv1.StreamDeploymentLogsRequest{DeploymentId: id, Follow: true})
+	require.NoError(t, err)
+	entries := recvAll(t, logs.Recv)
+	require.NotEmpty(t, entries)
+	first, last := entries[0].GetLogEntry(), entries[len(entries)-1].GetLogEntry()
+	assert.Equal(t, "Vérification du fichier Compose", first.GetMessage())
+	assert.Equal(t, "validate", first.GetStep())
+	assert.Equal(t, forgenetv1.LogStream_LOG_STREAM_STDOUT, first.GetStream())
+	assert.NotNil(t, first.GetEmittedAt())
+	assert.Equal(t, "Déploiement réussi", last.GetMessage())
+
+	// Reprise après la première ligne : elle n'est pas renvoyée.
+	resumed, err := ts.deployments.StreamDeploymentLogs(ctx, &forgenetv1.StreamDeploymentLogsRequest{DeploymentId: id, Since: first.GetEmittedAt()})
+	require.NoError(t, err)
+	assert.Len(t, recvAll(t, resumed.Recv), len(entries)-1)
+
+	absent, err := ts.deployments.StreamDeployment(ctx, &forgenetv1.StreamDeploymentRequest{DeploymentId: "dep_absent"})
+	require.NoError(t, err)
+	_, err = absent.Recv()
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
