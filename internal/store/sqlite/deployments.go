@@ -157,3 +157,61 @@ func scanDeployment(row scanner) (*store.Deployment, error) {
 func nullIfEmpty(s string) sql.NullString {
 	return sql.NullString{String: s, Valid: s != ""}
 }
+
+// maxDeploymentLogPage borne une page de journal lue d'un coup.
+const maxDeploymentLogPage = 1000
+
+func (s *deploymentsStore) AppendDeploymentLogs(ctx context.Context, logs []*store.DeploymentLog) error {
+	if len(logs) == 0 {
+		return nil
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("écriture du journal de déploiement : %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	stmt, err := tx.PrepareContext(ctx,
+		`INSERT INTO deployment_logs (deployment_id, emitted_at, stream, step, message) VALUES (?, ?, ?, ?, ?)`)
+	if err != nil {
+		return fmt.Errorf("écriture du journal de déploiement : %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
+
+	for _, l := range logs {
+		if l.Stream != store.LogStdout && l.Stream != store.LogStderr {
+			return fmt.Errorf("flux de journal inconnu : %q", l.Stream)
+		}
+		if _, err := stmt.ExecContext(ctx, l.DeploymentID, formatTime(l.EmittedAt), string(l.Stream), l.Step, l.Message); err != nil {
+			return wrapWriteError(err, "écriture du journal de déploiement")
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("écriture du journal de déploiement : %w", err)
+	}
+	return nil
+}
+
+func (s *deploymentsStore) ListDeploymentLogs(ctx context.Context, deploymentID string, after time.Time, limit int) ([]*store.DeploymentLog, error) {
+	if limit <= 0 || limit > maxDeploymentLogPage {
+		limit = maxDeploymentLogPage
+	}
+	// Les dates sont écrites au même format, de largeur fixe : la comparaison
+	// de textes suit l'ordre chronologique.
+	return queryAll(ctx, s.db, "lecture du journal de déploiement", scanDeploymentLog,
+		`SELECT deployment_id, emitted_at, stream, step, message FROM deployment_logs
+		 WHERE deployment_id = ? AND emitted_at > ? ORDER BY emitted_at ASC LIMIT ?`,
+		deploymentID, formatTime(after), limit)
+}
+
+func scanDeploymentLog(row scanner) (*store.DeploymentLog, error) {
+	var (
+		l      store.DeploymentLog
+		stream string
+	)
+	if err := row.Scan(&l.DeploymentID, &l.EmittedAt, &stream, &l.Step, &l.Message); err != nil {
+		return nil, wrapReadError(err, "lecture du journal de déploiement")
+	}
+	l.Stream = store.LogStream(stream)
+	return &l, nil
+}

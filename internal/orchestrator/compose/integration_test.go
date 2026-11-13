@@ -47,7 +47,7 @@ func TestEngine_RealComposeLifecycle(t *testing.T) {
 	})
 
 	// Déploiement : les deux services tournent, web est sain.
-	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/reference.compose.yaml")))
+	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/reference.compose.yaml"), nil))
 	first := byService(ctx, t, engine, project)
 	require.Len(t, first, 2)
 	assert.Equal(t, orchestrator.StateRunning, first["web"].State)
@@ -57,7 +57,7 @@ func TestEngine_RealComposeLifecycle(t *testing.T) {
 		"le fichier ne lit pas l'environnement du serveur")
 
 	// Mise à jour : web n'est pas recréé, cache est retiré, worker apparaît.
-	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/reference-v2.compose.yaml")))
+	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/reference-v2.compose.yaml"), nil))
 	second := byService(ctx, t, engine, project)
 	require.Len(t, second, 2)
 	assert.Equal(t, first["web"].ID, second["web"].ID, "un service inchangé garde son conteneur")

@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/compose"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 )
 
@@ -149,6 +151,10 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 	log := s.logger.With().Str("deployment_id", d.ID).Str("project_id", d.ProjectID).Logger()
 	stack, content := StackName(d.ProjectID), []byte(d.SourceContent)
 	state := store.DeploymentPending
+	// Le journal est fermé avant l'état final (voir journal) ; le defer couvre
+	// un déploiement annulé entre deux étapes.
+	journal := s.newJournal(d.ID)
+	defer journal.close()
 
 	advance := func(to store.DeploymentState) bool {
 		if !s.transition(d.ID, state, to, "") {
@@ -158,7 +164,7 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 		return true
 	}
 	fail := func(err error) {
-		to, message := store.DeploymentFailed, err.Error()
+		to, message := store.DeploymentFailed, failureMessage(err)
 		s.mu.Lock()
 		reason := run.reason
 		s.mu.Unlock()
@@ -170,6 +176,12 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 		case errors.Is(ctx.Err(), context.DeadlineExceeded):
 			message = fmt.Sprintf("délai de %s dépassé : %s", s.timeout, message)
 		}
+		if to == store.DeploymentCancelled {
+			journal.result(store.LogStderr, "Déploiement "+message)
+		} else {
+			journal.result(store.LogStderr, "Échec : "+message)
+		}
+		journal.close()
 		s.transition(d.ID, state, to, message)
 		log.Warn().Str("state", string(to)).Str("error", message).Msg("déploiement arrêté")
 	}
@@ -178,28 +190,37 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 	if !advance(store.DeploymentBuilding) {
 		return true // annulé entre-temps
 	}
+	journal.info(stepValidate, "Vérification du fichier Compose")
 	if err := s.stacks.Validate(ctx, content); err != nil {
 		fail(err)
 		return true
 	}
+	journal.info(stepValidate, "Fichier Compose valide")
 	if !advance(store.DeploymentDeploying) {
 		return true
 	}
-	if err := s.stacks.Deploy(ctx, stack, content); err != nil {
+	journal.info(stepDeploy, "Mise en service de la stack "+stack+" (docker compose up)")
+	if err := s.stacks.Deploy(ctx, stack, content, composeOutput(journal.output(stepDeploy))); err != nil {
 		fail(err)
 		return true
 	}
 	if !advance(store.DeploymentHealthChecking) {
 		return true
 	}
+	journal.info(stepHealthCheck, "Vérification des services")
 	services, err := s.stacks.Services(ctx, stack)
 	if err == nil {
+		for _, svc := range services {
+			journal.info(stepHealthCheck, describeService(svc))
+		}
 		err = checkHealthy(services)
 	}
 	if err != nil {
 		fail(err)
 		return true
 	}
+	journal.result(store.LogStdout, "Déploiement réussi")
+	journal.close()
 	if advance(store.DeploymentSuccess) {
 		log.Info().Msg("déploiement réussi")
 		if s.afterDeploy != nil {
@@ -210,16 +231,49 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 }
 
 // transition écrit un changement d'état, même si l'exécution vient d'être
-// annulée : l'état final doit toujours être enregistré.
+// annulée : l'état final doit toujours être enregistré. Il est ensuite diffusé.
 func (s *Service) transition(id string, from, to store.DeploymentState, message string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), writeTimeout)
 	defer cancel()
-	if _, err := s.store.TransitionDeployment(ctx, id, from, to, message); err != nil {
+	d, err := s.store.TransitionDeployment(ctx, id, from, to, message)
+	if err != nil {
 		if !errors.Is(err, store.ErrConflict) {
 			s.logger.Error().Err(err).Str("deployment_id", id).Str("from", string(from)).Str("to", string(to)).
 				Msg("changement d'état du déploiement")
 		}
 		return false
 	}
+	s.events.publish(id, event{deployment: d})
 	return true
+}
+
+// composeOutput rattache la sortie de docker compose au journal.
+func composeOutput(add func(store.LogStream, string)) compose.OutputFunc {
+	return func(stream compose.OutputStream, line string) {
+		if stream == compose.Stderr {
+			add(store.LogStderr, line)
+			return
+		}
+		add(store.LogStdout, line)
+	}
+}
+
+// describeService résume l'état d'un service pour le journal.
+func describeService(svc compose.Service) string {
+	line := fmt.Sprintf("%s : %s", svc.Service, svc.State)
+	if svc.Health != "" {
+		line += ", santé " + svc.Health
+	}
+	return line
+}
+
+// failureMessage décrit l'échec en une ligne : pour une commande Compose, sa
+// dernière ligne d'erreur plutôt que toute sa progression, déjà au journal.
+func failureMessage(err error) string {
+	message := err.Error()
+	var cmdErr *compose.CommandError
+	if errors.As(err, &cmdErr) {
+		message = strings.Replace(message, cmdErr.Error(), cmdErr.Summary(), 1)
+	}
+	return message
 }

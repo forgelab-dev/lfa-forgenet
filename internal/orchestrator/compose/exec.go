@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 	"time"
@@ -28,14 +29,29 @@ type CommandError struct {
 var subcommands = map[string]bool{"config": true, "up": true, "down": true, "ps": true, "version": true}
 
 func (e *CommandError) Error() string {
-	sub := "?"
-	for _, a := range e.Args {
-		if subcommands[a] {
-			sub = a
-			break
+	return fmt.Sprintf("docker compose %s : code %d : %s", e.subcommand(), e.ExitCode, e.Output)
+}
+
+// Summary résume l'erreur par la dernière ligne de la sortie d'erreur : c'est
+// là que Compose écrit la cause, après sa progression. La sortie complète
+// reste dans Output (et dans le journal d'un déploiement).
+func (e *CommandError) Summary() string {
+	last := ""
+	for line := range strings.SplitSeq(e.Output, "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			last = line
 		}
 	}
-	return fmt.Sprintf("docker compose %s : code %d : %s", sub, e.ExitCode, e.Output)
+	return fmt.Sprintf("docker compose %s : %s", e.subcommand(), last)
+}
+
+func (e *CommandError) subcommand() string {
+	for _, a := range e.Args {
+		if subcommands[a] {
+			return a
+		}
+	}
+	return "?"
 }
 
 type execRunner struct{}
@@ -52,8 +68,19 @@ func (execRunner) Run(ctx context.Context, c Command) ([]byte, error) {
 	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	var lines []*lineWriter
+	if c.Output != nil {
+		outLines, errLines := newLineWriter(Stdout, c.Output), newLineWriter(Stderr, c.Output)
+		lines = []*lineWriter{outLines, errLines}
+		cmd.Stdout, cmd.Stderr = io.MultiWriter(&stdout, outLines), io.MultiWriter(&stderr, errLines)
+	}
 
 	err := cmd.Run()
+	// Run a attendu la fin des copies : la dernière ligne, sans saut de ligne
+	// final, peut être rendue.
+	for _, w := range lines {
+		w.flush()
+	}
 	if err == nil {
 		return stdout.Bytes(), nil
 	}

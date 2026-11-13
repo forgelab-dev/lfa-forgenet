@@ -38,7 +38,7 @@ var (
 // Stacks est la part du moteur Compose dont le service a besoin.
 type Stacks interface {
 	Validate(ctx context.Context, content []byte) error
-	Deploy(ctx context.Context, project string, content []byte) error
+	Deploy(ctx context.Context, project string, content []byte, out compose.OutputFunc) error
 	Remove(ctx context.Context, project string, removeVolumes bool) error
 	Services(ctx context.Context, project string) ([]compose.Service, error)
 }
@@ -92,6 +92,8 @@ type Service struct {
 	afterDeploy func(ctx context.Context, projectID string)
 
 	wake chan struct{}
+	// events diffuse les changements d'état et le journal aux flux (Watch, Logs).
+	events *broker
 
 	mu      sync.Mutex
 	busy    map[string]bool       // projets en cours de déploiement ou de suppression
@@ -138,6 +140,7 @@ func New(st store.DeploymentStore, stacks Stacks, auditor audit.Auditor, logger 
 		timeout: defaultTimeout,
 		poll:    defaultPollInterval,
 		wake:    make(chan struct{}, 1),
+		events:  newBroker(),
 		busy:    make(map[string]bool),
 		running: make(map[string]*execution),
 		stop:    make(chan struct{}),
@@ -281,6 +284,9 @@ func (s *Service) cancel(ctx context.Context, id, reason string) (*store.Deploym
 			cancelled, err := s.store.TransitionDeployment(ctx, id, store.DeploymentPending, store.DeploymentCancelled, message)
 			if errors.Is(err, store.ErrConflict) {
 				continue
+			}
+			if err == nil {
+				s.events.publish(id, event{deployment: cancelled})
 			}
 			return cancelled, err
 		case store.DeploymentBuilding, store.DeploymentDeploying:

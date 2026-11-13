@@ -53,12 +53,28 @@ const (
 	validationProject = "forgenet-validation"
 )
 
+// OutputStream est le flux d'une ligne de sortie de la commande.
+type OutputStream int
+
+const (
+	// Stdout est la sortie standard.
+	Stdout OutputStream = iota
+	// Stderr est la sortie d'erreur, où Compose écrit aussi sa progression.
+	Stderr
+)
+
+// OutputFunc reçoit la sortie de la commande ligne par ligne, au fil de
+// l'exécution. Elle peut être appelée depuis deux goroutines à la fois (une
+// par flux) et ne doit pas bloquer longtemps.
+type OutputFunc func(stream OutputStream, line string)
+
 // Command est une exécution de `docker compose`.
 type Command struct {
-	Args  []string // arguments après « docker compose »
-	Stdin []byte
-	Env   []string // environnement complet de la commande
-	Dir   string
+	Args   []string // arguments après « docker compose »
+	Stdin  []byte
+	Env    []string // environnement complet de la commande
+	Dir    string
+	Output OutputFunc // facultative : reçoit la sortie en direct
 }
 
 // Runner exécute une commande et renvoie sa sortie standard. Une sortie en
@@ -152,8 +168,9 @@ func (e *Engine) Validate(ctx context.Context, content []byte) error {
 
 // Deploy crée la stack ou la met à jour : seuls les services modifiés sont
 // recréés, et ceux retirés du fichier sont supprimés. Il rend la main quand les
-// services tournent et que ceux qui ont une sonde de santé sont sains.
-func (e *Engine) Deploy(ctx context.Context, project string, content []byte) error {
+// services tournent et que ceux qui ont une sonde de santé sont sains. La
+// progression de `up` est passée à out, si elle est fournie.
+func (e *Engine) Deploy(ctx context.Context, project string, content []byte, out OutputFunc) error {
 	if err := checkProject(project); err != nil {
 		return err
 	}
@@ -162,7 +179,9 @@ func (e *Engine) Deploy(ctx context.Context, project string, content []byte) err
 	if err := e.Validate(ctx, content); err != nil {
 		return err
 	}
-	_, err := e.run(ctx, content, "-p", project, "-f", "-", "up",
+	// --quiet-pull garde les événements de téléchargement par service, sans
+	// une ligne par couche et par pourcentage.
+	_, err := e.runWithOutput(ctx, content, out, "-p", project, "-f", "-", "up",
 		"--detach", "--wait", "--wait-timeout", seconds(e.waitTimeout),
 		"--remove-orphans", "--quiet-pull")
 	return err
@@ -202,7 +221,11 @@ func (e *Engine) Ping(ctx context.Context) error {
 }
 
 func (e *Engine) run(ctx context.Context, stdin []byte, args ...string) ([]byte, error) {
-	return e.runner.Run(ctx, Command{Args: args, Stdin: stdin, Env: e.env, Dir: e.dir})
+	return e.runWithOutput(ctx, stdin, nil, args...)
+}
+
+func (e *Engine) runWithOutput(ctx context.Context, stdin []byte, out OutputFunc, args ...string) ([]byte, error) {
+	return e.runner.Run(ctx, Command{Args: args, Stdin: stdin, Env: e.env, Dir: e.dir, Output: out})
 }
 
 func checkProject(project string) error {

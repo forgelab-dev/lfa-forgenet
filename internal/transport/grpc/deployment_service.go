@@ -123,6 +123,42 @@ func (s *DeploymentServiceServer) DeleteStack(ctx context.Context, req *forgenet
 	return &forgenetv1.DeleteStackResponse{}, nil
 }
 
+// StreamDeployment envoie l'état du déploiement puis chacun de ses
+// changements ; le flux se termine à l'état final.
+func (s *DeploymentServiceServer) StreamDeployment(req *forgenetv1.StreamDeploymentRequest, stream forgenetv1.DeploymentService_StreamDeploymentServer) error {
+	err := s.deployments.Watch(stream.Context(), req.GetDeploymentId(), func(d *store.Deployment) error {
+		return stream.Send(&forgenetv1.StreamDeploymentResponse{Deployment: toProtoDeployment(d)})
+	})
+	if err != nil {
+		return s.toStatus(err, "suivi du déploiement")
+	}
+	return nil
+}
+
+// StreamDeploymentLogs envoie le journal d'exécution du déploiement ; avec
+// follow, il continue en direct jusqu'à l'état final. since reprend après la
+// dernière ligne reçue, sans doublon.
+func (s *DeploymentServiceServer) StreamDeploymentLogs(req *forgenetv1.StreamDeploymentLogsRequest, stream forgenetv1.DeploymentService_StreamDeploymentLogsServer) error {
+	opts := deploy.LogOptions{Follow: req.GetFollow()}
+	if req.GetSince() != nil {
+		opts.Since = req.GetSince().AsTime()
+	}
+	switch req.GetStream() {
+	case forgenetv1.LogStream_LOG_STREAM_STDOUT:
+		opts.Stream = store.LogStdout
+	case forgenetv1.LogStream_LOG_STREAM_STDERR:
+		opts.Stream = store.LogStderr
+	}
+
+	err := s.deployments.Logs(stream.Context(), req.GetDeploymentId(), opts, func(l *store.DeploymentLog) error {
+		return stream.Send(&forgenetv1.StreamDeploymentLogsResponse{LogEntry: toProtoLogEntry(l)})
+	})
+	if err != nil {
+		return s.toStatus(err, "lecture du journal de déploiement")
+	}
+	return nil
+}
+
 // checkStrategy accepte la recréation, seule stratégie d'une stack Compose
 // pour l'instant ; une stratégie absente vaut recréation.
 func checkStrategy(strategy *forgenetv1.StrategyConfig) error {
@@ -158,6 +194,8 @@ func (s *DeploymentServiceServer) toStatus(err error, action string) error {
 		return status.Error(codes.FailedPrecondition, err.Error())
 	case errors.Is(err, store.ErrNotFound):
 		return status.Error(codes.NotFound, "déploiement introuvable")
+	case errors.Is(err, deploy.ErrLagging):
+		return status.Error(codes.Unavailable, err.Error())
 	case errors.Is(err, compose.ErrUnavailable):
 		return status.Error(codes.Unavailable, "docker compose indisponible sur l'hôte")
 	case errors.Is(err, context.Canceled):
@@ -202,4 +240,17 @@ func toProtoDeployment(d *store.Deployment) *forgenetv1.Deployment {
 		pd.FinishedAt = timestamppb.New(*d.FinishedAt)
 	}
 	return pd
+}
+
+func toProtoLogEntry(l *store.DeploymentLog) *forgenetv1.DeploymentLogEntry {
+	stream := forgenetv1.LogStream_LOG_STREAM_STDOUT
+	if l.Stream == store.LogStderr {
+		stream = forgenetv1.LogStream_LOG_STREAM_STDERR
+	}
+	return &forgenetv1.DeploymentLogEntry{
+		EmittedAt: timestamppb.New(l.EmittedAt),
+		Message:   l.Message,
+		Step:      l.Step,
+		Stream:    stream,
+	}
 }
