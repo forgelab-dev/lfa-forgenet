@@ -1,0 +1,99 @@
+# Installation standard de ForgeNet : le serveur et Caddy (ADR-0007, ADR-0009).
+#
+# Les valeurs viennent du fichier .env voisin, écrit par install.sh (modèle :
+# .env.example). Lancement : docker compose up -d
+#
+# Ce qui est exposé :
+# - Caddy publie 80 et 443 (HTTPS du dashboard et des applications) ;
+# - le serveur publie 8080 sur 127.0.0.1 seulement : sans domaine, le dashboard
+#   s'ouvre par un tunnel SSH (ssh -L 8080:localhost:8080 serveur) ;
+# - l'API d'administration de Caddy n'est qu'un socket Unix partagé par les
+#   deux conteneurs, jamais un port.
+
+name: forgenet
+
+services:
+  server:
+    image: ghcr.io/forgelab-dev/forgenet-server:${FORGENET_VERSION:?FORGENET_VERSION manquante dans .env}
+    container_name: forgenet-server
+    restart: unless-stopped
+    # Utilisateur sans droits de l'image ; le groupe du socket Docker lui donne
+    # accès au démon, seul privilège dont il a besoin.
+    user: "10001:10001"
+    group_add:
+      - "${DOCKER_GID:?DOCKER_GID manquant dans .env}"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      FORGENET_AUTH_JWT_SECRET: ${FORGENET_JWT_SECRET:?FORGENET_JWT_SECRET manquant dans .env}
+      FORGENET_PROXY_ENABLED: "true"
+      # Le mode 0660 et le groupe 10001 de Caddy réservent le socket au serveur.
+      FORGENET_PROXY_ADMIN_ADDRESS: unix//run/forgenet/caddy-admin.sock|0660
+      FORGENET_PROXY_CADDY_CONTAINER: forgenet-caddy
+      FORGENET_PROXY_EMAIL: ${FORGENET_ACME_EMAIL:-}
+      FORGENET_PROXY_DASHBOARD_HOST: ${FORGENET_DOMAIN:-}
+      # Fixée seulement avec un domaine : les deux options vont ensemble.
+      FORGENET_PROXY_DASHBOARD_UPSTREAM: ${FORGENET_DOMAIN:+forgenet-server:8080}
+      # Métriques de l'hôte, pas du seul conteneur.
+      HOST_PROC: /host/proc
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /proc:/host/proc:ro
+      - forgenet-data:/var/lib/forgenet
+      - caddy-admin:/run/forgenet
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks: [core]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    depends_on:
+      caddy:
+        condition: service_started
+
+  caddy:
+    image: caddy:2.11.9-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
+    container_name: forgenet-caddy
+    restart: unless-stopped
+    # root dans le conteneur pour ses volumes, mais groupe 10001 : le socket
+    # d'administration, créé en 0660, n'est ouvert qu'au serveur.
+    user: "0:10001"
+    # --resume reprend la dernière configuration chargée par ForgeNet, gardée
+    # dans le volume /config : un redémarrage de Caddy seul ne coupe aucun site.
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile.base", "--adapter", "caddyfile", "--resume"]
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./Caddyfile.base:/etc/caddy/Caddyfile.base:ro
+      - caddy-data:/data
+      - caddy-config:/config
+      - caddy-admin:/run/forgenet
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    # Le réseau partagé avec les applications (forgenet-edge) n'est pas déclaré
+    # ici : le serveur le crée avec son étiquette et y branche Caddy (ADR-0008).
+    networks: [core]
+
+networks:
+  core:
+    name: forgenet-core
+
+volumes:
+  forgenet-data:
+  caddy-data:
+  caddy-config:
+  caddy-admin:

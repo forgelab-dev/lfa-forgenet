@@ -1,0 +1,15 @@
+# Contexte de build de deploy/Dockerfile : seulement les sources du serveur
+# et du dashboard. Jamais de secret, de base locale ni de dépendance installée.
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/
+!pkg/
+!web/
+web/node_modules/
+web/dist/
+**/*_test.go
+**/testdata/
+**/.env
+**/.env.*

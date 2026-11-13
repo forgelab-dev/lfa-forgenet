@@ -1,6 +1,6 @@
 # ADR-0009 : service du dashboard en production
 
-- Statut : proposé
+- Statut : accepté (revue de la PR #50, 13/11/2026)
 - Date : 2026-11-13
 - Contexte : ticket #15 (installation en une commande), à trancher avant son
   `docker-compose.yml`
