@@ -1,0 +1,12 @@
+# Généré par ForgeNet à chaque changement de domaine : ne pas modifier à la main.
+{
+	admin 127.0.0.1:2019
+	local_certs
+	skip_install_trust
+	http_port 8080
+	https_port 8443
+}
+
+app.forgenet.test {
+	reverse_proxy app:3000
+}

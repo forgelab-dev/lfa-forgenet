@@ -1,0 +1,4 @@
+# Généré par ForgeNet à chaque changement de domaine : ne pas modifier à la main.
+{
+	admin unix//run/forgenet/caddy-admin.sock
+}

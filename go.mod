@@ -1,6 +1,6 @@
 module github.com/forgelab-dev/lfa-forgenet
 
-go 1.26.10
+go 1.26.11
 
 require (
 	connectrpc.com/connect/v2 v2.0.2

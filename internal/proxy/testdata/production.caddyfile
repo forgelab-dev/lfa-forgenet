@@ -1,0 +1,13 @@
+# Généré par ForgeNet à chaque changement de domaine : ne pas modifier à la main.
+{
+	admin unix//run/forgenet/caddy-admin.sock|0220
+	email ops@example.org
+}
+
+api.example.org {
+	reverse_proxy boutique-api-1:8080
+}
+
+www.example.org {
+	reverse_proxy vitrine-web-1:80
+}
