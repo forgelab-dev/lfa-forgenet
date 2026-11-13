@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package forgenet.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1";
+
+// --- MODELS ---
+
+// Domain relie un nom de domaine au service d'une application déployée :
+// Caddy obtient son certificat et lui transmet le trafic (ADR-0007, ADR-0008).
+message Domain {
+  string id = 1;
+  // Nom normalisé : minuscules, sans point final, nom internationalisé en
+  // punycode (« xn-- »).
+  string host = 2;
+  string project_id = 3;
+  // Service du fichier Compose du projet.
+  string service = 4;
+  // Port où le service écoute dans son conteneur.
+  uint32 port = 5;
+  // Auteur de l'ajout, ex: "user:usr_…".
+  string created_by = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+// --- REQUEST / RESPONSE MESSAGES ---
+
+message ListDomainsRequest {
+  // Vide : les domaines de tous les projets.
+  string project_id = 1;
+}
+
+message ListDomainsResponse {
+  // Triés par nom de domaine.
+  repeated Domain domains = 1;
+}
+
+message AddDomainRequest {
+  string host = 1;
+  string project_id = 2;
+  string service = 3;
+  uint32 port = 4;
+}
+
+message AddDomainResponse {
+  Domain domain = 1;
+}
+
+message RemoveDomainRequest {
+  string domain_id = 1;
+}
+
+message RemoveDomainResponse {}
+
+// --- SERVICE ---
+
+// DomainService gère les noms de domaine servis par le reverse proxy. Tant
+// que le proxy est désactivé dans la configuration du serveur, chaque méthode
+// répond FAILED_PRECONDITION.
+service DomainService {
+  // ListDomains liste les domaines, d'un projet ou de tous.
+  rpc ListDomains(ListDomainsRequest) returns (ListDomainsResponse);
+
+  // AddDomain relie un domaine au service déployé d'un projet. Un nom déjà
+  // pris répond ALREADY_EXISTS ; un service absent de la stack, NOT_FOUND.
+  rpc AddDomain(AddDomainRequest) returns (AddDomainResponse);
+
+  // RemoveDomain retire un domaine. Caddy cesse de le servir avant que le
+  // domaine ne soit effacé.
+  rpc RemoveDomain(RemoveDomainRequest) returns (RemoveDomainResponse);
+}
