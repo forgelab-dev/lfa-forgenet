@@ -52,9 +52,8 @@ export const navigation: SectionGroup[] = [
         path: '/deploiements',
         label: 'Déploiements',
         icon: Rocket,
-        upcoming: true,
         summary:
-          'Lancer une application depuis une image ou un dépôt Git, suivre sa construction et revenir à une version précédente.',
+          'Déployer une application Docker Compose et suivre sa mise en service en direct, journal compris.',
       },
       {
         path: '/surveillance',

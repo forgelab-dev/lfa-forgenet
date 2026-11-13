@@ -27,6 +27,7 @@ const (
 	DeploymentService_StreamDeploymentLogs_FullMethodName = "/forgenet.v1.DeploymentService/StreamDeploymentLogs"
 	DeploymentService_StreamDeployment_FullMethodName     = "/forgenet.v1.DeploymentService/StreamDeployment"
 	DeploymentService_DeleteStack_FullMethodName          = "/forgenet.v1.DeploymentService/DeleteStack"
+	DeploymentService_ListStacks_FullMethodName           = "/forgenet.v1.DeploymentService/ListStacks"
 )
 
 // DeploymentServiceClient is the client API for DeploymentService service.
@@ -52,6 +53,9 @@ type DeploymentServiceClient interface {
 	// DeleteStack arrête et supprime la stack en service d'un projet : conteneurs et réseaux, et volumes sur demande.
 	// L'historique des déploiements est gardé. Refusé (FAILED_PRECONDITION) pendant un déploiement du projet.
 	DeleteStack(ctx context.Context, in *DeleteStackRequest, opts ...grpc.CallOption) (*DeleteStackResponse, error)
+	// ListStacks liste les stacks en place sur l'hôte, avec leurs conteneurs en marche et arrêtés.
+	// L'historique des déploiements ne suffit pas : une stack supprimée garde ses déploiements.
+	ListStacks(ctx context.Context, in *ListStacksRequest, opts ...grpc.CallOption) (*ListStacksResponse, error)
 }
 
 type deploymentServiceClient struct {
@@ -160,6 +164,16 @@ func (c *deploymentServiceClient) DeleteStack(ctx context.Context, in *DeleteSta
 	return out, nil
 }
 
+func (c *deploymentServiceClient) ListStacks(ctx context.Context, in *ListStacksRequest, opts ...grpc.CallOption) (*ListStacksResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListStacksResponse)
+	err := c.cc.Invoke(ctx, DeploymentService_ListStacks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DeploymentServiceServer is the server API for DeploymentService service.
 // All implementations must embed UnimplementedDeploymentServiceServer
 // for forward compatibility.
@@ -183,6 +197,9 @@ type DeploymentServiceServer interface {
 	// DeleteStack arrête et supprime la stack en service d'un projet : conteneurs et réseaux, et volumes sur demande.
 	// L'historique des déploiements est gardé. Refusé (FAILED_PRECONDITION) pendant un déploiement du projet.
 	DeleteStack(context.Context, *DeleteStackRequest) (*DeleteStackResponse, error)
+	// ListStacks liste les stacks en place sur l'hôte, avec leurs conteneurs en marche et arrêtés.
+	// L'historique des déploiements ne suffit pas : une stack supprimée garde ses déploiements.
+	ListStacks(context.Context, *ListStacksRequest) (*ListStacksResponse, error)
 	mustEmbedUnimplementedDeploymentServiceServer()
 }
 
@@ -216,6 +233,9 @@ func (UnimplementedDeploymentServiceServer) StreamDeployment(*StreamDeploymentRe
 }
 func (UnimplementedDeploymentServiceServer) DeleteStack(context.Context, *DeleteStackRequest) (*DeleteStackResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteStack not implemented")
+}
+func (UnimplementedDeploymentServiceServer) ListStacks(context.Context, *ListStacksRequest) (*ListStacksResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListStacks not implemented")
 }
 func (UnimplementedDeploymentServiceServer) mustEmbedUnimplementedDeploymentServiceServer() {}
 func (UnimplementedDeploymentServiceServer) testEmbeddedByValue()                           {}
@@ -368,6 +388,24 @@ func _DeploymentService_DeleteStack_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DeploymentService_ListStacks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListStacksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeploymentServiceServer).ListStacks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DeploymentService_ListStacks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeploymentServiceServer).ListStacks(ctx, req.(*ListStacksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DeploymentService_ServiceDesc is the grpc.ServiceDesc for DeploymentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -398,6 +436,10 @@ var DeploymentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteStack",
 			Handler:    _DeploymentService_DeleteStack_Handler,
+		},
+		{
+			MethodName: "ListStacks",
+			Handler:    _DeploymentService_ListStacks_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

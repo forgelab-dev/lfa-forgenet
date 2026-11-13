@@ -32,6 +32,7 @@ type fakeStacks struct {
 	block       bool
 	deployed    []string
 	output      []string // lignes passées à la sortie de Deploy
+	projects    []compose.Project
 	removed     []string
 	started     chan struct{} // reçoit un signal à chaque Deploy
 }
@@ -83,6 +84,12 @@ func (f *fakeStacks) Services(context.Context, string) ([]compose.Service, error
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.services, nil
+}
+
+func (f *fakeStacks) Projects(context.Context) ([]compose.Project, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.projects, nil
 }
 
 func (f *fakeStacks) set(fn func(*fakeStacks)) {
@@ -406,4 +413,24 @@ func TestDeleteStack_RefusedWhileProjectIsBusy(t *testing.T) {
 	stacks.mu.Lock()
 	defer stacks.mu.Unlock()
 	assert.Equal(t, []string{"forgenet-p1", "forgenet-p2+volumes", "forgenet-p1"}, stacks.removed)
+}
+
+func TestListStacks_KeepsOnlyForgeNetProjects(t *testing.T) {
+	stacks := newFakeStacks()
+	stacks.set(func(f *fakeStacks) {
+		f.projects = []compose.Project{
+			{Name: "forgenet-vitrine", Containers: 2, Running: 1},
+			{Name: "nextcloud", Containers: 3, Running: 3},
+			{Name: "forgenet-boutique", Containers: 1, Running: 1},
+			{Name: "forgenet-Pas_Valide", Containers: 1},
+		}
+	})
+	svc := newService(t, newStore(t), stacks)
+
+	list, err := svc.ListStacks(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, []deploy.Stack{
+		{ProjectID: "boutique", Containers: 1, Running: 1},
+		{ProjectID: "vitrine", Containers: 2, Running: 1},
+	}, list, "les projets Compose étrangers à ForgeNet n'apparaissent pas")
 }

@@ -214,6 +214,57 @@ func (e *Engine) Services(ctx context.Context, project string) ([]Service, error
 	return parseServices(out)
 }
 
+// Project est un projet Compose en place sur l'hôte et l'état de ses conteneurs.
+type Project struct {
+	Name       string
+	Containers int // conteneurs du projet, arrêtés compris
+	Running    int // conteneurs en marche
+}
+
+// Projects liste les projets Compose de l'hôte, arrêtés compris.
+func (e *Engine) Projects(ctx context.Context) ([]Project, error) {
+	out, err := e.run(ctx, nil, "ls", "--all", "--format", "json")
+	if err != nil {
+		return nil, err
+	}
+	return parseProjects(out)
+}
+
+// statusCount reconnaît un compte de `ls` : « running(2) », « exited(1) »…
+var statusCount = regexp.MustCompile(`([a-z]+)\((\d+)\)`)
+
+// parseProjects lit la sortie de `ls --format json`, par exemple
+// [{"Name":"x","Status":"exited(1), running(1)","ConfigFiles":"-"}].
+func parseProjects(out []byte) ([]Project, error) {
+	out = bytes.TrimSpace(out)
+	if len(out) == 0 {
+		return nil, nil
+	}
+	var entries []struct {
+		Name   string `json:"Name"`
+		Status string `json:"Status"`
+	}
+	if err := json.Unmarshal(out, &entries); err != nil {
+		return nil, fmt.Errorf("lecture des projets Compose : %w", err)
+	}
+	projects := make([]Project, 0, len(entries))
+	for _, entry := range entries {
+		p := Project{Name: entry.Name}
+		for _, m := range statusCount.FindAllStringSubmatch(entry.Status, -1) {
+			n, err := strconv.Atoi(m[2])
+			if err != nil {
+				return nil, fmt.Errorf("lecture des projets Compose : état %q", entry.Status)
+			}
+			p.Containers += n
+			if m[1] == "running" {
+				p.Running += n
+			}
+		}
+		projects = append(projects, p)
+	}
+	return projects, nil
+}
+
 // Ping vérifie que la commande docker compose répond.
 func (e *Engine) Ping(ctx context.Context) error {
 	_, err := e.run(ctx, nil, "version", "--short")
