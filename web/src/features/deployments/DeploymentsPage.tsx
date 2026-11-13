@@ -1,5 +1,5 @@
 import { ShieldCheck } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { PageHeader } from '../../components/ui/PageHeader';
 import { RequestError } from '../../components/ui/RequestError';
@@ -9,7 +9,8 @@ import { useRequest } from '../../lib/useRequest';
 import { useApi, useCurrentUser } from '../auth/session';
 import { ApplicationList } from './ApplicationList';
 import { DeployForm } from './DeployForm';
-import { groupByProject } from './group';
+import { groupByProject, type Stacks } from './group';
+import { isActive } from './state';
 
 /** Les déploiements chargés : le serveur n'en renvoie pas plus de 100 par page. */
 const pageSize = 100;
@@ -36,11 +37,35 @@ function AdminView() {
   );
   const [request, retry] = useRequest(load);
 
+  // Les stacks en place, relues à la fin d'un déploiement et après une
+  // suppression. Leur échec n'empêche pas d'afficher les déploiements.
+  const [stacks, setStacks] = useState<Stacks>({ known: false });
+  const [stacksVersion, setStacksVersion] = useState(0);
+  const refreshStacks = useCallback(() => setStacksVersion((v) => v + 1), []);
+  useEffect(() => {
+    const abort = new AbortController();
+    api.deployments.listStacks({}, { signal: abort.signal }).then(
+      (res) => {
+        if (!abort.signal.aborted) {
+          setStacks({ known: true, byProject: new Map(res.stacks.map((s) => [s.projectId, s])) });
+        }
+      },
+      () => {
+        if (!abort.signal.aborted) setStacks({ known: false });
+      }
+    );
+    return () => abort.abort();
+  }, [api, stacksVersion]);
+
   // Les créations et les états reçus en direct s'appliquent à la liste
   // chargée, sans la recharger ; un nouveau chargement les reprend par id.
   const [updates, setUpdates] = useState<Map<string, Deployment>>(() => new Map());
   const applyUpdate = useCallback((d: Deployment) => {
     setUpdates((current) => new Map(current).set(d.id, d));
+    // Un déploiement terminé a pu créer, changer ou laisser à moitié sa stack.
+    if (!isActive(d.state)) {
+      setStacksVersion((v) => v + 1);
+    }
   }, []);
 
   const applications = useMemo(() => {
@@ -51,8 +76,8 @@ function AdminView() {
     for (const [id, d] of updates) {
       byId.set(id, d);
     }
-    return groupByProject(byId.values());
-  }, [request, updates]);
+    return groupByProject(byId.values(), stacks);
+  }, [request, updates, stacks]);
 
   return (
     <>
@@ -71,7 +96,12 @@ function AdminView() {
                   ? '1 application'
                   : `${applications.length} applications`}
             </h2>
-            <ApplicationList applications={applications} onUpdate={applyUpdate} />
+            <ApplicationList
+              applications={applications}
+              stacksKnown={stacks.known}
+              onUpdate={applyUpdate}
+              onStackDeleted={refreshStacks}
+            />
           </section>
           <aside className="animate-rise [animation-delay:120ms] lg:sticky lg:top-6">
             <DeployForm onCreated={applyUpdate} />

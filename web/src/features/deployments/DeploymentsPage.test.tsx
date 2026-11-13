@@ -68,6 +68,10 @@ interface Options {
   /** Le premier flux de journal se coupe après n lignes. */
   dropLogsAfter?: number;
   deleteError?: ConnectError;
+  /** Stacks en place : [projet, conteneurs, en marche]. */
+  stacks?: [string, number, number][];
+  /** ListStacks échoue (docker compose indisponible). */
+  stacksError?: boolean;
 }
 
 function fakeServer(options: Options = {}) {
@@ -88,8 +92,10 @@ function fakeServer(options: Options = {}) {
     cancelled: [] as string[],
     deleted: [] as { projectId: string; deleteVolumes: boolean }[],
     logRequests: [] as StreamDeploymentLogsRequest[],
+    stacks: 0,
   };
   let dropped = false;
+  let stacks = options.stacks ?? [];
   // Libère le flux d'état ; le test décide quand le déploiement avance.
   let release: () => void = () => {};
   const advance = new Promise<void>((resolve) => (release = resolve));
@@ -109,6 +115,19 @@ function fakeServer(options: Options = {}) {
           listDeployments() {
             calls.list++;
             return { deployments: initial };
+          },
+          listStacks() {
+            calls.stacks++;
+            if (options.stacksError) {
+              throw new ConnectError('docker compose indisponible sur l’hôte', Code.Unavailable);
+            }
+            return {
+              stacks: stacks.map(([projectId, containers, running]) => ({
+                projectId,
+                containers,
+                running,
+              })),
+            };
           },
           createDeployment(req) {
             calls.created.push(req);
@@ -130,6 +149,7 @@ function fakeServer(options: Options = {}) {
           deleteStack(req) {
             calls.deleted.push({ projectId: req.projectId, deleteVolumes: req.deleteVolumes });
             if (options.deleteError) throw options.deleteError;
+            stacks = stacks.filter(([projectId]) => projectId !== req.projectId);
             return {};
           },
           async *streamDeployment(req) {
@@ -362,9 +382,11 @@ describe('DeploymentsPage', () => {
   it('supprime une stack, et exige le nom du projet pour effacer ses données', async () => {
     const server = fakeServer({
       initial: [deployment('dep_1', 'boutique', DeploymentState.SUCCESS, 5)],
+      stacks: [['boutique', 2, 2]],
     });
     renderPage(server);
     const row = await appRow('boutique');
+    expect(await within(row).findByText('2 conteneurs en marche')).toBeInTheDocument();
 
     fireEvent.click(within(row).getByRole('button', { name: 'Supprimer la stack boutique' }));
     let confirm = within(row).getByRole('group', { name: 'Supprimer la stack boutique' });
@@ -388,12 +410,18 @@ describe('DeploymentsPage', () => {
       'Stack supprimée, volumes compris'
     );
     expect(server.calls.deleted).toEqual([{ projectId: 'boutique', deleteVolumes: true }]);
+    // Les stacks sont relues : l'application n'a plus rien en place.
+    expect(
+      await within(row).findByText('Aucune stack en place', { selector: 'p' })
+    ).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: 'Supprimer la stack boutique' })).toBeDisabled();
   });
 
   it('explique un refus de suppression', async () => {
     renderPage(
       fakeServer({
         initial: [deployment('dep_1', 'boutique', DeploymentState.SUCCESS, 5)],
+        stacks: [['boutique', 1, 1]],
         deleteError: new ConnectError(
           'un déploiement du projet est en attente ou en cours',
           Code.FailedPrecondition
@@ -401,11 +429,70 @@ describe('DeploymentsPage', () => {
       })
     );
     const row = await appRow('boutique');
+    await within(row).findByText('1 conteneur en marche');
 
     fireEvent.click(within(row).getByRole('button', { name: 'Supprimer la stack boutique' }));
     fireEvent.click(within(row).getByRole('button', { name: 'Supprimer la stack' }));
     expect(await within(row).findByRole('alert')).toHaveTextContent(
       'Un déploiement du projet est en attente ou en cours.'
     );
+  });
+
+  it('montre ce qui tourne réellement, indépendamment du dernier déploiement', async () => {
+    renderPage(
+      fakeServer({
+        initial: [
+          deployment('dep_1', 'boutique', DeploymentState.SUCCESS, 5),
+          deployment('dep_2', 'api', DeploymentState.FAILED, 6),
+          deployment('dep_3', 'blog', DeploymentState.SUCCESS, 7),
+        ],
+        stacks: [
+          ['boutique', 2, 2],
+          ['api', 2, 1],
+          ['ancien', 1, 0],
+        ],
+      })
+    );
+
+    expect(
+      await within(await appRow('boutique')).findByText('2 conteneurs en marche')
+    ).toBeInTheDocument();
+    expect(
+      within(await appRow('api')).getByText('1 conteneur sur 2 en marche')
+    ).toBeInTheDocument();
+    const blog = await appRow('blog');
+    expect(within(blog).getByText('Aucune stack en place', { selector: 'p' })).toBeInTheDocument();
+    expect(within(blog).getByRole('button', { name: 'Supprimer la stack blog' })).toBeDisabled();
+
+    // Une stack sans déploiement chargé garde sa ligne, pour pouvoir la supprimer.
+    const ancien = await appRow('ancien');
+    expect(within(ancien).getByText('Stack arrêtée : 1 conteneur à l’arrêt')).toBeInTheDocument();
+    expect(within(ancien).getByRole('button', { name: 'Supprimer la stack ancien' })).toBeEnabled();
+  });
+
+  it('affiche les déploiements même si l’état des stacks est illisible', async () => {
+    renderPage(
+      fakeServer({
+        initial: [deployment('dep_1', 'boutique', DeploymentState.SUCCESS, 5)],
+        stacksError: true,
+      })
+    );
+    const row = await appRow('boutique');
+    expect(await within(row).findByText('État de la stack inconnu')).toBeInTheDocument();
+    expect(within(row).getByRole('button', { name: 'Supprimer la stack boutique' })).toBeEnabled();
+  });
+
+  it('relit les stacks quand un déploiement se termine', async () => {
+    const server = fakeServer();
+    renderPage(server);
+    await screen.findByRole('button', { name: 'Déployer' });
+    await waitFor(() => expect(server.calls.stacks).toBe(1));
+
+    fill('Fichier Compose', 'name: boutique\nservices:\n  web:\n    image: nginx\n');
+    fireEvent.click(screen.getByRole('button', { name: 'Déployer' }));
+    const row = await appRow('boutique');
+    server.release();
+    await waitFor(() => expect(within(row).getByText('Réussi')).toBeInTheDocument());
+    await waitFor(() => expect(server.calls.stacks).toBe(2));
   });
 });

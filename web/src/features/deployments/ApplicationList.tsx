@@ -1,10 +1,18 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
-import { ChevronDown, LoaderCircle, ScrollText, CircleStop, Trash2, WifiOff } from 'lucide-react';
+import {
+  Boxes,
+  ChevronDown,
+  CircleStop,
+  LoaderCircle,
+  ScrollText,
+  Trash2,
+  WifiOff,
+} from 'lucide-react';
 import { useId, useState, type ReactNode } from 'react';
 
 import { Button } from '../../components/ui/Button';
 import { fieldClass } from '../../components/ui/field';
-import { DeploymentState, type Deployment } from '../../gen/forgenet/v1/deploy_pb';
+import { DeploymentState, type Deployment, type Stack } from '../../gen/forgenet/v1/deploy_pb';
 import { describeError } from '../../lib/api/errors';
 import { useApi, useCurrentUser } from '../auth/session';
 import type { Application } from './group';
@@ -18,13 +26,18 @@ function created(d: Deployment): Date | undefined {
   return d.createdAt ? timestampDate(d.createdAt) : undefined;
 }
 
+interface RowProps {
+  app: Application;
+  /** Faux tant que les stacks ne sont pas chargées, ou si leur lecture a échoué. */
+  stacksKnown: boolean;
+  onUpdate: (deployment: Deployment) => void;
+  onStackDeleted: () => void;
+}
+
 export function ApplicationList({
   applications,
-  onUpdate,
-}: {
-  applications: Application[];
-  onUpdate: (deployment: Deployment) => void;
-}) {
+  ...props
+}: { applications: Application[] } & Omit<RowProps, 'app'>) {
   if (applications.length === 0) {
     return (
       <p className="mt-4 rounded-lg border border-dashed border-iron-700 px-5 py-10 text-center text-iron-300">
@@ -35,20 +48,18 @@ export function ApplicationList({
   }
   return (
     <ul aria-label="Applications" className="mt-4 space-y-3">
-      {applications.map((app) => (
-        <ApplicationRow key={app.projectId} app={app} onUpdate={onUpdate} />
-      ))}
+      {applications.map((app) =>
+        app.deployments.length > 0 ? (
+          <ApplicationRow key={app.projectId} app={app} {...props} />
+        ) : (
+          <StackOnlyRow key={app.projectId} app={app} {...props} />
+        )
+      )}
     </ul>
   );
 }
 
-function ApplicationRow({
-  app,
-  onUpdate,
-}: {
-  app: Application;
-  onUpdate: (d: Deployment) => void;
-}) {
+function ApplicationRow({ app, stacksKnown, onUpdate, onStackDeleted }: RowProps) {
   const [latest, ...history] = app.deployments;
   const active = isActive(latest.state);
   const me = useCurrentUser();
@@ -95,6 +106,7 @@ function ApplicationRow({
                 )}
             {author && ` · ${author}`}
           </p>
+          {!active && <StackStatus stack={app.stack} known={stacksKnown} />}
         </div>
         <div aria-live="polite" className="flex items-center gap-3">
           {watch.link === 'reconnecting' && (
@@ -186,7 +198,12 @@ function ApplicationRow({
         </ol>
       )}
 
-      <DeleteStack projectId={app.projectId} busy={active} />
+      <DeleteStack
+        projectId={app.projectId}
+        busy={active}
+        absent={stacksKnown && !app.stack}
+        onDeleted={onStackDeleted}
+      />
     </li>
   );
 }
@@ -312,7 +329,18 @@ function CancelButton({
  * demande. Supprimer les volumes efface les données : il faut alors retaper
  * le nom du projet.
  */
-function DeleteStack({ projectId, busy }: { projectId: string; busy: boolean }) {
+function DeleteStack({
+  projectId,
+  busy,
+  absent,
+  onDeleted,
+}: {
+  projectId: string;
+  busy: boolean;
+  /** Vrai quand on sait qu'aucune stack n'est en place : rien à supprimer. */
+  absent: boolean;
+  onDeleted: () => void;
+}) {
   const api = useApi();
   const [open, setOpen] = useState(false);
   const [withVolumes, setWithVolumes] = useState(false);
@@ -334,6 +362,9 @@ function DeleteStack({ projectId, busy }: { projectId: string; busy: boolean }) 
           : 'Stack supprimée : conteneurs et réseaux retirés. Les volumes, donc les données, sont gardés.'
       );
       setOpen(false);
+      setWithVolumes(false);
+      setTyped('');
+      onDeleted();
     } catch (err) {
       setError(describeError(err));
     } finally {
@@ -358,9 +389,9 @@ function DeleteStack({ projectId, busy }: { projectId: string; busy: boolean }) 
       </p>
       {!open ? (
         <div className="mt-3 flex flex-wrap items-center justify-end gap-3 border-t border-iron-800 pt-3">
-          {busy && (
+          {(busy || absent) && (
             <span className="text-xs text-iron-300">
-              Disponible une fois le déploiement terminé.
+              {busy ? 'Disponible une fois le déploiement terminé.' : 'Aucune stack en place.'}
             </span>
           )}
           <Button
@@ -369,7 +400,7 @@ function DeleteStack({ projectId, busy }: { projectId: string; busy: boolean }) 
               setOpen(true);
               setDone(undefined);
             }}
-            disabled={busy}
+            disabled={busy || absent}
             aria-label={`Supprimer la stack ${projectId}`}
           >
             <Trash2 aria-hidden="true" className="size-4" />
@@ -440,5 +471,55 @@ function DeleteStack({ projectId, busy }: { projectId: string; busy: boolean }) 
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * État de la stack en place, d'après Docker : ce qui tourne réellement,
+ * indépendamment de l'issue du dernier déploiement.
+ */
+function StackStatus({ stack, known }: { stack?: Stack; known: boolean }) {
+  let text = 'État de la stack inconnu';
+  let tone = 'text-iron-300';
+  if (known && !stack) {
+    text = 'Aucune stack en place';
+  } else if (stack) {
+    const plural = (n: number) => (n > 1 ? 's' : '');
+    if (stack.running === stack.containers) {
+      text = `${stack.running} conteneur${plural(stack.running)} en marche`;
+      tone = 'text-ok-400';
+    } else if (stack.running === 0) {
+      text = `Stack arrêtée : ${stack.containers} conteneur${plural(stack.containers)} à l’arrêt`;
+      tone = 'text-warn-400';
+    } else {
+      text = `${stack.running} conteneur${plural(stack.running)} sur ${stack.containers} en marche`;
+      tone = 'text-warn-400';
+    }
+  }
+  return (
+    <p className={`mt-1.5 inline-flex items-center gap-1.5 text-xs ${tone}`}>
+      <Boxes aria-hidden="true" className="size-3.5" />
+      {text}
+    </p>
+  );
+}
+
+/** Une stack en place dont aucun déploiement n'est dans l'historique chargé. */
+function StackOnlyRow({ app, stacksKnown, onStackDeleted }: RowProps) {
+  return (
+    <li className="rounded-lg border border-iron-800 bg-iron-900/40 px-4 py-4">
+      <h3 className="truncate font-mono text-base font-semibold text-iron-100">{app.projectId}</h3>
+      <StackStatus stack={app.stack} known={stacksKnown} />
+      <p className="mt-2 text-sm text-iron-300">
+        Aucun déploiement récent de ce projet : la stack date d’avant les 100 derniers déploiements.
+        Redéployez-la depuis le formulaire, ou supprimez-la.
+      </p>
+      <DeleteStack
+        projectId={app.projectId}
+        busy={false}
+        absent={stacksKnown && !app.stack}
+        onDeleted={onStackDeleted}
+      />
+    </li>
   );
 }
