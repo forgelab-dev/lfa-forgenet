@@ -1,0 +1,9 @@
+# Configuration de démarrage de Caddy dans l'installation standard.
+#
+# Elle n'ouvre que l'API d'administration, sur un socket Unix partagé avec le
+# serveur ForgeNet et jamais publié (ADR-0007). Le serveur charge ensuite la
+# configuration complète (dashboard et domaines), que Caddy garde et reprend
+# au redémarrage (--resume). Ne pas y ajouter de site : il serait remplacé.
+{
+	admin unix//run/forgenet/caddy-admin.sock|0660
+}
