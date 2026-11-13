@@ -16,6 +16,12 @@ describe('describeError', () => {
     expect(describeError(err)).toBe('Trop d’essais, réessayez plus tard.');
   });
 
+  it('reprend un conflit expliqué par le serveur', () => {
+    const err = new ConnectError('ce nom de domaine est déjà utilisé', Code.AlreadyExists);
+
+    expect(describeError(err)).toBe('Ce nom de domaine est déjà utilisé.');
+  });
+
   it('ne montre pas le détail des erreurs internes', () => {
     const err = new ConnectError('pq: relation "users" does not exist', Code.Internal);
 

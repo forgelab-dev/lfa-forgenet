@@ -89,7 +89,6 @@ export const navigation: SectionGroup[] = [
         path: '/domaines',
         label: 'Domaines',
         icon: Globe,
-        upcoming: true,
         summary:
           'Relier un nom de domaine à un service, avec un certificat HTTPS délivré automatiquement.',
       },

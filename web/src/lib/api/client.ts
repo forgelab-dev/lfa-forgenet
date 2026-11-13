@@ -11,6 +11,7 @@ import { createConnectTransport } from '@connectrpc/connect-web';
 import { AuthService } from '../../gen/forgenet/v1/auth_pb';
 import { ContainerService } from '../../gen/forgenet/v1/container_pb';
 import { DeploymentService } from '../../gen/forgenet/v1/deploy_pb';
+import { DomainService } from '../../gen/forgenet/v1/domain_pb';
 import { MetricsService } from '../../gen/forgenet/v1/metrics_pb';
 
 /** Renvoie le jeton de la session en cours, ou rien hors connexion. */
@@ -80,6 +81,7 @@ export interface ApiClients {
   auth: Client<typeof AuthService>;
   containers: Client<typeof ContainerService>;
   deployments: Client<typeof DeploymentService>;
+  domains: Client<typeof DomainService>;
   metrics: Client<typeof MetricsService>;
 }
 
@@ -88,6 +90,7 @@ export function createApiClients(transport: Transport): ApiClients {
     auth: createClient(AuthService, transport),
     containers: createClient(ContainerService, transport),
     deployments: createClient(DeploymentService, transport),
+    domains: createClient(DomainService, transport),
     metrics: createClient(MetricsService, transport),
   };
 }

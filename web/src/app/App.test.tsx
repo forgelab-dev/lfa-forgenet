@@ -168,9 +168,11 @@ describe('App', () => {
     const server = fakeServer();
     server.tokens.add('jeton-conserve');
     storeSession('jeton-conserve');
-    renderApp(server, '/domaines');
+    renderApp(server, '/marketplace');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Domaines' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Marketplace' })
+    ).toBeInTheDocument();
     expect(screen.getByText('En cours de construction')).toBeInTheDocument();
   });
 

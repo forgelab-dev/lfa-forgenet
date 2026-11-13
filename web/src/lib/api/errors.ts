@@ -13,6 +13,7 @@ export function describeError(err: unknown): string {
     case Code.Unauthenticated:
     case Code.ResourceExhausted:
     case Code.InvalidArgument:
+    case Code.AlreadyExists:
     case Code.FailedPrecondition:
     case Code.NotFound:
       return sentence(error.rawMessage) || fallback(error.code);
