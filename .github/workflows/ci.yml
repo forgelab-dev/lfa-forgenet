@@ -19,6 +19,7 @@ jobs:
       go: ${{ steps.filter.outputs.go }}
       web: ${{ steps.filter.outputs.web }}
       mobile: ${{ steps.filter.outputs.mobile }}
+      deploy: ${{ steps.filter.outputs.deploy }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -47,6 +48,14 @@ jobs:
               - '.github/workflows/ci.yml'
             mobile:
               - 'mobile/**'
+              - '.github/workflows/ci.yml'
+            deploy:
+              - 'deploy/**'
+              - '.dockerignore'
+              - 'go.mod'
+              - 'go.sum'
+              - 'web/package.json'
+              - 'web/package-lock.json'
               - '.github/workflows/ci.yml'
 
   buf:
@@ -205,16 +214,40 @@ jobs:
         if: steps.check.outputs.present == 'true'
         run: dart format --output=none --set-exit-if-changed .
 
+  deploy:
+    needs: changes
+    if: needs.changes.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Valeurs factices : on vérifie la syntaxe et l'interpolation, rien n'est lancé.
+      - name: Validate compose file
+        working-directory: deploy
+        run: |
+          printf 'FORGENET_VERSION=ci\nFORGENET_JWT_SECRET=%s\nDOCKER_GID=999\n' "$(openssl rand -hex 32)" > ci.env
+          docker compose --env-file ci.env config --quiet
+          printf 'FORGENET_DOMAIN=forgenet.example.org\n' >> ci.env
+          docker compose --env-file ci.env config --quiet
+
+      - name: Build server image
+        run: docker build -f deploy/Dockerfile --build-arg GIT_COMMIT=${GITHUB_SHA::7} -t forgenet-server:ci .
+
+      - name: Check image runs as non-root
+        run: test "$(docker image inspect forgenet-server:ci --format '{{.Config.User}}')" = "10001:10001"
+
   all-checks-pass:
-    needs: [buf, go, web, mobile]
+    needs: [buf, go, web, mobile, deploy]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Verify all required checks
         run: |
-          echo "buf=${{ needs.buf.result }} go=${{ needs.go.result }} web=${{ needs.web.result }} mobile=${{ needs.mobile.result }}"
+          echo "buf=${{ needs.buf.result }} go=${{ needs.go.result }} web=${{ needs.web.result }} mobile=${{ needs.mobile.result }} deploy=${{ needs.deploy.result }}"
           fail=0
-          for r in "${{ needs.buf.result }}" "${{ needs.go.result }}" "${{ needs.web.result }}" "${{ needs.mobile.result }}"; do
+          for r in "${{ needs.buf.result }}" "${{ needs.go.result }}" "${{ needs.web.result }}" "${{ needs.mobile.result }}" "${{ needs.deploy.result }}"; do
             if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
               fail=1
             fi
