@@ -159,7 +159,7 @@ func newFixture(t *testing.T) *fixture {
 		auditor: &fakeAuditor{},
 	}
 	f.svc = domains.New(f.store, f.proxy, f.network, f.stacks, f.auditor,
-		domains.Config{Network: "forgenet-edge", CaddyContainer: "forgenet-caddy"}, zerolog.Nop())
+		domains.Config{Network: "forgenet-edge", CaddyContainer: "forgenet-caddy", DashboardHost: "forgenet.example.org"}, zerolog.Nop())
 	return f
 }
 
@@ -215,13 +215,14 @@ func TestAdd_RecordsAttachesAndServes(t *testing.T) {
 
 func TestAdd_RefusesInvalidRequests(t *testing.T) {
 	cases := map[string]domains.AddRequest{
-		"domaine":           webRequest("a.org {\n}"),
-		"projet":            {Host: "a.example.org", ProjectID: "Boutique", Service: "web", Port: 80},
-		"projet en tiret":   {Host: "a.example.org", ProjectID: "boutique-", Service: "web", Port: 80},
-		"service majuscule": {Host: "a.example.org", ProjectID: "boutique", Service: "Web", Port: 80},
-		"service pointé":    {Host: "a.example.org", ProjectID: "boutique", Service: "web.a", Port: 80},
-		"port nul":          {Host: "a.example.org", ProjectID: "boutique", Service: "web", Port: 0},
-		"port trop grand":   {Host: "a.example.org", ProjectID: "boutique", Service: "web", Port: 65536},
+		"domaine":              webRequest("a.org {\n}"),
+		"domaine du dashboard": webRequest("ForgeNet.Example.org."),
+		"projet":               {Host: "a.example.org", ProjectID: "Boutique", Service: "web", Port: 80},
+		"projet en tiret":      {Host: "a.example.org", ProjectID: "boutique-", Service: "web", Port: 80},
+		"service majuscule":    {Host: "a.example.org", ProjectID: "boutique", Service: "Web", Port: 80},
+		"service pointé":       {Host: "a.example.org", ProjectID: "boutique", Service: "web.a", Port: 80},
+		"port nul":             {Host: "a.example.org", ProjectID: "boutique", Service: "web", Port: 0},
+		"port trop grand":      {Host: "a.example.org", ProjectID: "boutique", Service: "web", Port: 65536},
 	}
 	for name, req := range cases {
 		t.Run(name, func(t *testing.T) {

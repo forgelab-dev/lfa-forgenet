@@ -27,12 +27,29 @@ type Settings struct {
 	// HTTPPort et HTTPSPort changent les ports d'écoute de Caddy ; 0 garde 80 et 443.
 	HTTPPort  int
 	HTTPSPort int
+	// Dashboard, s'il est fixé, sert le dashboard de ForgeNet sous son propre
+	// nom de domaine, en HTTPS seulement (ADR-0009). Ce nom est réservé :
+	// aucune route d'application ne peut le prendre.
+	Dashboard *Route
 }
+
+// hsts demande au navigateur de ne plus joindre le dashboard qu'en HTTPS,
+// pendant un an. Sans includeSubDomains : les sous-domaines peuvent servir
+// des applications que ForgeNet ne gère pas.
+const hsts = "max-age=31536000"
 
 // Validate vérifie chaque option avant qu'elle n'entre dans le Caddyfile.
 func (s Settings) Validate() error {
 	if _, err := parseAdminAddress(s.AdminAddress); err != nil {
 		return err
+	}
+	if s.Dashboard != nil {
+		if err := ValidateHost(s.Dashboard.Host); err != nil {
+			return fmt.Errorf("dashboard : %w", err)
+		}
+		if err := s.Dashboard.Upstream.Validate(); err != nil {
+			return fmt.Errorf("dashboard : %w", err)
+		}
 	}
 	if s.Email != "" {
 		if err := validateEmail(s.Email); err != nil {
@@ -74,7 +91,7 @@ func Render(s Settings, routes []Route) ([]byte, error) {
 		if err := r.Upstream.Validate(); err != nil {
 			return nil, fmt.Errorf("%s : %w", r.Host, err)
 		}
-		if i > 0 && sorted[i-1].Host == r.Host {
+		if (i > 0 && sorted[i-1].Host == r.Host) || (s.Dashboard != nil && s.Dashboard.Host == r.Host) {
 			return nil, fmt.Errorf("%w : %s", ErrDuplicateHost, r.Host)
 		}
 	}
@@ -101,6 +118,10 @@ func Render(s Settings, routes []Route) ([]byte, error) {
 	}
 	b.WriteString("}\n")
 
+	if d := s.Dashboard; d != nil {
+		fmt.Fprintf(&b, "\n%s {\n\theader Strict-Transport-Security %s\n\treverse_proxy %s:%d\n}\n",
+			d.Host, hsts, d.Upstream.Container, d.Upstream.Port)
+	}
 	for _, r := range sorted {
 		fmt.Fprintf(&b, "\n%s {\n\treverse_proxy %s:%d\n}\n", r.Host, r.Upstream.Container, r.Upstream.Port)
 	}

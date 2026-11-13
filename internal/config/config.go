@@ -161,6 +161,20 @@ type ProxyConfig struct {
 	// HTTPPort et HTTPSPort changent les ports d'écoute de Caddy ; 0 garde 80 et 443.
 	HTTPPort  int `mapstructure:"http_port"`
 	HTTPSPort int `mapstructure:"https_port"`
+	// DashboardHost est le nom de domaine du dashboard, servi en HTTPS par
+	// Caddy (ADR-0009). Vide : le dashboard n'est pas publié, on l'ouvre par
+	// un tunnel SSH vers le port HTTP du serveur.
+	DashboardHost string `mapstructure:"dashboard_host"`
+	// DashboardUpstream est le serveur ForgeNet tel que Caddy le joint,
+	// « conteneur:port » (forgenet-server:8080 dans l'installation standard).
+	DashboardUpstream string `mapstructure:"dashboard_upstream"`
+}
+
+// WebConfig règle le service du dashboard par le serveur HTTP (ADR-0009).
+type WebConfig struct {
+	// Root est le dossier du dashboard compilé (web/dist). Vide : le serveur
+	// ne sert que l'API, comme en développement derrière Vite.
+	Root string `mapstructure:"root"`
 }
 
 // Config est la structure racine de la configuration ForgeNet.
@@ -174,6 +188,7 @@ type Config struct {
 	Health      HealthConfig   `mapstructure:"health"`
 	Metrics     MetricsConfig  `mapstructure:"metrics"`
 	Proxy       ProxyConfig    `mapstructure:"proxy"`
+	Web         WebConfig      `mapstructure:"web"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -267,6 +282,9 @@ func (c *Config) Validate() error {
 	if err := c.Proxy.validate(c.Environment); err != nil {
 		return err
 	}
+	if c.Web.Root != "" && !filepath.IsAbs(c.Web.Root) {
+		return fmt.Errorf("web.root doit être un chemin absolu : %q", c.Web.Root)
+	}
 
 	validLogLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
 	if !validLogLevels[strings.ToLower(c.Log.Level)] {
@@ -321,6 +339,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("proxy.local_certs", false)
 	v.SetDefault("proxy.http_port", 0)
 	v.SetDefault("proxy.https_port", 0)
+	v.SetDefault("proxy.dashboard_host", "")
+	v.SetDefault("proxy.dashboard_upstream", "")
+
+	v.SetDefault("web.root", "")
 }
 
 // dockerName reprend la règle de Docker pour un nom de réseau ou de conteneur.
@@ -331,7 +353,13 @@ var dockerName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$`)
 // démarrage, avec ses listes blanches (ADR-0007).
 func (p ProxyConfig) validate(environment string) error {
 	if !p.Enabled {
+		if p.DashboardHost != "" {
+			return fmt.Errorf("proxy.dashboard_host demande proxy.enabled : Caddy publie le dashboard")
+		}
 		return nil
+	}
+	if (p.DashboardHost == "") != (p.DashboardUpstream == "") {
+		return fmt.Errorf("proxy.dashboard_host et proxy.dashboard_upstream vont ensemble")
 	}
 	if !dockerName.MatchString(p.Network) {
 		return fmt.Errorf("proxy.network invalide : %q", p.Network)
