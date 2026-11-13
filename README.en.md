@@ -7,7 +7,7 @@
 Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *locally*, without a single line of your logs ever reaching a third-party cloud.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Status](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#-project-status)
@@ -22,9 +22,21 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 
 ## 🚧 Project status
 
-> **Pre-alpha — under construction.** The code is not production-ready yet, and the install commands below will not work until the first release ships. Today this repository holds the specification, the feature matrix and the target architecture.
+> **Pre-alpha — under construction.** The code is not production-ready yet, and the install commands below will not work until the first release ships. It is targeted for the [J90](https://github.com/forgelab-dev/lfa-forgenet/milestone/3) milestone.
 >
 > ⭐ Star the repo to follow along, or read the [roadmap](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet) (in French).
+
+**What already works**, running the server and the dashboard from source:
+
+- **`forgenet-server`** (Go): configuration, HTTP and gRPC transports, health probes, SQLite storage with migrations.
+- **Accounts**: username and password sign-in, admin and member roles, rate-limited attempts, audit log. Accounts are created with `forgenet-server user create`.
+- **Docker containers**: list, deploy, stop and restart.
+- **Docker Compose stacks**: deployments are queued, run one at a time and resumed when the server restarts.
+- **Live metrics**: CPU, memory, network and disk for the host and each container, streamed over WebSocket.
+- **Web dashboard**: sign-in, overview and container list. The other sections are shown as "coming soon".
+- **API contract**: gRPC services defined in [`api/proto`](api/proto), also served over Connect and gRPC-Web for the browser, with generated TypeScript and Dart clients.
+
+**Not built yet**: Caddy reverse proxy and automatic HTTPS, Marketplace, one-command install, local AI assistant, backups, migration from other PaaS, and the mobile app, of which only the generated API client exists. Architecture decisions are explained in [`docs/decisions/`](docs/decisions/) (in French).
 
 ---
 
@@ -102,7 +114,7 @@ ForgeNet exists for what they don't address:
 
 | Component | Stack | Role |
 |---|---|---|
-| **Core Engine** | Go, Gin/Echo, gRPC | Docker orchestration, metrics (`gopsutil`), Caddy control, AI calls |
+| **Core Engine** | Go, gRPC, Connect | Docker orchestration, metrics (`gopsutil`), Caddy control, AI calls |
 | **Web Dashboard** | React, Vite, Tailwind | Full administration: marketplace, logs, domains, databases |
 | **Mobile App** | Flutter | Live supervision, push alerting, incident response |
 | **AI Engine** | Ollama (Llama 3, Mistral, CodeLlama) | Log analysis, security audit, assistance — locally |
