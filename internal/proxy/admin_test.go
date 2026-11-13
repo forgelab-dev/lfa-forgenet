@@ -127,7 +127,7 @@ func TestAdminClient_Unreachable(t *testing.T) {
 	client, err := NewAdminClient("unix//tmp/forgenet-absent-" + time.Now().Format("150405.000000") + ".sock")
 	require.NoError(t, err)
 	_, err = client.Load(context.Background(), []byte("x"))
-	assert.ErrorContains(t, err, "injoignable")
+	assert.ErrorIs(t, err, ErrUnavailable)
 }
 
 func TestAdminClient_RespectsContext(t *testing.T) {
