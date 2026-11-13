@@ -26,7 +26,7 @@ type CommandError struct {
 }
 
 // subcommands sont les sous-commandes que lance le moteur, pour nommer celle qui échoue.
-var subcommands = map[string]bool{"config": true, "up": true, "down": true, "ps": true, "version": true}
+var subcommands = map[string]bool{"config": true, "up": true, "down": true, "ps": true, "ls": true, "version": true}
 
 func (e *CommandError) Error() string {
 	return fmt.Sprintf("docker compose %s : code %d : %s", e.subcommand(), e.ExitCode, e.Output)

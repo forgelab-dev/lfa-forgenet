@@ -2153,6 +2153,183 @@ class DeleteStackResponse extends $pb.GeneratedMessage {
   static DeleteStackResponse? _defaultInstance;
 }
 
+/// Stack est la stack Compose en place d'un projet, d'après Docker : elle
+/// existe tant que ses conteneurs n'ont pas été supprimés, arrêtés compris.
+class Stack extends $pb.GeneratedMessage {
+  factory Stack({
+    $core.String? projectId,
+    $core.int? containers,
+    $core.int? running,
+  }) {
+    final result = Stack._();
+    if (projectId != null) result.projectId = projectId;
+    if (containers != null) result.containers = containers;
+    if (running != null) result.running = running;
+    return result;
+  }
+
+  Stack._();
+
+  factory Stack.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Stack()..mergeFromBuffer(data, registry);
+  factory Stack.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Stack()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Stack',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: Stack.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'projectId')
+    ..aI(2, _omitFieldNames ? '' : 'containers', fieldType: $pb.PbFieldType.OU3)
+    ..aI(3, _omitFieldNames ? '' : 'running', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Stack clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Stack copyWith(void Function(Stack) updates) =>
+      super.copyWith((message) => updates(message as Stack)) as Stack;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Stack() / Stack.new instead')
+  static Stack create() => Stack._();
+  static $pb.GeneratedMessage $_createMessage() => Stack._();
+  @$core.override
+  Stack createEmptyInstance() => Stack._();
+  @$core.pragma('dart2js:noInline')
+  static Stack getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Stack>(Stack.$_createMessage);
+  static Stack? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get projectId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set projectId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProjectId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProjectId() => $_clearField(1);
+
+  /// Conteneurs de la stack, arrêtés compris.
+  @$pb.TagNumber(2)
+  $core.int get containers => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set containers($core.int value) => $_setUnsignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasContainers() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearContainers() => $_clearField(2);
+
+  /// Conteneurs en marche.
+  @$pb.TagNumber(3)
+  $core.int get running => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set running($core.int value) => $_setUnsignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasRunning() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearRunning() => $_clearField(3);
+}
+
+class ListStacksRequest extends $pb.GeneratedMessage {
+  factory ListStacksRequest() => ListStacksRequest._();
+
+  ListStacksRequest._();
+
+  factory ListStacksRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListStacksRequest()..mergeFromBuffer(data, registry);
+  factory ListStacksRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListStacksRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListStacksRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: ListStacksRequest.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListStacksRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListStacksRequest copyWith(void Function(ListStacksRequest) updates) =>
+      super.copyWith((message) => updates(message as ListStacksRequest))
+          as ListStacksRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListStacksRequest() / ListStacksRequest.new instead')
+  static ListStacksRequest create() => ListStacksRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ListStacksRequest._();
+  @$core.override
+  ListStacksRequest createEmptyInstance() => ListStacksRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ListStacksRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListStacksRequest>(
+          ListStacksRequest.$_createMessage);
+  static ListStacksRequest? _defaultInstance;
+}
+
+class ListStacksResponse extends $pb.GeneratedMessage {
+  factory ListStacksResponse({
+    $core.Iterable<Stack>? stacks,
+  }) {
+    final result = ListStacksResponse._();
+    if (stacks != null) result.stacks.addAll(stacks);
+    return result;
+  }
+
+  ListStacksResponse._();
+
+  factory ListStacksResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListStacksResponse()..mergeFromBuffer(data, registry);
+  factory ListStacksResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListStacksResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListStacksResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: ListStacksResponse.$_createMessage)
+    ..pPM<Stack>(1, _omitFieldNames ? '' : 'stacks',
+        subBuilder: Stack.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListStacksResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListStacksResponse copyWith(void Function(ListStacksResponse) updates) =>
+      super.copyWith((message) => updates(message as ListStacksResponse))
+          as ListStacksResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListStacksResponse() / ListStacksResponse.new instead')
+  static ListStacksResponse create() => ListStacksResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListStacksResponse._();
+  @$core.override
+  ListStacksResponse createEmptyInstance() => ListStacksResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListStacksResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListStacksResponse>(
+          ListStacksResponse.$_createMessage);
+  static ListStacksResponse? _defaultInstance;
+
+  /// Par identifiant de projet.
+  @$pb.TagNumber(1)
+  $pb.PbList<Stack> get stacks => $_getList(0);
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

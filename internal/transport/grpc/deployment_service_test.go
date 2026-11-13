@@ -49,6 +49,10 @@ func (f *fakeStacks) Remove(_ context.Context, project string, _ bool) error {
 	return nil
 }
 
+func (f *fakeStacks) Projects(context.Context) ([]compose.Project, error) {
+	return []compose.Project{{Name: "forgenet-boutique", Containers: 2, Running: 1}, {Name: "autre", Containers: 1}}, nil
+}
+
 func (f *fakeStacks) Services(context.Context, string) ([]compose.Service, error) {
 	return []compose.Service{{Service: "web", State: orchestrator.StateRunning}}, nil
 }
@@ -111,6 +115,10 @@ func TestDeploymentService_AdminOnly(t *testing.T) {
 		},
 		"DeleteStack": func(ctx context.Context) error {
 			_, err := ts.deployments.DeleteStack(ctx, &forgenetv1.DeleteStackRequest{ProjectId: "p2"})
+			return err
+		},
+		"ListStacks": func(ctx context.Context) error {
+			_, err := ts.deployments.ListStacks(ctx, &forgenetv1.ListStacksRequest{})
 			return err
 		},
 		// Un flux rend son erreur à la première lecture.
@@ -332,4 +340,15 @@ func TestDeploymentService_StreamsStateAndLogs(t *testing.T) {
 	require.NoError(t, err)
 	_, err = absent.Recv()
 	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestDeploymentService_ListStacks(t *testing.T) {
+	ts := startDeploymentServer(t, false)
+	resp, err := ts.deployments.ListStacks(as(ts.adminToken), &forgenetv1.ListStacksRequest{})
+	require.NoError(t, err)
+	require.Len(t, resp.GetStacks(), 1, "seules les stacks de ForgeNet")
+	st := resp.GetStacks()[0]
+	assert.Equal(t, "boutique", st.GetProjectId())
+	assert.Equal(t, uint32(2), st.GetContainers())
+	assert.Equal(t, uint32(1), st.GetRunning())
 }

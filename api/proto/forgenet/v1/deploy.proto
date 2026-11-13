@@ -191,6 +191,23 @@ message DeleteStackRequest {
 
 message DeleteStackResponse {}
 
+// Stack est la stack Compose en place d'un projet, d'après Docker : elle
+// existe tant que ses conteneurs n'ont pas été supprimés, arrêtés compris.
+message Stack {
+  string project_id = 1;
+  // Conteneurs de la stack, arrêtés compris.
+  uint32 containers = 2;
+  // Conteneurs en marche.
+  uint32 running = 3;
+}
+
+message ListStacksRequest {}
+
+message ListStacksResponse {
+  // Par identifiant de projet.
+  repeated Stack stacks = 1;
+}
+
 // --- SERVICE ---
 
 // DeploymentService gère le cycle de vie asynchrone des déploiements des applications.
@@ -219,4 +236,8 @@ service DeploymentService {
   // DeleteStack arrête et supprime la stack en service d'un projet : conteneurs et réseaux, et volumes sur demande.
   // L'historique des déploiements est gardé. Refusé (FAILED_PRECONDITION) pendant un déploiement du projet.
   rpc DeleteStack(DeleteStackRequest) returns (DeleteStackResponse);
+
+  // ListStacks liste les stacks en place sur l'hôte, avec leurs conteneurs en marche et arrêtés.
+  // L'historique des déploiements ne suffit pas : une stack supprimée garde ses déploiements.
+  rpc ListStacks(ListStacksRequest) returns (ListStacksResponse);
 }

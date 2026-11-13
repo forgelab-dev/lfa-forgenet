@@ -123,6 +123,23 @@ func (s *DeploymentServiceServer) DeleteStack(ctx context.Context, req *forgenet
 	return &forgenetv1.DeleteStackResponse{}, nil
 }
 
+// ListStacks liste les stacks en place sur l'hôte.
+func (s *DeploymentServiceServer) ListStacks(ctx context.Context, _ *forgenetv1.ListStacksRequest) (*forgenetv1.ListStacksResponse, error) {
+	stacks, err := s.deployments.ListStacks(ctx)
+	if err != nil {
+		return nil, s.toStatus(err, "liste des stacks")
+	}
+	resp := &forgenetv1.ListStacksResponse{Stacks: make([]*forgenetv1.Stack, 0, len(stacks))}
+	for _, st := range stacks {
+		resp.Stacks = append(resp.Stacks, &forgenetv1.Stack{
+			ProjectId:  st.ProjectID,
+			Containers: uint32(st.Containers), //nolint:gosec // compte de conteneurs, positif
+			Running:    uint32(st.Running),    //nolint:gosec // idem
+		})
+	}
+	return resp, nil
+}
+
 // StreamDeployment envoie l'état du déploiement puis chacun de ses
 // changements ; le flux se termine à l'état final.
 func (s *DeploymentServiceServer) StreamDeployment(req *forgenetv1.StreamDeploymentRequest, stream forgenetv1.DeploymentService_StreamDeploymentServer) error {

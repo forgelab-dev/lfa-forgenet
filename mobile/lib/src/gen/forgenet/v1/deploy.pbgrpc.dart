@@ -102,6 +102,15 @@ class DeploymentServiceClient extends $grpc.Client {
     return $createUnaryCall(_$deleteStack, request, options: options);
   }
 
+  /// ListStacks liste les stacks en place sur l'hôte, avec leurs conteneurs en marche et arrêtés.
+  /// L'historique des déploiements ne suffit pas : une stack supprimée garde ses déploiements.
+  $grpc.ResponseFuture<$0.ListStacksResponse> listStacks(
+    $0.ListStacksRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$listStacks, request, options: options);
+  }
+
   // method descriptors
 
   static final _$createDeployment = $grpc.ClientMethod<
@@ -144,6 +153,11 @@ class DeploymentServiceClient extends $grpc.Client {
           '/forgenet.v1.DeploymentService/DeleteStack',
           ($0.DeleteStackRequest value) => value.writeToBuffer(),
           $0.DeleteStackResponse.fromBuffer);
+  static final _$listStacks =
+      $grpc.ClientMethod<$0.ListStacksRequest, $0.ListStacksResponse>(
+          '/forgenet.v1.DeploymentService/ListStacks',
+          ($0.ListStacksRequest value) => value.writeToBuffer(),
+          $0.ListStacksResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('forgenet.v1.DeploymentService')
@@ -223,6 +237,13 @@ abstract class DeploymentServiceBase extends $grpc.Service {
             ($core.List<$core.int> value) =>
                 $0.DeleteStackRequest.fromBuffer(value),
             ($0.DeleteStackResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.ListStacksRequest, $0.ListStacksResponse>(
+        'ListStacks',
+        listStacks_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.ListStacksRequest.fromBuffer(value),
+        ($0.ListStacksResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.CreateDeploymentResponse> createDeployment_Pre(
@@ -295,4 +316,12 @@ abstract class DeploymentServiceBase extends $grpc.Service {
 
   $async.Future<$0.DeleteStackResponse> deleteStack(
       $grpc.ServiceCall call, $0.DeleteStackRequest request);
+
+  $async.Future<$0.ListStacksResponse> listStacks_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.ListStacksRequest> $request) async {
+    return listStacks($call, await $request);
+  }
+
+  $async.Future<$0.ListStacksResponse> listStacks(
+      $grpc.ServiceCall call, $0.ListStacksRequest request);
 }

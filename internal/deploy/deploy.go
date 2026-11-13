@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -41,6 +42,7 @@ type Stacks interface {
 	Deploy(ctx context.Context, project string, content []byte, out compose.OutputFunc) error
 	Remove(ctx context.Context, project string, removeVolumes bool) error
 	Services(ctx context.Context, project string) ([]compose.Service, error)
+	Projects(ctx context.Context) ([]compose.Project, error)
 }
 
 const (
@@ -368,6 +370,32 @@ func (s *Service) deleteStack(ctx context.Context, projectID string, removeVolum
 		}
 	}
 	return s.stacks.Remove(ctx, StackName(projectID), removeVolumes)
+}
+
+// Stack est la stack en place d'un projet de ForgeNet.
+type Stack struct {
+	ProjectID  string
+	Containers int // conteneurs, arrêtés compris
+	Running    int // conteneurs en marche
+}
+
+// ListStacks liste les stacks de ForgeNet en place sur l'hôte, par projet.
+// Les autres projets Compose de l'hôte, sans le préfixe, sont ignorés.
+func (s *Service) ListStacks(ctx context.Context) ([]Stack, error) {
+	projects, err := s.stacks.Projects(ctx)
+	if err != nil {
+		return nil, err
+	}
+	stacks := make([]Stack, 0, len(projects))
+	for _, p := range projects {
+		id, ok := strings.CutPrefix(p.Name, stackPrefix)
+		if !ok || !ValidProjectID(id) {
+			continue
+		}
+		stacks = append(stacks, Stack{ProjectID: id, Containers: p.Containers, Running: p.Running})
+	}
+	sort.Slice(stacks, func(i, j int) bool { return stacks[i].ProjectID < stacks[j].ProjectID })
+	return stacks, nil
 }
 
 // ValidProjectID indique si id peut identifier un projet.

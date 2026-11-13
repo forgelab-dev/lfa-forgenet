@@ -686,3 +686,47 @@ const DeleteStackResponse$json = {
 /// Descriptor for `DeleteStackResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List deleteStackResponseDescriptor =
     $convert.base64Decode('ChNEZWxldGVTdGFja1Jlc3BvbnNl');
+
+@$core.Deprecated('Use stackDescriptor instead')
+const Stack$json = {
+  '1': 'Stack',
+  '2': [
+    {'1': 'project_id', '3': 1, '4': 1, '5': 9, '10': 'projectId'},
+    {'1': 'containers', '3': 2, '4': 1, '5': 13, '10': 'containers'},
+    {'1': 'running', '3': 3, '4': 1, '5': 13, '10': 'running'},
+  ],
+};
+
+/// Descriptor for `Stack`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List stackDescriptor = $convert.base64Decode(
+    'CgVTdGFjaxIdCgpwcm9qZWN0X2lkGAEgASgJUglwcm9qZWN0SWQSHgoKY29udGFpbmVycxgCIA'
+    'EoDVIKY29udGFpbmVycxIYCgdydW5uaW5nGAMgASgNUgdydW5uaW5n');
+
+@$core.Deprecated('Use listStacksRequestDescriptor instead')
+const ListStacksRequest$json = {
+  '1': 'ListStacksRequest',
+};
+
+/// Descriptor for `ListStacksRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listStacksRequestDescriptor =
+    $convert.base64Decode('ChFMaXN0U3RhY2tzUmVxdWVzdA==');
+
+@$core.Deprecated('Use listStacksResponseDescriptor instead')
+const ListStacksResponse$json = {
+  '1': 'ListStacksResponse',
+  '2': [
+    {
+      '1': 'stacks',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.forgenet.v1.Stack',
+      '10': 'stacks'
+    },
+  ],
+};
+
+/// Descriptor for `ListStacksResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listStacksResponseDescriptor = $convert.base64Decode(
+    'ChJMaXN0U3RhY2tzUmVzcG9uc2USKgoGc3RhY2tzGAEgAygLMhIuZm9yZ2VuZXQudjEuU3RhY2'
+    'tSBnN0YWNrcw==');
