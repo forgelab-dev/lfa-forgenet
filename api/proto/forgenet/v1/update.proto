@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package forgenet.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1";
+
+// --- ENUMS ---
+
+// UpdateStep est l'étape où se trouve, ou s'est arrêtée, une mise à jour
+// (ADR-0011).
+enum UpdateStep {
+  UPDATE_STEP_UNSPECIFIED = 0;
+  UPDATE_STEP_CHECK = 1; // Vérification des versions
+  UPDATE_STEP_PULL = 2; // Téléchargement de l'image et des fichiers, serveur encore en service
+  UPDATE_STEP_BACKUP = 3; // Serveur arrêté, sauvegarde de la base et de la configuration
+  UPDATE_STEP_SWITCH = 4; // Démarrage de la nouvelle version
+  UPDATE_STEP_HEALTH = 5; // Attente de la santé de la nouvelle version
+  UPDATE_STEP_ROLLBACK = 6; // Retour à la version précédente
+  UPDATE_STEP_DONE = 7; // Terminée
+}
+
+// UpdateResult est l'issue d'une mise à jour.
+enum UpdateResult {
+  UPDATE_RESULT_UNSPECIFIED = 0;
+  UPDATE_RESULT_RUNNING = 1; // En cours
+  UPDATE_RESULT_SUCCEEDED = 2; // Nouvelle version en service
+  UPDATE_RESULT_ROLLED_BACK = 3; // Échec, version précédente remise en service
+  UPDATE_RESULT_FAILED = 4; // Échec avant toute modification, ou retour arrière impossible
+}
+
+// --- MODELS ---
+
+// AvailableRelease est une version publiée plus récente que celle en service.
+message AvailableRelease {
+  string version = 1;
+  // Notes de version sur GitHub ; vide si la fiche n'en donne pas.
+  string notes_url = 2;
+}
+
+// UpdateRun décrit la dernière mise à jour lancée sur l'installation.
+message UpdateRun {
+  string from_version = 1;
+  string to_version = 2;
+  UpdateStep step = 3;
+  UpdateResult result = 4;
+  // Raison d'un échec ou d'un retour arrière.
+  string reason = 5;
+  // Dossier de la sauvegarde prise avant la bascule, sur l'hôte.
+  string backup = 6;
+  google.protobuf.Timestamp started_at = 7;
+  // Absent tant que la mise à jour est en cours.
+  google.protobuf.Timestamp finished_at = 8;
+}
+
+// --- REQUEST / RESPONSE MESSAGES ---
+
+message GetUpdateStatusRequest {}
+
+message GetUpdateStatusResponse {
+  string current_version = 1;
+  // Absent : à jour, ou aucune vérification réussie.
+  AvailableRelease available = 2;
+  // Dernière vérification réussie ; absente si aucune.
+  google.protobuf.Timestamp checked_at = 3;
+  // Erreur de la dernière vérification, vide si elle a réussi.
+  string check_error = 4;
+  // Faux si la vérification quotidienne est coupée (updates.check: false).
+  bool check_enabled = 5;
+  // Vrai si cette installation sait se mettre à jour depuis le dashboard
+  // (installation standard d'install.sh) ; sinon, la mise à jour se fait à
+  // la main.
+  bool supported = 6;
+  // Dernière mise à jour lancée ; absente si aucune.
+  UpdateRun last_run = 7;
+}
+
+message CheckForUpdatesRequest {}
+
+message CheckForUpdatesResponse {
+  GetUpdateStatusResponse status = 1;
+}
+
+message StartUpdateRequest {}
+
+message StartUpdateResponse {
+  // Version qui va être installée.
+  string to_version = 1;
+}
+
+// --- SERVICE ---
+
+// UpdateService annonce les nouvelles versions et met l'installation à jour
+// (ADR-0011). Réservé aux administrateurs.
+service UpdateService {
+  // GetUpdateStatus donne la version en service, la version disponible et la
+  // dernière mise à jour lancée.
+  rpc GetUpdateStatus(GetUpdateStatusRequest) returns (GetUpdateStatusResponse);
+
+  // CheckForUpdates interroge les releases tout de suite, sans attendre la
+  // vérification quotidienne. Répété trop vite, il renvoie le dernier résultat.
+  rpc CheckForUpdates(CheckForUpdatesRequest) returns (CheckForUpdatesResponse);
+
+  // StartUpdate lance la mise à jour vers la version disponible, la seule que
+  // le serveur accepte d'installer : le client ne choisit ni la version ni
+  // l'image. Rien à installer répond FAILED_PRECONDITION ; une mise à jour
+  // déjà en cours, ABORTED.
+  rpc StartUpdate(StartUpdateRequest) returns (StartUpdateResponse);
+}
