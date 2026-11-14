@@ -14,7 +14,9 @@ name: forgenet
 
 services:
   server:
-    image: ghcr.io/forgelab-dev/forgenet-server:${FORGENET_VERSION:?FORGENET_VERSION manquante dans .env}
+    # Version et empreinte : l'empreinte, tirée de la fiche de la release,
+    # désigne l'image exacte construite et signée par la CI (ADR-0011).
+    image: ghcr.io/forgelab-dev/forgenet-server:${FORGENET_VERSION:?FORGENET_VERSION manquante dans .env}${FORGENET_IMAGE_DIGEST:+@${FORGENET_IMAGE_DIGEST}}
     container_name: forgenet-server
     restart: unless-stopped
     # Utilisateur sans droits de l'image ; le groupe du socket Docker lui donne
@@ -40,6 +42,9 @@ services:
       FORGENET_PROXY_DASHBOARD_UPSTREAM: ${FORGENET_DOMAIN:+forgenet-server:8080}
       # Métriques de l'hôte, pas du seul conteneur.
       HOST_PROC: /host/proc
+      # Dossier d'installation sur l'hôte : le conteneur de mise à jour y
+      # trouve docker-compose.yml et .env (ADR-0011).
+      FORGENET_INSTALL_DIR: ${FORGENET_INSTALL_DIR:-/opt/forgenet}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /proc:/host/proc:ro

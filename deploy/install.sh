@@ -34,6 +34,8 @@ ADMIN_USER="${FORGENET_ADMIN_USER-}"
 ADMIN_EMAIL="${FORGENET_ADMIN_EMAIL-}"
 SOURCE_DIR=""
 DOMAIN_SET=0
+UPDATE=0
+VERSION_SET=0
 EMAIL_SET=0
 [ -n "${FORGENET_DOMAIN+x}" ] && DOMAIN_SET=1
 [ -n "${FORGENET_ACME_EMAIL+x}" ] && EMAIL_SET=1
@@ -57,6 +59,9 @@ Usage : sudo bash install.sh [options]
                       --domain "" retire un domaine déjà configuré.
   --email ADRESSE     Adresse des avis Let's Encrypt (facultative).
   --version X.Y.Z     Version de ForgeNet (défaut : celle publiée avec ce script).
+  --update            Met à jour une installation existante : sauvegarde, bascule,
+                      retour arrière automatique en cas d'échec. Sans --version,
+                      vise la dernière version publiée.
   --admin-user NOM    Nom du premier administrateur (sinon demandé).
   --admin-email ADR   Adresse du premier administrateur (sinon demandée).
   --dir CHEMIN        Dossier d'installation (défaut : /opt/forgenet).
@@ -75,11 +80,12 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 	--domain) need_value "$@"; DOMAIN="$2"; DOMAIN_SET=1; shift 2 ;;
 	--email) need_value "$@"; ACME_EMAIL="$2"; EMAIL_SET=1; shift 2 ;;
-	--version) need_value "$@"; VERSION="$2"; shift 2 ;;
+	--version) need_value "$@"; VERSION="$2"; VERSION_SET=1; shift 2 ;;
 	--admin-user) need_value "$@"; ADMIN_USER="$2"; shift 2 ;;
 	--admin-email) need_value "$@"; ADMIN_EMAIL="$2"; shift 2 ;;
 	--dir) need_value "$@"; INSTALL_DIR="$2"; shift 2 ;;
 	--source) need_value "$@"; SOURCE_DIR="$2"; shift 2 ;;
+	--update) UPDATE=1; shift ;;
 	-h | --help) usage; exit 0 ;;
 	*) die "option inconnue : $1 (voir --help)" ;;
 	esac
@@ -267,6 +273,8 @@ write_files() {
 		ok "clé de session générée"
 	fi
 	set_env FORGENET_VERSION "$VERSION"
+	set_env FORGENET_IMAGE_DIGEST "$(release_digest)"
+	set_env FORGENET_INSTALL_DIR "$INSTALL_DIR"
 	set_env DOCKER_GID "$(stat -c %g /var/run/docker.sock)"
 
 	# Domaine et adresse : ceux de la ligne de commande, sinon ceux déjà en place.
@@ -282,6 +290,24 @@ write_files() {
 		[ -n "$(get_env FORGENET_ACME_EMAIL)" ] || set_env FORGENET_ACME_EMAIL ""
 	fi
 	ok "docker-compose.yml, Caddyfile.base, .env (0600)"
+}
+
+# release_digest lit l'empreinte de l'image dans la fiche de la release
+# (ADR-0011) : l'installation tire alors l'image exacte signée par la CI, pas
+# seulement une étiquette. Sans fiche (v0.1.0), l'étiquette seule est gardée.
+release_digest() {
+	local url="https://github.com/forgelab-dev/lfa-forgenet/releases/download/v${VERSION}/forgenet-release.json"
+	local fiche digest
+	if ! fiche="$(curl -fsSL --max-time 30 "$url" 2>/dev/null)"; then
+		warn "fiche de la release v${VERSION} introuvable : image désignée par son étiquette seule"
+		return 0
+	fi
+	digest="$(printf '%s\n' "$fiche" | sed -n 's/.*"digest": *"\(sha256:[0-9a-f]\{64\}\)".*/\1/p' | head -n 1)"
+	if [ -z "$digest" ] || ! printf '%s' "$fiche" | grep -q '"image": *"ghcr.io/forgelab-dev/forgenet-server"' ||
+		! printf '%s' "$fiche" | grep -q "\"version\": *\"${VERSION}\""; then
+		die "fiche de la release v${VERSION} invalide : installation arrêtée"
+	fi
+	printf '%s' "$digest"
 }
 
 # --- 4. Démarrage et administrateur ---------------------------------------------
@@ -400,7 +426,51 @@ summary() {
 	echo "    Pare-feu : seuls 22 (SSH), 80 et 443 ont besoin d'être ouverts."
 }
 
+# Première version dont le serveur sait se mettre à jour lui-même (ADR-0011).
+readonly SELF_UPDATE_SINCE="0.2.0"
+
+# version_ge A B : vrai si A >= B (versions X.Y.Z, suffixe de pré-version ignoré).
+version_ge() {
+	[ "$(printf '%s\n%s\n' "${1%%-*}" "${2%%-*}" | sort -V | head -n 1)" = "${2%%-*}" ]
+}
+
+# run_update confie la mise à jour au serveur en place quand il sait la faire :
+# sauvegarde, bascule, santé, retour arrière automatique. Sinon, ce script
+# réinstalle simplement la version qu'il porte, comme avant.
+run_update() {
+	[ -f "$INSTALL_DIR/.env" ] || die "aucune installation dans $INSTALL_DIR : lancez install.sh sans --update"
+	local installed
+	installed="$(docker exec forgenet-server forgenet-server -version 2>/dev/null | awk '{print $2}')"
+	if [ -z "$installed" ] || ! version_ge "$installed" "$SELF_UPDATE_SINCE"; then
+		warn "la version installée (${installed:-inconnue}) ne sait pas encore se mettre à jour : réinstallation vers $VERSION par ce script"
+		return 1
+	fi
+	local to="latest"
+	[ "$VERSION_SET" -eq 1 ] && to="$VERSION"
+	info "Mise à jour de ForgeNet $installed (vers : $to)"
+	local started
+	started="$(docker exec forgenet-server forgenet-server update start --to "$to")" || die "mise à jour refusée (message ci-dessus)"
+	printf '%s\n' "$started"
+	# Déjà à jour : rien n'a été lancé.
+	case "$started" in *"Mise à jour lancée"*) ;; *) exit 0 ;; esac
+	sleep 2
+	# Le conteneur reste après la fin : ses journaux se lisent jusqu'au bout.
+	docker logs -f forgenet-updater 2>&1 || true
+	local state reason
+	state="$(docker exec forgenet-server cat /var/lib/forgenet/maj/etat.json 2>/dev/null || true)"
+	reason="$(printf '%s\n' "$state" | sed -n 's/^ *"raison": "\(.*\)",*$/\1/p')"
+	case "$state" in
+	*'"resultat": "reussie"'*) ok "mise à jour terminée : $(docker exec forgenet-server forgenet-server -version)" ;;
+	*'"resultat": "annulee"'*) die "mise à jour annulée, retour à $installed : ${reason:-raison inconnue}" ;;
+	*) die "mise à jour en échec : ${reason:-état illisible}" ;;
+	esac
+	exit 0
+}
+
 main() {
+	if [ "$UPDATE" -eq 1 ]; then
+		run_update || true
+	fi
 	check_system
 	ensure_docker
 	check_ports
