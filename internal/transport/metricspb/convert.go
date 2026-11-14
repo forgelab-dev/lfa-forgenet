@@ -1,4 +1,7 @@
-package ws
+// Package metricspb traduit les mesures de internal/metrics en messages du
+// contrat api/ (metrics.proto), pour les flux WebSocket comme pour les appels
+// Connect et gRPC.
+package metricspb
 
 import (
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -7,10 +10,8 @@ import (
 	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
 )
 
-// Les messages envoyés sont ceux du contrat api/ (metrics.proto) : le
-// dashboard et l'application mobile les décodent avec leur code généré.
-
-func toSystemMetrics(h metrics.Host) *forgenetv1.SystemMetrics {
+// ToSystemMetrics traduit une mesure de l'hôte.
+func ToSystemMetrics(h metrics.Host) *forgenetv1.SystemMetrics {
 	return &forgenetv1.SystemMetrics{
 		CollectedAt:           timestamppb.New(h.CollectedAt),
 		UptimeSeconds:         h.UptimeSeconds,
@@ -23,7 +24,8 @@ func toSystemMetrics(h metrics.Host) *forgenetv1.SystemMetrics {
 	}
 }
 
-func toContainerMetrics(c metrics.Container) *forgenetv1.ContainerMetrics {
+// ToContainerMetrics traduit une mesure d'un conteneur.
+func ToContainerMetrics(c metrics.Container) *forgenetv1.ContainerMetrics {
 	return &forgenetv1.ContainerMetrics{
 		ContainerId: c.ContainerID,
 		CollectedAt: timestamppb.New(c.CollectedAt),

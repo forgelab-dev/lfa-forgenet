@@ -24,6 +24,7 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/metrics"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
+	"github.com/forgelab-dev/lfa-forgenet/internal/transport/metricspb"
 	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
 )
 
@@ -148,7 +149,7 @@ func (h *MetricsHandler) serveSystem(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return nil, err
 		}
-		return &forgenetv1.StreamSystemMetricsResponse{Metrics: toSystemMetrics(m)}, nil
+		return &forgenetv1.StreamSystemMetricsResponse{Metrics: metricspb.ToSystemMetrics(m)}, nil
 	})
 }
 
@@ -159,7 +160,7 @@ func (h *MetricsHandler) serveContainer(w http.ResponseWriter, r *http.Request) 
 		if err != nil {
 			return nil, err
 		}
-		return &forgenetv1.StreamContainerMetricsResponse{Metrics: toContainerMetrics(m)}, nil
+		return &forgenetv1.StreamContainerMetricsResponse{Metrics: metricspb.ToContainerMetrics(m)}, nil
 	})
 }
 
