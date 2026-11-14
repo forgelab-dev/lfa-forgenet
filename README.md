@@ -10,7 +10,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Status](https://img.shields.io/badge/statut-alpha%20v0.1.0-orange.svg)](#-état-du-projet)
+[![Status](https://img.shields.io/badge/statut-alpha%20v0.3.0-orange.svg)](#-état-du-projet) <!-- x-release-please-version -->
 
 **Français** · [English](README.en.md)
 
@@ -22,7 +22,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 
 ## 🚧 État du projet
 
-> **Alpha — v0.1.0, première version publiée.** ForgeNet s'installe et se tient en main, mais l'API, la configuration et les données peuvent encore changer d'une version à l'autre sans migration garantie. Essayez-le sur un serveur de test, pas encore en production.
+> **Alpha — v0.3.0.** <!-- x-release-please-version --> ForgeNet s'installe, se tient en main et se met à jour depuis son dashboard, mais l'API, la configuration et les données peuvent encore changer d'une version à l'autre sans migration garantie. Essayez-le sur un serveur de test, pas encore en production.
 >
 > ⭐ Mettez une étoile pour suivre l'avancement, ou consultez la [feuille de route](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet). Ce qui change d'une version à l'autre est dans le [CHANGELOG](CHANGELOG.md).
 
@@ -30,17 +30,18 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
   <img src="docs/media/demo.gif" width="860" alt="Démonstration sur un VPS de test : connexion, déploiement d'une stack Docker Compose suivi en direct, puis écran Surveillance avec les mesures du serveur et des conteneurs">
 </p>
 
-**Ce que fait la v0.1.0** :
+**Ce que fait ForgeNet aujourd'hui** :
 
 - **Installation en une commande** sur Debian ou Ubuntu, x86_64 ou ARM64 : le serveur et Caddy en conteneurs durcis, image signée (voir [Installation](#-installation)).
 - **Déploiements Docker Compose** depuis le dashboard : mis en file, suivis en direct avec leur journal, repris au redémarrage du serveur ; état réel de chaque stack, suppression avec ou sans ses volumes.
 - **Domaines et HTTPS** : un domaine par service, certificat Let's Encrypt et redirection HTTPS par Caddy, rechargé à chaque changement.
 - **Surveillance** : processeur, mémoire, disque et réseau du serveur et de chaque conteneur, en direct, avec la dernière heure ; reconnexion propre sur une connexion lente ou coupée.
 - **Conteneurs** : lister, consulter, démarrer, arrêter, redémarrer.
+- **Mises à jour** : une nouvelle version est annoncée dans le dashboard et s'installe en un clic, avec sauvegarde de la base et de la configuration, contrôle de santé et retour automatique à la version précédente en cas d'échec ; `install.sh --restore` remet une sauvegarde.
 - **Comptes et sécurité** : rôles administrateur et membre, droits vérifiés à chaque appel, tentatives de connexion limitées, journal d'audit.
 - **API** : contrat gRPC ([`api/proto`](api/proto)), servi aussi en Connect et gRPC-Web, avec des clients générés en TypeScript et en Dart.
 
-**Pas encore là** : retour arrière d'un déploiement, déploiement depuis Git, Marketplace, assistant IA local, sauvegardes, migration depuis les autres PaaS, CLI, et l'application mobile, dont seul le client d'API généré existe. Le détail, case par case, est dans la [matrice fonctionnelle](docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md) ; les choix d'architecture dans [`docs/decisions/`](docs/decisions/).
+**Pas encore là** : retour arrière d'un déploiement, déploiement depuis Git, Marketplace, assistant IA local, sauvegardes des applications, migration depuis les autres PaaS, CLI, changement de mot de passe, envoi d'e-mails (invitations, mot de passe oublié), et l'application mobile, dont seul le client d'API généré existe. Le détail, case par case, est dans la [matrice fonctionnelle](docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md) ; les choix d'architecture dans [`docs/decisions/`](docs/decisions/).
 
 ---
 
@@ -52,7 +53,7 @@ Vos données de production — logs, métriques, secrets, bases — finissent ch
 
 ## ✨ Fonctionnalités
 
-> Cette section décrit **la cible** de ForgeNet. Ce que la v0.1.0 fait déjà est listé dans l'[État du projet](#-état-du-projet).
+> Cette section décrit **la cible** de ForgeNet. Ce qu'il fait déjà est listé dans l'[État du projet](#-état-du-projet).
 
 ### Le socle
 
@@ -90,13 +91,15 @@ sudo bash install.sh --domain forgenet.exemple.org --email vous@exemple.org
 
 Le script vient du tag de la version : il installe l'image de cette même version, `ghcr.io/forgelab-dev/forgenet-server`, signée par cosign. Sa vérification est décrite dans [`docs/RELEASING.md`](docs/RELEASING.md#vérifier-une-image-publiée).
 
-Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écrit `/opt/forgenet`, démarre le serveur et Caddy, puis crée le premier administrateur. Il se relance sans risque, par exemple pour ajouter un domaine ou changer de version (`bash install.sh --help`).
+Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écrit `/opt/forgenet`, démarre le serveur et Caddy, puis crée le premier administrateur. Lancé sans terminal (cloud-init par exemple), il tire son mot de passe au hasard et le range dans `/opt/forgenet/admin-password`, lisible par root seul : gardez ce fichier, le changement de mot de passe n'existe pas encore ([#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)). Le script se relance sans risque, par exemple pour ajouter un domaine ou changer de version (`bash install.sh --help`).
 
 **Sans domaine**, le dashboard n'écoute que sur le serveur : ouvrez-le par un tunnel SSH, `ssh -N -L 8080:127.0.0.1:8080 utilisateur@serveur`, puis `http://localhost:8080`. Les raisons de ce choix sont dans l'[ADR-0009](docs/decisions/0009-service-du-dashboard-en-production.md).
 
-**Mise à jour** — `sudo bash install.sh --update` passe à la dernière version publiée : sauvegarde de la base et de la configuration dans `/opt/forgenet/sauvegardes/`, bascule sur l'image signée de la release, contrôle de santé, et retour automatique à la version précédente en cas d'échec. Une version plus ancienne que celle en place est refusée. Le fonctionnement est décrit dans l'[ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md). Depuis une 0.1.x, qui ne sait pas encore se mettre à jour elle-même, le script fait la même sauvegarde puis réinstalle, sans retour automatique : en cas de souci, revenez à la sauvegarde.
+**Mise à jour** — une nouvelle version est annoncée aux administrateurs en haut du dashboard, et « Mettre à jour » l'installe. En terminal, `sudo bash install.sh --update` fait la même chose : sauvegarde de la base et de la configuration dans `/opt/forgenet/sauvegardes/`, bascule sur l'image signée de la release, contrôle de santé, et retour automatique à la version précédente en cas d'échec. Une version plus ancienne que celle en place est refusée. Le fonctionnement est décrit dans l'[ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md). Depuis une 0.1.x, qui ne sait pas encore se mettre à jour elle-même, le script fait la même sauvegarde puis réinstalle, sans retour automatique : en cas de souci, revenez à la sauvegarde.
 
 **Revenir à une sauvegarde** — `sudo bash install.sh --restore 20261114-150834-0.1.1` (le nom d'un dossier de `/opt/forgenet/sauvegardes/`) remet la base, `.env` et les fichiers d'installation, donc la version d'alors, puis redémarre le serveur. Les sites déployés ne s'arrêtent pas.
+
+**Redémarrage du serveur** — ForgeNet et Caddy repartent seuls, mais pas encore les applications dont le `docker-compose.yml` ne dit rien ([#70](https://github.com/forgelab-dev/lfa-forgenet/issues/70)) : en attendant, donnez `restart: unless-stopped` à leurs services.
 
 **Prérequis** — Debian ou Ubuntu, x86_64 ou ARM64, 2 Go de RAM, ports 80 et 443 libres.
 
