@@ -50,6 +50,12 @@ func DefaultPolicy() Policy {
 			// comme ils voient les conteneurs ; les modifier reste réservé aux
 			// administrateurs (ADR-0008).
 			forgenetv1.DomainService_ListDomains_FullMethodName: store.RoleMember,
+			// Les mesures sont ouvertes aux membres, comme leurs flux WebSocket
+			// (ADR-0005, ADR-0010).
+			forgenetv1.MetricsService_GetSystemMetrics_FullMethodName:      store.RoleMember,
+			forgenetv1.MetricsService_QuerySystemMetrics_FullMethodName:    store.RoleMember,
+			forgenetv1.MetricsService_GetContainerMetrics_FullMethodName:   store.RoleMember,
+			forgenetv1.MetricsService_QueryContainerMetrics_FullMethodName: store.RoleMember,
 		},
 	}
 }

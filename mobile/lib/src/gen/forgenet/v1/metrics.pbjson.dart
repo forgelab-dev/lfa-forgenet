@@ -496,6 +496,36 @@ final $typed_data.Uint8List streamContainerMetricsResponseDescriptor =
         'Ch5TdHJlYW1Db250YWluZXJNZXRyaWNzUmVzcG9uc2USNwoHbWV0cmljcxgBIAEoCzIdLmZvcm'
         'dlbmV0LnYxLkNvbnRhaW5lck1ldHJpY3NSB21ldHJpY3M=');
 
+@$core.Deprecated('Use streamAllContainerMetricsResponseDescriptor instead')
+const StreamAllContainerMetricsResponse$json = {
+  '1': 'StreamAllContainerMetricsResponse',
+  '2': [
+    {
+      '1': 'collected_at',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'collectedAt'
+    },
+    {
+      '1': 'containers',
+      '3': 2,
+      '4': 3,
+      '5': 11,
+      '6': '.forgenet.v1.ContainerMetrics',
+      '10': 'containers'
+    },
+  ],
+};
+
+/// Descriptor for `StreamAllContainerMetricsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List streamAllContainerMetricsResponseDescriptor =
+    $convert.base64Decode(
+        'CiFTdHJlYW1BbGxDb250YWluZXJNZXRyaWNzUmVzcG9uc2USPQoMY29sbGVjdGVkX2F0GAEgAS'
+        'gLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFILY29sbGVjdGVkQXQSPQoKY29udGFpbmVy'
+        'cxgCIAMoCzIdLmZvcmdlbmV0LnYxLkNvbnRhaW5lck1ldHJpY3NSCmNvbnRhaW5lcnM=');
+
 @$core.Deprecated('Use queryContainerMetricsRequestDescriptor instead')
 const QueryContainerMetricsRequest$json = {
   '1': 'QueryContainerMetricsRequest',

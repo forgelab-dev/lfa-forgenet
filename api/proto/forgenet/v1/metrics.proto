@@ -165,6 +165,17 @@ message StreamContainerMetricsResponse {
   ContainerMetrics metrics = 1;
 }
 
+// StreamAllContainerMetricsResponse est un relevé de tous les conteneurs en
+// cours d'exécution, pris au même passage. C'est le message de la route
+// WebSocket /ws/v1/metrics/containers (ADR-0010) : un client suit tous les
+// conteneurs sur une seule liaison. Un conteneur absent du relevé n'est plus en
+// cours d'exécution.
+message StreamAllContainerMetricsResponse {
+  // Fin du passage qui a pris ces mesures.
+  google.protobuf.Timestamp collected_at = 1;
+  repeated ContainerMetrics containers = 2;
+}
+
 message QueryContainerMetricsRequest {
   string container_id = 1;
   TimeRange range = 2;
