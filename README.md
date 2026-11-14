@@ -94,7 +94,9 @@ Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écri
 
 **Sans domaine**, le dashboard n'écoute que sur le serveur : ouvrez-le par un tunnel SSH, `ssh -N -L 8080:127.0.0.1:8080 utilisateur@serveur`, puis `http://localhost:8080`. Les raisons de ce choix sont dans l'[ADR-0009](docs/decisions/0009-service-du-dashboard-en-production.md).
 
-**Mise à jour** — `sudo bash install.sh --update` passe à la dernière version publiée : sauvegarde de la base et de la configuration dans `/opt/forgenet/sauvegardes/`, bascule sur l'image signée de la release, contrôle de santé, et retour automatique à la version précédente en cas d'échec. Une version plus ancienne que celle en place est refusée. Le fonctionnement est décrit dans l'[ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md).
+**Mise à jour** — `sudo bash install.sh --update` passe à la dernière version publiée : sauvegarde de la base et de la configuration dans `/opt/forgenet/sauvegardes/`, bascule sur l'image signée de la release, contrôle de santé, et retour automatique à la version précédente en cas d'échec. Une version plus ancienne que celle en place est refusée. Le fonctionnement est décrit dans l'[ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md). Depuis une 0.1.x, qui ne sait pas encore se mettre à jour elle-même, le script fait la même sauvegarde puis réinstalle, sans retour automatique : en cas de souci, revenez à la sauvegarde.
+
+**Revenir à une sauvegarde** — `sudo bash install.sh --restore 20261114-150834-0.1.1` (le nom d'un dossier de `/opt/forgenet/sauvegardes/`) remet la base, `.env` et les fichiers d'installation, donc la version d'alors, puis redémarre le serveur. Les sites déployés ne s'arrêtent pas.
 
 **Prérequis** — Debian ou Ubuntu, x86_64 ou ARM64, 2 Go de RAM, ports 80 et 443 libres.
 

@@ -154,3 +154,8 @@ mise à jour (`StartUpdate`, inscrite au journal d'audit sous `update.start`).
   (`FORGENET_IMAGE_DIGEST`, facultative pour les installations antérieures).
 - Les installations en 0.1.x passent une dernière fois par `install.sh` pour
   obtenir la version qui contient ce système ; ensuite, le dashboard suffit.
+  Pour ce passage, le script sauvegarde lui-même la base et la configuration,
+  au même endroit et au même format, mais ne revient pas en arrière seul.
+- `install.sh --restore <sauvegarde>` remet une sauvegarde, qu'elle vienne du
+  script ou du serveur : la base est copiée dans le volume par un conteneur de
+  l'image en place, avec le propriétaire du dossier de données.

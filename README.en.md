@@ -93,7 +93,9 @@ It installs Docker if missing (official repository, verified key), writes `/opt/
 
 **Without a domain**, the dashboard only listens on the server: open it through an SSH tunnel, `ssh -N -L 8080:127.0.0.1:8080 user@server`, then `http://localhost:8080`. The reasoning is in [ADR-0009](docs/decisions/0009-service-du-dashboard-en-production.md) (in French).
 
-**Updating** — `sudo bash install.sh --update` moves to the latest published version: it backs up the database and configuration to `/opt/forgenet/sauvegardes/`, switches to the release's signed image, checks the server's health, and rolls back to the previous version automatically if anything fails. A version older than the installed one is refused. The design is in [ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md) (in French).
+**Updating** — `sudo bash install.sh --update` moves to the latest published version: it backs up the database and configuration to `/opt/forgenet/sauvegardes/`, switches to the release's signed image, checks the server's health, and rolls back to the previous version automatically if anything fails. A version older than the installed one is refused. The design is in [ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md) (in French). From a 0.1.x release, which cannot update itself yet, the script takes the same backup and then reinstalls, without automatic rollback: if anything goes wrong, restore the backup.
+
+**Restoring a backup** — `sudo bash install.sh --restore 20261114-150834-0.1.1` (the name of a folder in `/opt/forgenet/sauvegardes/`) puts back the database, `.env` and the install files, and therefore the version of that time, then restarts the server. Deployed sites keep running.
 
 **Requirements** — Debian or Ubuntu, x86_64 or ARM64, 2 GB RAM, ports 80 and 443 free.
 
