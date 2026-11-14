@@ -1,6 +1,6 @@
 # ADR-0011 : mise à jour d'une installation depuis le dashboard
 
-- Statut : proposé
+- Statut : accepté
 - Date : 2026-11-14
 - Contexte : ticket #62, après la publication de la v0.1.0 (#16)
 
@@ -56,7 +56,8 @@ construire, de signer avec cosign et de vérifier. Une installation tire ainsi
 - Une fois par jour, le serveur lit la dernière release de
   `forgelab-dev/lfa-forgenet` sur l'API GitHub, en HTTPS, avec un User-Agent
   générique (`forgenet/<version>`). C'est le seul appel sortant ; il ne transmet
-  rien sur l'installation. `updates.check: false` le coupe.
+  rien sur l'installation. `updates.check: false` (`FORGENET_UPDATES_CHECK=false`
+  dans `.env`) le coupe ; `updates.check_interval` règle l'intervalle (24 h).
 - Une version plus récente (comparaison semver) est annoncée aux seuls
   administrateurs, avec ses notes. **Rien ne se met à jour tout seul.**
 - Une version plus ancienne n'est jamais proposée : la base est déjà migrée et
@@ -109,6 +110,27 @@ ancienne, sur décision explicite.
   fiche.
 - La fiche vient de l'API GitHub en HTTPS, et l'image désignée par son empreinte
   est signée par cosign (vérifiable avec la commande de `docs/RELEASING.md`).
+
+### Dans le dashboard
+
+Le service `UpdateService`, réservé aux administrateurs, donne la version en
+service, la version disponible et la dernière mise à jour (`GetUpdateStatus`),
+vérifie sur demande (`CheckForUpdates`, au plus une fois par minute) et lance la
+mise à jour (`StartUpdate`, inscrite au journal d'audit sous `update.start`).
+
+- Un bandeau en tête de page annonce la version, avec ses notes ; la
+  confirmation rappelle la sauvegarde, la coupure d'environ une minute du
+  dashboard (les applications ne sont pas redémarrées) et le retour arrière.
+- Pendant la mise à jour, le dashboard relit l'état toutes les deux secondes.
+  Les appels qui échouent pendant la coupure sont attendus : il affiche « le
+  serveur redémarre » et attend son retour, puis le résultat. Après une
+  réussite, il propose de se recharger pour passer à la nouvelle interface.
+- Un échec reste signalé une semaine, une réussite un jour, jusqu'à ce que
+  l'administrateur ferme l'avis.
+- Une mise à jour « en cours » depuis plus de 30 minutes est tenue pour
+  interrompue, et son verrou est repris : elle ne bloque pas la suivante.
+- Sans `FORGENET_INSTALL_DIR` (installation hors `install.sh`), la version est
+  annoncée, mais la mise à jour se fait sur le serveur.
 
 ## Alternatives écartées
 
