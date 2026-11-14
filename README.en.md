@@ -15,7 +15,7 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Status](https://img.shields.io/badge/status-alpha%20v0.3.0-orange.svg)](#-project-status) <!-- x-release-please-version -->
+[![Status](https://img.shields.io/badge/status-alpha%20v0.4.0)](#-project-status) <!-- x-release-please-version -->
 
 **English** · [Français](README.md)
 
@@ -27,7 +27,7 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 
 ## 🚧 Project status
 
-> **Alpha — v0.3.0.** <!-- x-release-please-version --> ForgeNet installs, is usable and updates itself from its dashboard, but the API, the configuration and the data may still change between releases without a guaranteed migration. Try it on a test server, not in production yet.
+> **Alpha — v0.4.0.** <!-- x-release-please-version --> ForgeNet installs, is usable and updates itself from its dashboard, but the API, the configuration and the data may still change between releases without a guaranteed migration. Try it on a test server, not in production yet.
 >
 > ⭐ Star the repo to follow along, or read the [roadmap](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet) (in French). Changes between releases are listed in the [CHANGELOG](CHANGELOG.md).
 
@@ -87,7 +87,7 @@ On a Debian or Ubuntu server, as root:
 
 <!-- x-release-please-start-version -->
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/v0.3.0/deploy/install.sh
+curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/v0.4.0/deploy/install.sh
 less install.sh   # read a script before running it as root
 sudo bash install.sh --domain forgenet.example.org --email you@example.org
 ```

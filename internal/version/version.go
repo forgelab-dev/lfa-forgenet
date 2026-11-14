@@ -8,7 +8,7 @@ import (
 
 var (
 	// Version est la version sémantique du binaire (surpassée à la compilation via -ldflags).
-	Version = "0.3.0" // x-release-please-version
+	Version = "0.4.0" // x-release-please-version
 	// GitCommit est le hash du commit git source.
 	GitCommit = "unknown"
 	// BuildDate est la date de compilation au format RFC3339.

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.3.0...v0.4.0) (2026-11-14)
+
+
+### Fonctionnalités
+
+* **web:** logo ForgeNet, l'enclume ([f23e6fd](https://github.com/forgelab-dev/lfa-forgenet/commit/f23e6fd33dd33a6fd875fa2da19bfa2d98a887c5))
+
 ## [0.3.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.2.0...v0.3.0) (2026-11-14)
 
 
