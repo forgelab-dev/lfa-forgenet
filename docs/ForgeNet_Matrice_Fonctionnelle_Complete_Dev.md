@@ -3,9 +3,9 @@
 **Base :** [ForgeNet_Document_de_Projet_v2.3.0.md](ForgeNet_Document_de_Projet_v2.3.0.md) — remplace/étend le §3 (Matrice des Fonctionnalités)
 **Portée :** architecture à 5 modules (§2) — Core Engine, Dashboard Web, Mobile, IA, Reverse Proxy — + Écosystème
 **Statut :** backlog exhaustif, sans priorisation de sprint (voir le document projet §3 pour le P0/P1/P2)
-**Révision :** 14 novembre 2026, état à la v0.1.0 (alpha)
+**Révision :** 14 novembre 2026, état à la v0.3.0 (alpha)
 
-**Lecture de l'état :** une case cochée est livrée dans une version publiée (*v0.1.0*). Une case vide suivie de « *v0.1.0, en partie* » est commencée : la note dit ce qui existe. Les autres cases sont à faire.
+**Lecture de l'état :** une case cochée est livrée dans une version publiée, notée en italique (*v0.1.0*, *v0.2.0*…). Une case vide suivie de « *en partie* » est commencée : la note dit ce qui existe. Une case vide suivie de « *prévu : #NN* » a son ticket ouvert. Les autres cases sont à faire.
 
 ---
 
@@ -36,6 +36,7 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 - [ ] Gestion des volumes (création, montage, snapshot) `🔓 CE`
 - [ ] Gestion des réseaux Docker (isolation par projet/équipe) `🔓 CE` — *v0.1.0, en partie : un réseau par stack Compose, et le réseau `forgenet-edge` pour les seuls services publiés par un domaine (ADR-0008)*
 - [ ] Health checks configurables (HTTP, TCP, commande custom) avec auto-restart `🔓 CE` — *v0.1.0, en partie : l'état de chaque service, et ses health checks Compose, sont vérifiés à la fin du déploiement ; pas encore de redémarrage automatique*
+- [ ] Applications relancées après un redémarrage du serveur : politique `restart: unless-stopped` donnée aux services qui n'en précisent pas `🔓 CE` — *prévu : #70 ; aujourd'hui seuls le serveur ForgeNet et Caddy repartent seuls*
 - [ ] Limites de ressources par conteneur (CPU, RAM, disque) et enforcement `🔓 CE`
 - [x] File d'attente de déploiement (anti-conflit sur un même service) `🔓 CE` — *v0.1.0 : un déploiement à la fois, repris au redémarrage du serveur (ADR-0004)*
 - [ ] Scheduler de tâches cron définies par l'utilisateur `🔓 CE`
@@ -94,6 +95,12 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 - [ ] File d'attente des requêtes IA (éviter de saturer la machine hôte) `🔓 CE`
 - [ ] Télémétrie opt-in uniquement, anonymisée, désactivable à tout moment `🔓 CE`
 
+### 1.9 Installation & Mises à jour de ForgeNet
+- [x] Installation en une commande sur Debian et Ubuntu (x86_64, ARM64), serveur et Caddy en conteneurs durcis, image signée par cosign `🔓 CE` — *v0.1.0 : `deploy/install.sh` (#15)*
+- [x] Annonce des nouvelles versions aux administrateurs et mise à jour en un clic depuis le dashboard `🔓 CE` — *v0.2.0 : vérification quotidienne désactivable, image épinglée par son empreinte, sauvegarde, contrôle de santé et retour arrière automatique (ADR-0011, #62) ; la même chose par `install.sh --update`*
+- [x] Sauvegarde de la base et de la configuration de ForgeNet avant mise à jour, et retour à une sauvegarde `🔓 CE` — *v0.2.0 : sauvegarde avant chaque mise à jour, cinq dernières gardées dans `/opt/forgenet/sauvegardes/` ; v0.3.0 : `install.sh --restore`, et sauvegarde des 0.1.x avant leur réinstallation*
+- [ ] Commande `forgenet` d'administration sur le serveur (version, état, journaux, mise à jour, sauvegardes, comptes), sans `docker exec` `🔓 CE` — *prévu : #71 ; à distinguer de `forgenet-cli` (§1.3), client d'API à distance*
+
 ---
 
 ## 2. Dashboard Web (React + Vite + Tailwind)
@@ -130,7 +137,7 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 ### 2.5 Gestion d'Équipe & RBAC
 - [ ] Rôles prédéfinis (Owner, Admin, Développeur, Lecture seule) `🔓 CE` — *v0.1.0, en partie : deux rôles, administrateur et membre (consultation)*
 - [ ] RBAC granulaire par projet/service `🔓 CE`
-- [ ] Invitations par email `🔓 CE`
+- [ ] Invitations par email `🔓 CE` — *prévu : #73, après l'envoi d'e-mails*
 - [ ] Journal d'activité par membre `🔓 CE` — *v0.1.0, en partie : journal d'audit enregistré côté serveur, pas encore d'écran*
 - [ ] SSO/SAML `🏢 EE`
 - [ ] **Mode multi-tenant / marque blanche** : un intégrateur/MSP héberge ForgeNet et revend des instances à ses propres clients sous sa marque `🏢 EE`
@@ -160,6 +167,8 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 
 ### 2.9 Paramètres & Compte
 - [ ] Profil, tokens API, préférences de notification `🔓 CE`
+- [ ] Changer son mot de passe, dans le dashboard et en terminal (`user set-password`) `🔓 CE` — *prévu : #72 ; aujourd'hui seule la création d'un compte existe*
+- [ ] Envoi d'e-mails (SMTP) : lien à usage unique pour la première connexion de l'administrateur, mot de passe oublié `🔓 CE` — *prévu : #73, ADR d'abord ; aujourd'hui ForgeNet n'envoie aucun e-mail*
 - [ ] Thème clair/sombre `🔓 CE`
 - [ ] Localisation FR/EN `🔓 CE`
 - [ ] Personnalisation de marque (logo, couleurs, domaine du dashboard) pour usage marque blanche `🏢 EE`

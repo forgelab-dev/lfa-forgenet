@@ -10,7 +10,7 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Status](https://img.shields.io/badge/status-alpha%20v0.1.0-orange.svg)](#-project-status)
+[![Status](https://img.shields.io/badge/status-alpha%20v0.3.0-orange.svg)](#-project-status) <!-- x-release-please-version -->
 
 **English** · [Français](README.md)
 
@@ -22,7 +22,7 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 
 ## 🚧 Project status
 
-> **Alpha — v0.1.0, first published release.** ForgeNet installs and is usable, but the API, the configuration and the data may still change between releases without a guaranteed migration. Try it on a test server, not in production yet.
+> **Alpha — v0.3.0.** <!-- x-release-please-version --> ForgeNet installs, is usable and updates itself from its dashboard, but the API, the configuration and the data may still change between releases without a guaranteed migration. Try it on a test server, not in production yet.
 >
 > ⭐ Star the repo to follow along, or read the [roadmap](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet) (in French). Changes between releases are listed in the [CHANGELOG](CHANGELOG.md).
 
@@ -30,17 +30,18 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
   <img src="docs/media/demo.gif" width="860" alt="Demo on a test VPS: sign-in, a Docker Compose stack deployed and followed live, then the Monitoring screen with server and container metrics">
 </p>
 
-**What v0.1.0 does**:
+**What ForgeNet does today**:
 
 - **One-command install** on Debian or Ubuntu, x86_64 or ARM64: the server and Caddy in hardened containers, signed image (see [Installation](#-installation)).
 - **Docker Compose deployments** from the dashboard: queued, followed live with their log, resumed when the server restarts; the real state of each stack, removal with or without its volumes.
 - **Domains and HTTPS**: one domain per service, Let's Encrypt certificate and HTTPS redirect by Caddy, reloaded on every change.
 - **Monitoring**: CPU, memory, disk and network for the server and each container, live, with the last hour; clean reconnection on a slow or dropped connection.
 - **Containers**: list, inspect, start, stop, restart.
+- **Updates**: a new version is announced in the dashboard and installs in one click, with a backup of the database and configuration, a health check and an automatic rollback to the previous version on failure; `install.sh --restore` puts a backup back.
 - **Accounts and security**: admin and member roles, permissions checked on every call, rate-limited sign-in, audit log.
 - **API**: gRPC contract ([`api/proto`](api/proto)), also served over Connect and gRPC-Web, with generated TypeScript and Dart clients.
 
-**Not there yet**: deployment rollback, deploy from Git, Marketplace, local AI assistant, backups, migration from other PaaS, CLI, and the mobile app, of which only the generated API client exists. The item-by-item status is in the [feature matrix](docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md) (in French); architecture decisions are in [`docs/decisions/`](docs/decisions/) (in French).
+**Not there yet**: deployment rollback, deploy from Git, Marketplace, local AI assistant, application backups, migration from other PaaS, CLI, password change, email (invitations, password reset), and the mobile app, of which only the generated API client exists. The item-by-item status is in the [feature matrix](docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md) (in French); architecture decisions are in [`docs/decisions/`](docs/decisions/) (in French).
 
 ---
 
@@ -52,7 +53,7 @@ Your production data — logs, metrics, secrets, databases — ends up on AWS, G
 
 ## ✨ Features
 
-> This section describes **where ForgeNet is heading**. What v0.1.0 already does is listed under [Project status](#-project-status).
+> This section describes **where ForgeNet is heading**. What it already does is listed under [Project status](#-project-status).
 
 ### The foundation
 - **One-click deploys** — Docker, Docker Compose, or automatic buildpack detection (Node, Python, Go, PHP, Ruby, static). No Dockerfile required.
@@ -89,13 +90,15 @@ sudo bash install.sh --domain forgenet.example.org --email you@example.org
 
 The script comes from the release tag: it installs the image of that same release, `ghcr.io/forgelab-dev/forgenet-server`, signed with cosign. How to verify it is described in [`docs/RELEASING.md`](docs/RELEASING.md) (in French).
 
-It installs Docker if missing (official repository, verified key), writes `/opt/forgenet`, starts the server and Caddy, then creates the first administrator. It is safe to run again, for instance to add a domain or change version (`bash install.sh --help`).
+It installs Docker if missing (official repository, verified key), writes `/opt/forgenet`, starts the server and Caddy, then creates the first administrator. Run without a terminal (cloud-init, for instance), it picks a random password and stores it in `/opt/forgenet/admin-password`, readable by root only: keep that file, since passwords cannot be changed yet ([#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)). The script is safe to run again, for instance to add a domain or change version (`bash install.sh --help`).
 
 **Without a domain**, the dashboard only listens on the server: open it through an SSH tunnel, `ssh -N -L 8080:127.0.0.1:8080 user@server`, then `http://localhost:8080`. The reasoning is in [ADR-0009](docs/decisions/0009-service-du-dashboard-en-production.md) (in French).
 
-**Updating** — `sudo bash install.sh --update` moves to the latest published version: it backs up the database and configuration to `/opt/forgenet/sauvegardes/`, switches to the release's signed image, checks the server's health, and rolls back to the previous version automatically if anything fails. A version older than the installed one is refused. The design is in [ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md) (in French). From a 0.1.x release, which cannot update itself yet, the script takes the same backup and then reinstalls, without automatic rollback: if anything goes wrong, restore the backup.
+**Updating** — a new version is announced to administrators at the top of the dashboard, and its "Mettre à jour" (Update) button installs it. From a terminal, `sudo bash install.sh --update` does the same: it backs up the database and configuration to `/opt/forgenet/sauvegardes/`, switches to the release's signed image, checks the server's health, and rolls back to the previous version automatically if anything fails. A version older than the installed one is refused. The design is in [ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md) (in French). From a 0.1.x release, which cannot update itself yet, the script takes the same backup and then reinstalls, without automatic rollback: if anything goes wrong, restore the backup.
 
 **Restoring a backup** — `sudo bash install.sh --restore 20261114-150834-0.1.1` (the name of a folder in `/opt/forgenet/sauvegardes/`) puts back the database, `.env` and the install files, and therefore the version of that time, then restarts the server. Deployed sites keep running.
+
+**Server reboot** — ForgeNet and Caddy come back on their own, but applications whose `docker-compose.yml` says nothing about it do not yet ([#70](https://github.com/forgelab-dev/lfa-forgenet/issues/70)): until then, give their services `restart: unless-stopped`.
 
 **Requirements** — Debian or Ubuntu, x86_64 or ARM64, 2 GB RAM, ports 80 and 443 free.
 
