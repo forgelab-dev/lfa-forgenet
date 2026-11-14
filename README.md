@@ -94,6 +94,8 @@ Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écri
 
 **Sans domaine**, le dashboard n'écoute que sur le serveur : ouvrez-le par un tunnel SSH, `ssh -N -L 8080:127.0.0.1:8080 utilisateur@serveur`, puis `http://localhost:8080`. Les raisons de ce choix sont dans l'[ADR-0009](docs/decisions/0009-service-du-dashboard-en-production.md).
 
+**Mise à jour** — `sudo bash install.sh --update` passe à la dernière version publiée : sauvegarde de la base et de la configuration dans `/opt/forgenet/sauvegardes/`, bascule sur l'image signée de la release, contrôle de santé, et retour automatique à la version précédente en cas d'échec. Une version plus ancienne que celle en place est refusée. Le fonctionnement est décrit dans l'[ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md).
+
 **Prérequis** — Debian ou Ubuntu, x86_64 ou ARM64, 2 Go de RAM, ports 80 et 443 libres.
 
 <details>
