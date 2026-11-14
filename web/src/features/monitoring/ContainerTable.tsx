@@ -88,7 +88,9 @@ export function ContainerTable({ containers, known, hostMemory, rangeMs, now, st
                 onClick={() => setOpen(expanded ? undefined : c.id)}
                 className={`cursor-pointer border-t border-iron-800 first:border-t-0 hover:bg-iron-900 max-sm:grid max-sm:grid-cols-2 max-sm:gap-x-3 max-sm:gap-y-1.5 max-sm:px-4 max-sm:py-3 ${expanded ? 'bg-iron-900' : ''}`}
               >
-                <td className="min-w-0 px-4 py-3 max-sm:col-span-2 max-sm:p-0">
+                {/* La colonne du nom prend la place restante sans jamais élargir le tableau :
+                    un nom d'image épinglé par empreinte (caddy:…@sha256:…) est tronqué. */}
+                <td className="min-w-0 px-4 py-3 sm:w-full sm:max-w-0 max-sm:col-span-2 max-sm:p-0">
                   <button
                     type="button"
                     aria-expanded={expanded}
@@ -104,10 +106,13 @@ export function ContainerTable({ containers, known, hostMemory, rangeMs, now, st
                       className={`size-4 shrink-0 transition-transform duration-200 ease-out-quart ${expanded ? 'rotate-90 text-gold-400' : 'text-iron-500'}`}
                     />
                     <span className="min-w-0">
-                      <span className="block truncate font-mono text-[0.8125rem] font-medium">
+                      <span
+                        className="block truncate font-mono text-[0.8125rem] font-medium"
+                        title={info?.name ?? c.id}
+                      >
                         {info?.name ?? c.id.slice(0, 12)}
                       </span>
-                      <span className="block truncate text-xs text-iron-300">
+                      <span className="block truncate text-xs text-iron-300" title={info?.image}>
                         {info?.image ?? 'conteneur'}
                       </span>
                     </span>
