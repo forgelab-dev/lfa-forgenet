@@ -134,8 +134,14 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "empreinte invalide : $DIGEST"; exit 1; }
+          # Les fichiers d'installation du tag, par empreinte : le moteur de mise
+          # à jour les télécharge et refuse ceux qui ne correspondent pas.
+          compose_sum="$(sha256sum deploy/docker-compose.yml | cut -d' ' -f1)"
+          caddy_sum="$(sha256sum deploy/Caddyfile.base | cut -d' ' -f1)"
           jq -n --arg v "$VERSION" --arg i "$IMAGE" --arg d "$DIGEST" \
             --arg u "https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}" \
-            '{schema: 1, version: $v, image: $i, digest: $d, notes_url: $u}' > forgenet-release.json
+            --arg c "$compose_sum" --arg k "$caddy_sum" \
+            '{schema: 1, version: $v, image: $i, digest: $d, notes_url: $u,
+              files: {"docker-compose.yml": $c, "Caddyfile.base": $k}}' > forgenet-release.json
           cat forgenet-release.json
           gh release upload "$TAG" forgenet-release.json --clobber --repo "$GITHUB_REPOSITORY"
