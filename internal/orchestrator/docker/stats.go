@@ -14,6 +14,7 @@ import (
 var (
 	_ metrics.StatsSource    = (*Engine)(nil)
 	_ metrics.RunningCounter = (*Engine)(nil)
+	_ metrics.RunningLister  = (*Engine)(nil)
 )
 
 // Stats lit une mesure des ressources d'un conteneur (identifiant ou nom).
@@ -44,4 +45,18 @@ func (e *Engine) CountRunning(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("liste des conteneurs : %w", err)
 	}
 	return len(res.Items), nil
+}
+
+// RunningIDs renvoie l'identifiant complet de chaque conteneur en cours
+// d'exécution.
+func (e *Engine) RunningIDs(ctx context.Context) ([]string, error) {
+	res, err := e.cli.ContainerList(ctx, client.ContainerListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("liste des conteneurs : %w", err)
+	}
+	ids := make([]string, 0, len(res.Items))
+	for _, c := range res.Items {
+		ids = append(ids, c.ID)
+	}
+	return ids, nil
 }
