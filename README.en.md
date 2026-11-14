@@ -27,7 +27,7 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 > ⭐ Star the repo to follow along, or read the [roadmap](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet) (in French). Changes between releases are listed in the [CHANGELOG](CHANGELOG.md).
 
 <p align="center">
-  <img src="docs/media/demo-v0.1.0.gif" width="860" alt="v0.1.0 demo: sign-in, a Docker Compose stack deployed and followed live, then the Monitoring screen with server and container metrics">
+  <img src="docs/media/demo.gif" width="860" alt="Demo on a test VPS: sign-in, a Docker Compose stack deployed and followed live, then the Monitoring screen with server and container metrics">
 </p>
 
 **What v0.1.0 does**:
