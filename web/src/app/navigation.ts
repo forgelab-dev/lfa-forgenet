@@ -59,7 +59,6 @@ export const navigation: SectionGroup[] = [
         path: '/surveillance',
         label: 'Surveillance',
         icon: Activity,
-        upcoming: true,
         summary:
           'Processeur, mémoire, réseau et disque du serveur et de chaque conteneur, en direct.',
       },
