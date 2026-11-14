@@ -26,6 +26,13 @@ export interface Session {
   logout(): Promise<void>;
   /** Relance la vérification du jeton conservé. */
   retry(): void;
+  /**
+   * Jeton de la session, pour les flux WebSocket : le navigateur ne laisse pas
+   * poser d'en-tête Authorization sur une poignée de main (ADR-0005).
+   */
+  token(): string | undefined;
+  /** Ferme la session quand un flux WebSocket signale un jeton refusé (4401). */
+  expire(): void;
 }
 
 export const SessionContext = createContext<Session | null>(null);
