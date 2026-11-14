@@ -34,9 +34,18 @@ Le workflow de release joint à chaque release GitHub un fichier
   "version": "0.1.1",
   "image": "ghcr.io/forgelab-dev/forgenet-server",
   "digest": "sha256:…",
-  "notes_url": "https://github.com/forgelab-dev/lfa-forgenet/releases/tag/v0.1.1"
+  "notes_url": "https://github.com/forgelab-dev/lfa-forgenet/releases/tag/v0.2.0",
+  "files": {
+    "docker-compose.yml": "<sha256 hexadécimal>",
+    "Caddyfile.base": "<sha256 hexadécimal>"
+  }
 }
 ```
+
+`files` (depuis la 0.2.0) donne l'empreinte des fichiers d'installation du tag :
+une version qui fait évoluer `docker-compose.yml` l'apporte avec elle, et le
+moteur refuse un fichier qui ne correspond pas. Seuls ces deux noms sont admis.
+Les fiches sans `files` (0.1.1) laissent les fichiers en place.
 
 L'empreinte est celle de l'index multi-architectures que la même tâche vient de
 construire, de signer avec cosign et de vérifier. Une installation tire ainsi
@@ -59,7 +68,8 @@ construire, de signer avec cosign et de vérifier. Une installation tire ainsi
 Un serveur ne peut pas se remplacer lui-même : il serait arrêté au milieu de
 l'opération. Au clic, le serveur lance donc un conteneur séparé
 (`forgenet-updater`), à partir de **sa propre image** (un code connu, déjà en
-service), qui lui survit le temps de la mise à jour puis s'efface. Il reçoit le
+service), qui lui survit le temps de la mise à jour. Il reste ensuite, arrêté,
+pour ses journaux, et la mise à jour suivante le retire. Il reçoit le
 socket Docker, le dossier d'installation et le volume de données, rien de plus ;
 le serveur pilote déjà Docker, ce conteneur n'ajoute donc aucun droit.
 
@@ -67,17 +77,29 @@ le serveur pilote déjà Docker, ce conteneur n'ajoute donc aucun droit.
 dashboard les suive et que le serveur relancé affiche le résultat :
 
 1. **Verrou** : une seule mise à jour à la fois.
-2. **Sauvegarde** : le serveur est arrêté, puis la base SQLite (avec son journal
-   WAL) et `.env` sont copiés dans `/opt/forgenet/sauvegardes/<date>-<version>/`.
-   Les cinq dernières sont gardées.
-3. **Bascule** : `.env` reçoit la nouvelle version et son empreinte ;
-   `docker compose up -d` recrée le serveur sur l'image exacte.
-4. **Santé** : le nouveau serveur doit être « healthy » sous 60 secondes.
-5. **Retour arrière** en cas d'échec : `.env` et la base sauvegardés sont remis
-   en place, l'ancienne version redémarre, et la raison est notée.
+2. **Téléchargement**, avant tout arrêt : l'image `version@empreinte` et les
+   fichiers d'installation, vérifiés contre la fiche. Un registre injoignable ou
+   un fichier altéré annule tout sans coupure.
+3. **Sauvegarde** : le serveur est arrêté, puis la base SQLite (avec son journal
+   WAL), `.env` et les fichiers d'installation sont copiés dans
+   `/opt/forgenet/sauvegardes/<date>-<version>/`. Les cinq dernières sont
+   gardées.
+4. **Bascule** : les nouveaux fichiers sont écrits, `.env` reçoit la nouvelle
+   version et son empreinte, `docker compose up -d` recrée le serveur sur
+   l'image exacte (et les autres services si `docker-compose.yml` a changé).
+5. **Santé** : le nouveau serveur doit être « healthy » sous 90 secondes (son
+   premier contrôle arrive après 30). Un conteneur arrêté ou « unhealthy »
+   échoue tout de suite.
+6. **Retour arrière** en cas d'échec : fichiers, `.env` et base sauvegardés sont
+   remis en place, l'ancienne version redémarre (avec au moins deux minutes pour
+   redevenir saine), et la raison est notée.
 
-`install.sh --update` lance le même conteneur : un seul code pour les deux
-chemins.
+En ligne de commande : `forgenet-server update check` dit si une version est
+disponible, `forgenet-server update start` lance le conteneur de mise à jour, qui
+exécute `forgenet-server update apply`. `install.sh --update` passe par
+`update start` dès que la version installée le connaît : un seul code pour le
+terminal et le dashboard. `--force` réinstalle une version égale ou plus
+ancienne, sur décision explicite.
 
 ### Sécurité
 
@@ -106,6 +128,7 @@ chemins.
 
 - Le workflow de release obtient le droit d'écrire dans la release
   (`contents: write`) pour y joindre la fiche.
-- `docker-compose.yml` désignera l'image par version et empreinte.
+- `docker-compose.yml` désigne l'image par version et empreinte
+  (`FORGENET_IMAGE_DIGEST`, facultative pour les installations antérieures).
 - Les installations en 0.1.x passent une dernière fois par `install.sh` pour
   obtenir la version qui contient ce système ; ensuite, le dashboard suffit.
