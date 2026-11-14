@@ -15,7 +15,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Status](https://img.shields.io/badge/statut-alpha%20v0.3.0-orange.svg)](#-état-du-projet) <!-- x-release-please-version -->
+[![Status](https://img.shields.io/badge/statut-alpha%20v0.4.0)](#-état-du-projet) <!-- x-release-please-version -->
 
 **Français** · [English](README.en.md)
 
@@ -27,7 +27,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 
 ## 🚧 État du projet
 
-> **Alpha — v0.3.0.** <!-- x-release-please-version --> ForgeNet s'installe, se tient en main et se met à jour depuis son dashboard, mais l'API, la configuration et les données peuvent encore changer d'une version à l'autre sans migration garantie. Essayez-le sur un serveur de test, pas encore en production.
+> **Alpha — v0.4.0.** <!-- x-release-please-version --> ForgeNet s'installe, se tient en main et se met à jour depuis son dashboard, mais l'API, la configuration et les données peuvent encore changer d'une version à l'autre sans migration garantie. Essayez-le sur un serveur de test, pas encore en production.
 >
 > ⭐ Mettez une étoile pour suivre l'avancement, ou consultez la [feuille de route](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet). Ce qui change d'une version à l'autre est dans le [CHANGELOG](CHANGELOG.md).
 
@@ -88,7 +88,7 @@ Sur un serveur Debian ou Ubuntu, en root :
 
 <!-- x-release-please-start-version -->
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/v0.3.0/deploy/install.sh
+curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/v0.4.0/deploy/install.sh
 less install.sh   # relisez un script avant de le lancer en root
 sudo bash install.sh --domain forgenet.exemple.org --email vous@exemple.org
 ```
