@@ -259,6 +259,7 @@ describe('écran Surveillance', () => {
     const host = await socketOn('/ws/v1/metrics/system');
     const last = Date.now();
     host.emit(systemMessage(last));
+    expect(screen.queryByText(/mesures de/)).not.toBeInTheDocument(); // première connexion
     (await socketOn('/ws/v1/metrics/containers')).emit(sweep(last, []));
     await screen.findByText('En direct');
 
