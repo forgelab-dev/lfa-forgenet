@@ -3,7 +3,9 @@
 **Base :** [ForgeNet_Document_de_Projet_v2.3.0.md](ForgeNet_Document_de_Projet_v2.3.0.md) — remplace/étend le §3 (Matrice des Fonctionnalités)
 **Portée :** architecture à 5 modules (§2) — Core Engine, Dashboard Web, Mobile, IA, Reverse Proxy — + Écosystème
 **Statut :** backlog exhaustif, sans priorisation de sprint (voir le document projet §3 pour le P0/P1/P2)
-**Révision :** 15 septembre 2026
+**Révision :** 14 novembre 2026, état à la v0.1.0 (alpha)
+
+**Lecture de l'état :** une case cochée est livrée dans une version publiée (*v0.1.0*). Une case vide suivie de « *v0.1.0, en partie* » est commencée : la note dit ce qui existe. Les autres cases sont à faire.
 
 ---
 
@@ -24,33 +26,33 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 ## 1. Core Engine (Go, Gin/Echo, gRPC)
 
 ### 1.1 Orchestration Docker
-- [ ] CRUD conteneurs (créer, démarrer, arrêter, redémarrer, supprimer, kill forcé) `🔓 CE`
-- [ ] Support Docker Compose (parsing, déploiement multi-service, dépendances entre services) `🔓 CE`
+- [ ] CRUD conteneurs (créer, démarrer, arrêter, redémarrer, supprimer, kill forcé) `🔓 CE` — *v0.1.0, en partie : lister, consulter, démarrer, arrêter, redémarrer ; création et suppression passent par les stacks Compose, pas de kill forcé*
+- [x] Support Docker Compose (parsing, déploiement multi-service, dépendances entre services) `🔓 CE` — *v0.1.0 : fichier validé, stack par projet, `docker compose up` (ADR-0003)*
 - [ ] Build d'image depuis Dockerfile `🔓 CE`
 - [ ] Détection automatique de buildpacks (Node, Python, Go, PHP, Ruby, statique) façon Nixpacks `🔓 CE`
 - [ ] Déploiement depuis Git (push-to-deploy via webhook GitHub/GitLab/Gitea) `🔓 CE`
 - [ ] **Déploiements Blue-Green et Canary** avec bascule de trafic progressive et rollback automatique sur échec de health check `🔓 CE`
 - [ ] Rollback vers une version précédente d'un déploiement (1 clic) `🔓 CE`
 - [ ] Gestion des volumes (création, montage, snapshot) `🔓 CE`
-- [ ] Gestion des réseaux Docker (isolation par projet/équipe) `🔓 CE`
-- [ ] Health checks configurables (HTTP, TCP, commande custom) avec auto-restart `🔓 CE`
+- [ ] Gestion des réseaux Docker (isolation par projet/équipe) `🔓 CE` — *v0.1.0, en partie : un réseau par stack Compose, et le réseau `forgenet-edge` pour les seuls services publiés par un domaine (ADR-0008)*
+- [ ] Health checks configurables (HTTP, TCP, commande custom) avec auto-restart `🔓 CE` — *v0.1.0, en partie : l'état de chaque service, et ses health checks Compose, sont vérifiés à la fin du déploiement ; pas encore de redémarrage automatique*
 - [ ] Limites de ressources par conteneur (CPU, RAM, disque) et enforcement `🔓 CE`
-- [ ] File d'attente de déploiement (anti-conflit sur un même service) `🔓 CE`
+- [x] File d'attente de déploiement (anti-conflit sur un même service) `🔓 CE` — *v0.1.0 : un déploiement à la fois, repris au redémarrage du serveur (ADR-0004)*
 - [ ] Scheduler de tâches cron définies par l'utilisateur `🔓 CE`
 - [ ] **Boucle GitOps** : réconciliation continue entre l'état déclaré en dépôt (manifeste ForgeNet) et l'état réel des conteneurs, avec dérive détectée et corrigée `🏢 EE`
 
 ### 1.2 Métriques & Observabilité
-- [ ] Collecte via `gopsutil` (CPU, RAM, disque, réseau, uptime) — hôte + par conteneur `🔓 CE`
-- [ ] Historisation des métriques avec rétention configurable (stockage local) `🔓 CE`
-- [ ] Endpoint streaming WebSocket pour dashboard/mobile temps réel `🔓 CE`
+- [x] Collecte via `gopsutil` (CPU, RAM, disque, réseau, uptime) — hôte + par conteneur `🔓 CE` — *v0.1.0 : gopsutil pour l'hôte, statistiques du démon Docker pour les conteneurs*
+- [ ] Historisation des métriques avec rétention configurable (stockage local) `🔓 CE` — *v0.1.0, en partie : la dernière heure, gardée en mémoire et perdue au redémarrage (ADR-0010) ; rétention non configurable*
+- [x] Endpoint streaming WebSocket pour dashboard/mobile temps réel `🔓 CE` — *v0.1.0 : hôte, un conteneur, ou tous les conteneurs sur une liaison (ADR-0005, ADR-0010)*
 - [ ] Export Prometheus / OpenTelemetry standard (interopérable avec Grafana existant) `🔓 CE`
 - [ ] **Tableau de prévision de capacité** : projection d'usage CPU/RAM/disque à 30/60/90 jours, alerte avant saturation `🏢 EE`
 
 ### 1.3 API & Intégrations
-- [ ] API gRPC interne (dashboard ↔ core, mobile ↔ core via gateway REST/gRPC-Web) `🔓 CE`
+- [x] API gRPC interne (dashboard ↔ core, mobile ↔ core via gateway REST/gRPC-Web) `🔓 CE` — *v0.1.0 : gRPC, et Connect/gRPC-Web pour le navigateur sur le même port que le dashboard (ADR-0006)*
 - [ ] API REST publique documentée (OpenAPI 3) pour intégrations tierces `🔓 CE`
-- [ ] Authentification par token API (scoped, révocable, expirable) `🔓 CE`
-- [ ] Rate limiting sur l'API publique `🔓 CE`
+- [ ] Authentification par token API (scoped, révocable, expirable) `🔓 CE` — *v0.1.0, en partie : jetons de session expirables, révoqués à la déconnexion ; pas encore de jetons d'API créés depuis le dashboard*
+- [ ] Rate limiting sur l'API publique `🔓 CE` — *v0.1.0, en partie : la connexion seulement : 10 échecs en 15 minutes par adresse et identifiant*
 - [ ] Webhooks sortants (Slack, Discord, Telegram, email, SMS) `🔓 CE`
 - [ ] CLI `forgenet-cli` (login, deploy, logs, status, scale) pour scripting/CI externe `🔓 CE`
 - [ ] **Provider Terraform / Pulumi officiel** — gérer ForgeNet en Infrastructure-as-Code `🏢 EE`
@@ -59,8 +61,8 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 ### 1.4 Sécurité & Secrets
 - [ ] Intégration HashiCorp Vault (secrets de build/déploiement : tokens registry, clés API) `🔓 CE`
 - [ ] Chiffrement des variables d'environnement au repos `🔓 CE`
-- [ ] RBAC enforcement côté moteur (vérification systématique par appel, pas seulement côté UI) `🔓 CE`
-- [ ] Audit log horodaté de toutes les actions sensibles (start/stop/deploy/delete), attribué à un utilisateur `🔓 CE`
+- [x] RBAC enforcement côté moteur (vérification systématique par appel, pas seulement côté UI) `🔓 CE` — *v0.1.0 : un même garde vérifie chaque appel gRPC, Connect et WebSocket*
+- [x] Audit log horodaté de toutes les actions sensibles (start/stop/deploy/delete), attribué à un utilisateur `🔓 CE` — *v0.1.0 : conteneurs, déploiements, stacks et domaines*
 - [ ] Scan de vulnérabilités des images (intégration Trivy, open-source) `🔓 CE`
 - [ ] Détection de ports exposés à risque + alerte `🔓 CE`
 - [ ] **Rotation automatique des secrets** (tokens registry, clés DB) avec fenêtre de grâce sans downtime `🏢 EE`
@@ -83,7 +85,7 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 ### 1.7 Résilience Réseau & Contexte Bas-Débit
 > Différenciateur direct pour la cible ouest-africaine — aucun concurrent (Coolify/Dokploy/CapRover) ne conçoit pour la connectivité intermittente.
 - [ ] **Mode dégradé** : file d'attente locale des commandes/déploiements en cas de coupure, rejeu automatique au retour du réseau `🔓 CE`
-- [ ] Compression et agrégation des flux de logs/metrics avant transmission (économie de bande passante) `🔓 CE`
+- [ ] Compression et agrégation des flux de logs/metrics avant transmission (économie de bande passante) `🔓 CE` — *v0.1.0, en partie : flux WebSocket compressés (permessage-deflate) et relevé de tous les conteneurs en un message ; pas encore pour les journaux*
 - [ ] Synchronisation différentielle (delta uniquement) entre agents et control plane `🔓 CE`
 - [ ] Mode "faible bande passante" pour le dashboard (désactive le streaming temps réel, polling espacé) `🔓 CE`
 
@@ -104,7 +106,7 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 - [ ] Page vendeur avec suivi des revenus (commission 70/30 sur templates premium) `☁️ MC`
 
 ### 2.2 Reverse Proxy & Domain Manager
-- [ ] Ajout/suppression de domaines et sous-domaines par service `🔓 CE`
+- [x] Ajout/suppression de domaines et sous-domaines par service `🔓 CE` — *v0.1.0 : écran Domaines, Caddy rechargé à chaque changement*
 - [ ] Statut visible des certificats SSL (génération auto via Caddy) `🔓 CE`
 - [ ] Éditeur de règles de redirection/réécriture `🔓 CE`
 - [ ] Support domaines wildcard `🔓 CE`
@@ -126,25 +128,25 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 - [ ] **Auto-remédiation suggérée en un clic** (ex : redémarrer un conteneur OOM-killed, augmenter une limite mémoire, régénérer un certificat expiré) avec action réversible et journalisée `🏢 EE`
 
 ### 2.5 Gestion d'Équipe & RBAC
-- [ ] Rôles prédéfinis (Owner, Admin, Développeur, Lecture seule) `🔓 CE`
+- [ ] Rôles prédéfinis (Owner, Admin, Développeur, Lecture seule) `🔓 CE` — *v0.1.0, en partie : deux rôles, administrateur et membre (consultation)*
 - [ ] RBAC granulaire par projet/service `🔓 CE`
 - [ ] Invitations par email `🔓 CE`
-- [ ] Journal d'activité par membre `🔓 CE`
+- [ ] Journal d'activité par membre `🔓 CE` — *v0.1.0, en partie : journal d'audit enregistré côté serveur, pas encore d'écran*
 - [ ] SSO/SAML `🏢 EE`
 - [ ] **Mode multi-tenant / marque blanche** : un intégrateur/MSP héberge ForgeNet et revend des instances à ses propres clients sous sa marque `🏢 EE`
 
 ### 2.6 Monitoring & Logs
-- [ ] Logs temps réel (stream WebSocket, filtrage par service/niveau) `🔓 CE`
-- [ ] Graphiques de métriques historiques (CPU/RAM/réseau/disque) `🔓 CE`
+- [ ] Logs temps réel (stream WebSocket, filtrage par service/niveau) `🔓 CE` — *v0.1.0, en partie : journal d'un déploiement en direct, et journaux d'un conteneur par l'API ; pas de filtre par niveau*
+- [x] Graphiques de métriques historiques (CPU/RAM/réseau/disque) `🔓 CE` — *v0.1.0 : écran Surveillance, sur 15 minutes ou une heure*
 - [ ] Alertes configurables (seuils, canaux de notification) `🔓 CE`
-- [ ] Timeline des déploiements `🔓 CE`
+- [x] Timeline des déploiements `🔓 CE` — *v0.1.0 : écran Déploiements, avec la frise d'états et le journal de chaque déploiement*
 - [ ] **Tableau de coût & de ressources** : estimation du coût d'hébergement par projet/service, comparatif vs plans cloud tiers `☁️ MC`
 
 ### 2.7 Déploiement & CI/CD
 - [ ] Connexion dépôt Git (GitHub, GitLab, Gitea) — GitHub en priorité d'implémentation `🔓 CE`
 - [ ] Déploiement automatique sur push (branche configurable) `🔓 CE`
 - [ ] Environnements de prévisualisation avant merge `🔓 CE`
-- [ ] Historique des déploiements avec rollback en un clic `🔓 CE`
+- [ ] Historique des déploiements avec rollback en un clic `🔓 CE` — *v0.1.0, en partie : historique et redéploiement ; le retour arrière n'est pas encore implémenté*
 - [ ] **Assistant d'import** : détection et migration guidée d'un projet Coolify/CapRover/Dokploy existant (parcours "quitter mon PaaS actuel" en moins de 10 minutes) `🔓 CE`
 
 ### 2.8 Facturation & Abonnement (Managed Cloud)
@@ -214,12 +216,12 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 
 ## 5. Reverse Proxy & SSL (Caddy)
 
-- [ ] Auto-HTTPS (Let's Encrypt) sans configuration manuelle `🔓 CE`
-- [ ] Génération automatique de Caddyfile à partir des règles définies dans le dashboard `🔓 CE`
+- [ ] Auto-HTTPS (Let's Encrypt) sans configuration manuelle `🔓 CE` — *v0.1.0, en partie : configuré et testé avec l'autorité locale de Caddy ; à vérifier sur un VPS public (#15)*
+- [x] Génération automatique de Caddyfile à partir des règles définies dans le dashboard `🔓 CE` — *v0.1.0 : Caddyfile entier régénéré et rechargé par l'API d'administration de Caddy (ADR-0007)*
 - [ ] Éditeur de configuration avancée (Caddyfile brut) pour utilisateurs experts `🔓 CE`
 - [ ] Support des domaines wildcard `🔓 CE`
 - [ ] Load balancing round-robin / least-connections entre instances `🔓 CE`
-- [ ] Redirection HTTP→HTTPS forcée par défaut `🔓 CE`
+- [x] Redirection HTTP→HTTPS forcée par défaut `🔓 CE` — *v0.1.0 : comportement par défaut de Caddy, gardé*
 - [ ] **Pare-feu applicatif (WAF) intégré** : règles anti-injection/anti-scan de base, activables par service sans dépendance tierce `🏢 EE`
 
 ---
