@@ -1,6 +1,6 @@
 # ADR-0010 : historique court des mesures, gardé en mémoire
 
-- Statut : proposé
+- Statut : accepté (revue de la PR #55, 14/11/2026)
 - Date : 2026-11-14
 - Contexte : ticket #49 (écran Surveillance du dashboard)
 
