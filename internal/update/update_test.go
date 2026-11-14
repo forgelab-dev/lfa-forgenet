@@ -376,3 +376,16 @@ func TestParseReleaseFiles(t *testing.T) {
 		assert.ErrorIs(t, err, ErrInvalidRelease, name)
 	}
 }
+
+func TestApplyTakesOverAStaleLock(t *testing.T) {
+	in := newInstall(t)
+	lock := filepath.Join(in.data, "maj", "verrou")
+	require.NoError(t, os.MkdirAll(filepath.Dir(lock), 0o750))
+	require.NoError(t, os.WriteFile(lock, nil, 0o600))
+	old := in.clock.Add(-time.Hour)
+	require.NoError(t, os.Chtimes(lock, old, old))
+
+	st, err := in.engine.Apply(context.Background(), release(t, "0.2.0"))
+	require.NoError(t, err, "un verrou d'une heure vient d'une mise à jour interrompue")
+	assert.Equal(t, ResultSucceeded, st.Result)
+}

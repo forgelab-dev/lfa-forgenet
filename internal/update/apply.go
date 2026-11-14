@@ -147,14 +147,9 @@ func (e *Engine) Apply(ctx context.Context, target Release) (State, error) {
 		return State{}, err
 	}
 	_ = sameOwner(e.stateDir(), e.DataDir)
-	lock, err := os.OpenFile(filepath.Join(e.stateDir(), "verrou"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
-	if err != nil {
-		if errors.Is(err, os.ErrExist) {
-			return State{}, ErrBusy
-		}
+	if err := e.lock(); err != nil {
 		return State{}, err
 	}
-	_ = lock.Close()
 	defer func() { _ = os.Remove(filepath.Join(e.stateDir(), "verrou")) }()
 
 	env, err := readEnv(e.envPath())
@@ -251,6 +246,33 @@ func (e *Engine) rollback(ctx context.Context, st *State, cause error) (State, e
 	st.Result, st.Finished = ResultRolledBack, e.Now().UTC()
 	e.save(st)
 	return *st, cause
+}
+
+// staleLock : un verrou plus vieux vient d'une mise à jour interrompue
+// (conteneur tué, hôte redémarré) ; le moteur finit en quelques minutes.
+const staleLock = 30 * time.Minute
+
+// lock prend le verrou ; un verrou abandonné est repris plutôt que de
+// bloquer toutes les mises à jour suivantes.
+func (e *Engine) lock() error {
+	path := filepath.Join(e.stateDir(), "verrou")
+	for range 2 {
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600) //nolint:gosec // chemin de l'installation, fixé par l'administrateur
+		if err == nil {
+			return f.Close()
+		}
+		if !errors.Is(err, os.ErrExist) {
+			return err
+		}
+		info, statErr := os.Stat(path)
+		if statErr != nil || e.Now().Sub(info.ModTime()) < staleLock {
+			return ErrBusy
+		}
+		if err := os.Remove(path); err != nil {
+			return err
+		}
+	}
+	return ErrBusy
 }
 
 func (e *Engine) fail(st *State, err error) (State, error) {
