@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.1.1...v0.2.0) (2026-11-14)
+
+
+### Fonctionnalités
+
+* **api:** contrat UpdateService ([fd10501](https://github.com/forgelab-dev/lfa-forgenet/commit/fd105015d594ce3604dc4e80a9d0c9b24f6cc3f7)), closes [#62](https://github.com/forgelab-dev/lfa-forgenet/issues/62)
+* **deploy:** install.sh --update et image épinglée par empreinte ([271a077](https://github.com/forgelab-dev/lfa-forgenet/commit/271a077a52e500bbaa69bf7f37c082db9b7e04ae)), closes [#62](https://github.com/forgelab-dev/lfa-forgenet/issues/62)
+* **update:** annonce des versions et mise à jour par l'API ([5063a9b](https://github.com/forgelab-dev/lfa-forgenet/commit/5063a9b5a4f53528ef1a78b02a9092337c3764a7)), closes [#62](https://github.com/forgelab-dev/lfa-forgenet/issues/62)
+* **update:** moteur de mise à jour et sous-commandes ([f1533ea](https://github.com/forgelab-dev/lfa-forgenet/commit/f1533ea1391fa31a885d7ad7e36f146d287a7ac8)), closes [#62](https://github.com/forgelab-dev/lfa-forgenet/issues/62)
+* **web:** bandeau de mise à jour du dashboard ([e2067b2](https://github.com/forgelab-dev/lfa-forgenet/commit/e2067b2f409176ff2925a7945f47bff902465005)), closes [#62](https://github.com/forgelab-dev/lfa-forgenet/issues/62)
+
+
+### Corrections
+
+* **update:** reprendre un verrou abandonné ([be33730](https://github.com/forgelab-dev/lfa-forgenet/commit/be337307a82241cfe948b3ec52947f833f66d772)), closes [#62](https://github.com/forgelab-dev/lfa-forgenet/issues/62)
+
 ## [0.1.1](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.1.0...v0.1.1) (2026-11-14)
 
 
