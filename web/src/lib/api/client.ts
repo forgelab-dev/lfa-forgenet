@@ -13,6 +13,7 @@ import { ContainerService } from '../../gen/forgenet/v1/container_pb';
 import { DeploymentService } from '../../gen/forgenet/v1/deploy_pb';
 import { DomainService } from '../../gen/forgenet/v1/domain_pb';
 import { MetricsService } from '../../gen/forgenet/v1/metrics_pb';
+import { UpdateService } from '../../gen/forgenet/v1/update_pb';
 
 /** Renvoie le jeton de la session en cours, ou rien hors connexion. */
 export type TokenSource = () => string | undefined;
@@ -83,6 +84,7 @@ export interface ApiClients {
   deployments: Client<typeof DeploymentService>;
   domains: Client<typeof DomainService>;
   metrics: Client<typeof MetricsService>;
+  updates: Client<typeof UpdateService>;
 }
 
 export function createApiClients(transport: Transport): ApiClients {
@@ -92,5 +94,6 @@ export function createApiClients(transport: Transport): ApiClients {
     deployments: createClient(DeploymentService, transport),
     domains: createClient(DomainService, transport),
     metrics: createClient(MetricsService, transport),
+    updates: createClient(UpdateService, transport),
   };
 }

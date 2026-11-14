@@ -5,6 +5,9 @@ import { Link, useLocation } from 'wouter';
 import { Wordmark } from '../components/ui/Wordmark';
 import { UserRole } from '../gen/forgenet/v1/auth_pb';
 import { useCurrentUser, useSession } from '../features/auth/session';
+import { UpdateBanner } from '../features/updates/UpdateBanner';
+import { UpdatesProvider } from '../features/updates/UpdatesProvider';
+import { useUpdates } from '../features/updates/updates';
 import { navigation, type Section, type SectionGroup } from './navigation';
 
 const roleLabel: Record<UserRole, string> = {
@@ -18,30 +21,33 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
-      <aside className="sticky top-0 hidden h-dvh border-r border-iron-800 bg-iron-900 lg:block">
-        <SidebarContent />
-      </aside>
+    <UpdatesProvider>
+      <div className="min-h-dvh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <aside className="sticky top-0 hidden h-dvh border-r border-iron-800 bg-iron-900 lg:block">
+          <SidebarContent />
+        </aside>
 
-      <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-iron-800 bg-iron-900/95 px-2 backdrop-blur-sm lg:hidden">
-        <button
-          type="button"
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Ouvrir la navigation"
-          aria-expanded={drawerOpen}
-          className="flex size-11 items-center justify-center rounded-md text-iron-100 hover:bg-iron-850"
-        >
-          <Menu aria-hidden="true" className="size-5" />
-        </button>
-        <Wordmark className="text-lg" />
-      </header>
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-iron-800 bg-iron-900/95 px-2 backdrop-blur-sm lg:hidden">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Ouvrir la navigation"
+            aria-expanded={drawerOpen}
+            className="flex size-11 items-center justify-center rounded-md text-iron-100 hover:bg-iron-850"
+          >
+            <Menu aria-hidden="true" className="size-5" />
+          </button>
+          <Wordmark className="text-lg" />
+        </header>
 
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+        <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
-        {children}
-      </main>
-    </div>
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8 lg:px-12 lg:py-12">
+          <UpdateBanner />
+          {children}
+        </main>
+      </div>
+    </UpdatesProvider>
   );
 }
 
@@ -186,6 +192,7 @@ function UserCard() {
           <p className="text-xs text-iron-300">{roleLabel[user.role]}</p>
         </div>
       </div>
+      <VersionLine />
       <button
         type="button"
         disabled={leaving}
@@ -198,6 +205,48 @@ function UserCard() {
         <LogOut aria-hidden="true" className="size-4" />
         {leaving ? 'Déconnexion…' : 'Se déconnecter'}
       </button>
+    </div>
+  );
+}
+
+/**
+ * Version en service, pour les administrateurs : la nouvelle version quand
+ * elle existe, sinon de quoi vérifier tout de suite (ADR-0011).
+ */
+function VersionLine() {
+  const updates = useUpdates();
+  const status = updates?.status;
+  if (!updates || !status) {
+    return null;
+  }
+  return (
+    <div className="mt-2 px-2 text-xs text-iron-300">
+      <div className="flex min-h-11 items-center justify-between gap-2">
+        <span>
+          ForgeNet <span className="font-mono">{status.currentVersion}</span>
+        </span>
+        {status.available ? (
+          <span className="font-medium text-gold-300">
+            <span className="font-mono">{status.available.version}</span> disponible
+          </span>
+        ) : (
+          status.checkEnabled && (
+            <button
+              type="button"
+              onClick={() => void updates.check()}
+              disabled={updates.checking}
+              className="-mr-2 min-h-11 rounded-md px-2 text-iron-300 underline-offset-2 hover:text-iron-100 hover:underline disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-gold-400"
+            >
+              {updates.checking ? 'Vérification…' : 'Vérifier les mises à jour'}
+            </button>
+          )
+        )}
+      </div>
+      {updates.checkError && (
+        <p role="alert" className="pb-1 text-danger-400">
+          {updates.checkError}
+        </p>
+      )}
     </div>
   );
 }
