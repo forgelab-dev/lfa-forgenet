@@ -24,6 +24,9 @@ de ce tag, qui installe cette image par défaut.
    - y joint sa **provenance** (SLSA, `mode=max`) et son **SBOM** ;
    - la **signe avec cosign** sans clé, par l'identité OIDC du workflow, puis
      vérifie la signature.
+   - joint à la release sa **fiche** `forgenet-release.json` : version, image et
+     empreinte exacte de l'index signé, adresse des notes. Les installations
+     existantes s'en servent pour se mettre à jour (ADR-0011).
 
 Avant la 1.0, une fonctionnalité ou un changement cassant fait monter la version
 mineure (0.1 → 0.2), une correction la version de correctif (0.1.0 → 0.1.1).
