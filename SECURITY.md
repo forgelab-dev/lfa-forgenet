@@ -6,11 +6,13 @@ ForgeNet gère des secrets, des accès serveur et des données de production. Le
 
 ## Versions prises en charge
 
-ForgeNet est en **pré-alpha** : aucune version n'est encore publiée pour la production. Jusqu'à la première release, seule la branche `main` est prise en charge. Ce tableau sera complété à la sortie de la v0.1.0.
+ForgeNet est en **alpha** depuis la v0.1.0 : les correctifs de sécurité sont publiés sur la dernière version mineure seulement, et sur `main`. Une version alpha n'est pas faite pour la production.
 
 | Version | Prise en charge |
 |---|---|
 | `main` | ✅ |
+| 0.1.x (dernière publiée) | ✅ |
+| antérieures | ❌ |
 
 ## Signaler une vulnérabilité
 
@@ -50,7 +52,7 @@ Nous pratiquons la **divulgation coordonnée** : merci de ne rien publier avant 
 
 ## English
 
-ForgeNet is **pre-alpha**: only the `main` branch is supported until the first release.
+ForgeNet is **alpha** since v0.1.0: security fixes ship for the latest minor release and `main` only. An alpha release is not meant for production.
 
 **Never report a vulnerability through a public issue, discussion or pull request.** Use GitHub's private reporting (**Security** tab → **Report a vulnerability**, or [this form](https://github.com/forgelab-dev/lfa-forgenet/security/advisories/new)). Without a GitHub account, email **contact@lucidforgeafrica.com** with "ForgeNet security" as the subject and no technical details in that first message; we will reply with a confidential channel.
 

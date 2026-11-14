@@ -10,7 +10,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Status](https://img.shields.io/badge/statut-pré--alpha-orange.svg)](#-état-du-projet)
+[![Status](https://img.shields.io/badge/statut-alpha%20v0.1.0-orange.svg)](#-état-du-projet)
 
 **Français** · [English](README.en.md)
 
@@ -22,23 +22,25 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 
 ## 🚧 État du projet
 
-> **Pré-alpha — en cours de construction.** Le code n'est pas encore utilisable en production et les commandes d'installation ci-dessous ne fonctionneront pas tant que la première release n'est pas publiée. Elle est visée au jalon [J90](https://github.com/forgelab-dev/lfa-forgenet/milestone/3).
+> **Alpha — v0.1.0, première version publiée.** ForgeNet s'installe et se tient en main, mais l'API, la configuration et les données peuvent encore changer d'une version à l'autre sans migration garantie. Essayez-le sur un serveur de test, pas encore en production.
 >
-> ⭐ Mettez une étoile pour suivre l'avancement, ou consultez la [feuille de route](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet).
+> ⭐ Mettez une étoile pour suivre l'avancement, ou consultez la [feuille de route](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet). Ce qui change d'une version à l'autre est dans le [CHANGELOG](CHANGELOG.md).
 
-**Ce qui fonctionne déjà**, en lançant le serveur et le dashboard depuis les sources :
+<p align="center">
+  <img src="docs/media/demo-v0.1.0.gif" width="860" alt="Démonstration de la v0.1.0 : connexion, déploiement d'une stack Docker Compose suivi en direct, puis écran Surveillance avec les mesures du serveur et des conteneurs">
+</p>
 
-- **Serveur `forgenet-server`** (Go) : configuration, transports HTTP et gRPC, sondes de santé, stockage SQLite avec migrations.
-- **Comptes** : connexion par identifiant et mot de passe, rôles administrateur et membre, tentatives limitées, journal d'audit. Un compte se crée avec `forgenet-server user create`.
-- **Conteneurs Docker** : lister, déployer, arrêter et redémarrer.
-- **Stacks Docker Compose** : déploiements mis en file, exécutés un par un et repris au redémarrage du serveur.
-- **Métriques en direct** : processeur, mémoire, réseau et disque de l'hôte et de chaque conteneur, diffusés par WebSocket.
-- **Reverse proxy Caddy** : HTTPS automatique (Let's Encrypt) et domaines reliés aux applications, gérés depuis le dashboard.
-- **Dashboard web** : connexion, vue d'ensemble, conteneurs et domaines. Les autres sections sont marquées « bientôt ».
-- **Installation** : [`deploy/install.sh`](deploy/install.sh) pour Debian et Ubuntu, avec l'image du serveur et Caddy durcis ; elle attend la publication de la première image.
-- **Contrat d'API** : services gRPC définis dans [`api/proto`](api/proto), servis aussi en Connect et gRPC-Web pour le navigateur, avec des clients générés en TypeScript et en Dart.
+**Ce que fait la v0.1.0** :
 
-**Pas encore construit** : Marketplace, assistant IA local, sauvegardes, migration depuis les autres PaaS, et l'application mobile, dont seul le client d'API généré existe. Les choix d'architecture sont expliqués dans [`docs/decisions/`](docs/decisions/).
+- **Installation en une commande** sur Debian ou Ubuntu, x86_64 ou ARM64 : le serveur et Caddy en conteneurs durcis, image signée (voir [Installation](#-installation)).
+- **Déploiements Docker Compose** depuis le dashboard : mis en file, suivis en direct avec leur journal, repris au redémarrage du serveur ; état réel de chaque stack, suppression avec ou sans ses volumes.
+- **Domaines et HTTPS** : un domaine par service, certificat Let's Encrypt et redirection HTTPS par Caddy, rechargé à chaque changement.
+- **Surveillance** : processeur, mémoire, disque et réseau du serveur et de chaque conteneur, en direct, avec la dernière heure ; reconnexion propre sur une connexion lente ou coupée.
+- **Conteneurs** : lister, consulter, démarrer, arrêter, redémarrer.
+- **Comptes et sécurité** : rôles administrateur et membre, droits vérifiés à chaque appel, tentatives de connexion limitées, journal d'audit.
+- **API** : contrat gRPC ([`api/proto`](api/proto)), servi aussi en Connect et gRPC-Web, avec des clients générés en TypeScript et en Dart.
+
+**Pas encore là** : retour arrière d'un déploiement, déploiement depuis Git, Marketplace, assistant IA local, sauvegardes, migration depuis les autres PaaS, CLI, et l'application mobile, dont seul le client d'API généré existe. Le détail, case par case, est dans la [matrice fonctionnelle](docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md) ; les choix d'architecture dans [`docs/decisions/`](docs/decisions/).
 
 ---
 
@@ -49,6 +51,8 @@ Vos données de production — logs, métriques, secrets, bases — finissent ch
 **ForgeNet part de l'hypothèse inverse : rien ne sort de vos serveurs.** Pas les données, pas les logs, pas les prompts de l'assistant IA. Installable sur un VPS, un serveur nu ou une machine de bureau.
 
 ## ✨ Fonctionnalités
+
+> Cette section décrit **la cible** de ForgeNet. Ce que la v0.1.0 fait déjà est listé dans l'[État du projet](#-état-du-projet).
 
 ### Le socle
 
@@ -74,15 +78,17 @@ Vos données de production — logs, métriques, secrets, bases — finissent ch
 
 ## 🚀 Installation
 
-> ⚠️ Non fonctionnel avant la première release — voir [État du projet](#-état-du-projet).
-
 Sur un serveur Debian ou Ubuntu, en root :
 
+<!-- x-release-please-start-version -->
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/main/deploy/install.sh
+curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/v0.1.0/deploy/install.sh
 less install.sh   # relisez un script avant de le lancer en root
 sudo bash install.sh --domain forgenet.exemple.org --email vous@exemple.org
 ```
+<!-- x-release-please-end -->
+
+Le script vient du tag de la version : il installe l'image de cette même version, `ghcr.io/forgelab-dev/forgenet-server`, signée par cosign. Sa vérification est décrite dans [`docs/RELEASING.md`](docs/RELEASING.md#vérifier-une-image-publiée).
 
 Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écrit `/opt/forgenet`, démarre le serveur et Caddy, puis crée le premier administrateur. Il se relance sans risque, par exemple pour ajouter un domaine ou changer de version (`bash install.sh --help`).
 

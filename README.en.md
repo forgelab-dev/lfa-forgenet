@@ -10,7 +10,7 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Status](https://img.shields.io/badge/status-pre--alpha-orange.svg)](#-project-status)
+[![Status](https://img.shields.io/badge/status-alpha%20v0.1.0-orange.svg)](#-project-status)
 
 **English** · [Français](README.md)
 
@@ -22,21 +22,25 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 
 ## 🚧 Project status
 
-> **Pre-alpha — under construction.** The code is not production-ready yet, and the install commands below will not work until the first release ships. It is targeted for the [J90](https://github.com/forgelab-dev/lfa-forgenet/milestone/3) milestone.
+> **Alpha — v0.1.0, first published release.** ForgeNet installs and is usable, but the API, the configuration and the data may still change between releases without a guaranteed migration. Try it on a test server, not in production yet.
 >
-> ⭐ Star the repo to follow along, or read the [roadmap](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet) (in French).
+> ⭐ Star the repo to follow along, or read the [roadmap](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet) (in French). Changes between releases are listed in the [CHANGELOG](CHANGELOG.md).
 
-**What already works**, running the server and the dashboard from source:
+<p align="center">
+  <img src="docs/media/demo-v0.1.0.gif" width="860" alt="v0.1.0 demo: sign-in, a Docker Compose stack deployed and followed live, then the Monitoring screen with server and container metrics">
+</p>
 
-- **`forgenet-server`** (Go): configuration, HTTP and gRPC transports, health probes, SQLite storage with migrations.
-- **Accounts**: username and password sign-in, admin and member roles, rate-limited attempts, audit log. Accounts are created with `forgenet-server user create`.
-- **Docker containers**: list, deploy, stop and restart.
-- **Docker Compose stacks**: deployments are queued, run one at a time and resumed when the server restarts.
-- **Live metrics**: CPU, memory, network and disk for the host and each container, streamed over WebSocket.
-- **Web dashboard**: sign-in, overview and container list. The other sections are shown as "coming soon".
-- **API contract**: gRPC services defined in [`api/proto`](api/proto), also served over Connect and gRPC-Web for the browser, with generated TypeScript and Dart clients.
+**What v0.1.0 does**:
 
-**Not built yet**: Caddy reverse proxy and automatic HTTPS, Marketplace, one-command install, local AI assistant, backups, migration from other PaaS, and the mobile app, of which only the generated API client exists. Architecture decisions are explained in [`docs/decisions/`](docs/decisions/) (in French).
+- **One-command install** on Debian or Ubuntu, x86_64 or ARM64: the server and Caddy in hardened containers, signed image (see [Installation](#-installation)).
+- **Docker Compose deployments** from the dashboard: queued, followed live with their log, resumed when the server restarts; the real state of each stack, removal with or without its volumes.
+- **Domains and HTTPS**: one domain per service, Let's Encrypt certificate and HTTPS redirect by Caddy, reloaded on every change.
+- **Monitoring**: CPU, memory, disk and network for the server and each container, live, with the last hour; clean reconnection on a slow or dropped connection.
+- **Containers**: list, inspect, start, stop, restart.
+- **Accounts and security**: admin and member roles, permissions checked on every call, rate-limited sign-in, audit log.
+- **API**: gRPC contract ([`api/proto`](api/proto)), also served over Connect and gRPC-Web, with generated TypeScript and Dart clients.
+
+**Not there yet**: deployment rollback, deploy from Git, Marketplace, local AI assistant, backups, migration from other PaaS, CLI, and the mobile app, of which only the generated API client exists. The item-by-item status is in the [feature matrix](docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md) (in French); architecture decisions are in [`docs/decisions/`](docs/decisions/) (in French).
 
 ---
 
@@ -47,6 +51,8 @@ Your production data — logs, metrics, secrets, databases — ends up on AWS, G
 **ForgeNet starts from the opposite assumption: nothing leaves your servers.** Not the data, not the logs, not even the AI assistant's prompts. Installs on a VPS, bare metal, or a machine under your desk.
 
 ## ✨ Features
+
+> This section describes **where ForgeNet is heading**. What v0.1.0 already does is listed under [Project status](#-project-status).
 
 ### The foundation
 - **One-click deploys** — Docker, Docker Compose, or automatic buildpack detection (Node, Python, Go, PHP, Ruby, static). No Dockerfile required.
@@ -71,23 +77,33 @@ Your production data — logs, metrics, secrets, databases — ends up on AWS, G
 
 ## 🚀 Installation
 
-> ⚠️ Not functional before the first release — see [Project status](#-project-status).
+On a Debian or Ubuntu server, as root:
 
+<!-- x-release-please-start-version -->
 ```bash
-curl -fsSL https://forgenet.lucidforgeafrica.com/install.sh | sh
+curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/v0.1.0/deploy/install.sh
+less install.sh   # read a script before running it as root
+sudo bash install.sh --domain forgenet.example.org --email you@example.org
 ```
+<!-- x-release-please-end -->
 
-The script installs the Core Engine, Caddy and the dashboard. Then open `https://<your-server>` and follow the setup wizard.
+The script comes from the release tag: it installs the image of that same release, `ghcr.io/forgelab-dev/forgenet-server`, signed with cosign. How to verify it is described in [`docs/RELEASING.md`](docs/RELEASING.md) (in French).
 
-**Requirements** — Linux x86_64 or ARM64, Docker 24+, 2 GB RAM (4 GB recommended with the AI engine enabled).
+It installs Docker if missing (official repository, verified key), writes `/opt/forgenet`, starts the server and Caddy, then creates the first administrator. It is safe to run again, for instance to add a domain or change version (`bash install.sh --help`).
+
+**Without a domain**, the dashboard only listens on the server: open it through an SSH tunnel, `ssh -N -L 8080:127.0.0.1:8080 user@server`, then `http://localhost:8080`. The reasoning is in [ADR-0009](docs/decisions/0009-service-du-dashboard-en-production.md) (in French).
+
+**Requirements** — Debian or Ubuntu, x86_64 or ARM64, 2 GB RAM, ports 80 and 443 free.
 
 <details>
-<summary>Install with Docker Compose</summary>
+<summary>Manual install with Docker Compose</summary>
 
 ```bash
 git clone https://github.com/forgelab-dev/lfa-forgenet.git
 cd lfa-forgenet/deploy
+cp .env.example .env && chmod 600 .env   # then fill it in
 docker compose up -d
+docker compose exec server forgenet-server user create --username admin --email you@example.org
 ```
 
 </details>

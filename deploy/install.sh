@@ -2,7 +2,7 @@
 #
 # Installation de ForgeNet sur un serveur Debian ou Ubuntu (ADR-0009).
 #
-#   curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/main/deploy/install.sh
+#   curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/v0.1.0/deploy/install.sh # x-release-please-version
 #   less install.sh            # relisez avant de lancer en root
 #   sudo bash install.sh [--domain forgenet.exemple.org --email vous@exemple.org]
 #

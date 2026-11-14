@@ -12,7 +12,9 @@
       "extra-files": [
         { "type": "generic", "path": "internal/version/version.go" },
         { "type": "generic", "path": "deploy/install.sh" },
-        { "type": "generic", "path": "deploy/.env.example" }
+        { "type": "generic", "path": "deploy/.env.example" },
+        { "type": "generic", "path": "README.md" },
+        { "type": "generic", "path": "README.en.md" }
       ],
       "changelog-sections": [
         { "type": "feat", "section": "Fonctionnalités" },
