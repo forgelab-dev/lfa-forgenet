@@ -54,7 +54,9 @@ export function LinkBadge({ status, pace, lastAt }: Props) {
       label = 'Flux fermé';
       break;
   }
-  const stale = status.state !== 'live' && lastAt !== undefined;
+  // L'heure des dernières mesures n'a de sens qu'après une coupure : à la
+  // première connexion, rien n'est encore périmé.
+  const stale = lastAt !== undefined && status.state !== 'live' && status.state !== 'connecting';
 
   return (
     <p
