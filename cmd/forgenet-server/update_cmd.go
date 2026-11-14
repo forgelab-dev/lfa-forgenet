@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/update"
@@ -22,12 +20,6 @@ var errUpdateUsage = errors.New(`usage :
   forgenet-server update start [--to X.Y.Z] [--pre] [--force]
                                                        lance la mise à jour à côté du serveur
   forgenet-server update apply [--to X.Y.Z] ...        (dans le conteneur de mise à jour)`)
-
-// updaterName est le conteneur de mise à jour : un seul à la fois.
-const updaterName = "forgenet-updater"
-
-// dataMount est le dossier de données du serveur dans son image (Dockerfile).
-const dataMount = "/var/lib/forgenet"
 
 func runUpdate(ctx context.Context, args []string, stdout io.Writer) error {
 	if len(args) == 0 {
@@ -83,22 +75,6 @@ func updateCheck(ctx context.Context, args []string, stdout io.Writer) error {
 	return err
 }
 
-// dockerCLI lance la CLI docker sans shell.
-type dockerCLI struct{}
-
-func (dockerCLI) Run(ctx context.Context, args ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, "docker", args...) //nolint:gosec // arguments construits par le moteur, sans shell
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		msg := strings.TrimSpace(string(out))
-		if len(msg) > 400 {
-			msg = msg[len(msg)-400:]
-		}
-		return string(out), fmt.Errorf("docker %s : %w : %s", args[0], err, msg)
-	}
-	return string(out), nil
-}
-
 var stepLabels = map[string]string{
 	update.StepCheck:    "Vérification",
 	update.StepPull:     "Téléchargement de l'image",
@@ -114,7 +90,7 @@ func updateApply(ctx context.Context, args []string, stdout io.Writer) error {
 	to := flags.String("to", "latest", "version visée (X.Y.Z) ou latest")
 	pre := flags.Bool("pre", false, "inclure les pré-versions")
 	installDir := flags.String("install-dir", envOr("FORGENET_INSTALL_DIR", "/opt/forgenet"), "dossier d'installation (docker-compose.yml, .env)")
-	dataDir := flags.String("data-dir", dataMount, "volume de données du serveur")
+	dataDir := flags.String("data-dir", update.DataMount, "volume de données du serveur")
 	timeout := flags.Duration("health-timeout", 90*time.Second, "délai pour que la nouvelle version soit saine")
 	force := flags.Bool("force", false, "accepter une version égale ou plus ancienne")
 	if err := flags.Parse(args); err != nil {
@@ -126,7 +102,7 @@ func updateApply(ctx context.Context, args []string, stdout io.Writer) error {
 	}
 	last := ""
 	engine := &update.Engine{
-		Docker: dockerCLI{}, InstallDir: *installDir, DataDir: *dataDir,
+		Docker: update.CLI{}, InstallDir: *installDir, DataDir: *dataDir,
 		HealthTimeout: *timeout, Force: *force, Fetch: source().FetchFile,
 		Report: func(s update.State) {
 			if s.Step != last {
@@ -146,10 +122,8 @@ func updateApply(ctx context.Context, args []string, stdout io.Writer) error {
 	return err
 }
 
-// updateStart lance le conteneur de mise à jour à côté du serveur. Il tourne
-// depuis l'image en service (un code connu), en root pour écrire .env et la
-// sauvegarde, avec le socket Docker, le dossier d'installation et le volume de
-// données : rien de plus que ce que le serveur a déjà (ADR-0011).
+// updateStart lance le conteneur de mise à jour à côté du serveur (voir
+// update.Launch).
 func updateStart(ctx context.Context, args []string, stdout io.Writer) error {
 	flags := flag.NewFlagSet("forgenet-server update start", flag.ContinueOnError)
 	to := flags.String("to", "latest", "version visée (X.Y.Z) ou latest")
@@ -161,7 +135,7 @@ func updateStart(ctx context.Context, args []string, stdout io.Writer) error {
 		return err
 	}
 	if *installDir == "" || !filepath.IsAbs(*installDir) {
-		return errors.New("dossier d'installation inconnu : FORGENET_INSTALL_DIR (chemin absolu sur l'hôte) doit être fixé")
+		return update.ErrUnsupported
 	}
 	// La version visée est vérifiée tout de suite : une erreur se lit ici,
 	// pas dans les journaux d'un conteneur.
@@ -180,49 +154,13 @@ func updateStart(ctx context.Context, args []string, stdout io.Writer) error {
 			return fmt.Errorf("%w (%s installée, %s visée)", update.ErrNotNewer, cur, rel.Version)
 		}
 	}
-	d := dockerCLI{}
-	// Le conteneur d'une mise à jour précédente reste, arrêté, pour ses
-	// journaux ; il est retiré ici, sauf s'il tourne encore.
-	if status, err := d.Run(ctx, "inspect", "-f", "{{.State.Status}}", updaterName); err == nil {
-		if s := strings.TrimSpace(status); s == "running" || s == "restarting" {
-			return update.ErrBusy
-		}
-		if _, err := d.Run(ctx, "rm", updaterName); err != nil {
-			return err
-		}
-	}
-	image, err := d.Run(ctx, "inspect", "-f", "{{.Config.Image}}", *container)
+	id, err := update.Launch(ctx, update.CLI{}, update.LaunchOptions{
+		Container: *container, InstallDir: *installDir, To: *to, Pre: *pre, Force: *force,
+	})
 	if err != nil {
 		return err
 	}
-	volume, err := d.Run(ctx, "inspect", "-f", `{{range .Mounts}}{{if eq .Destination "`+dataMount+`"}}{{.Name}}{{end}}{{end}}`, *container)
-	if err != nil {
-		return err
-	}
-	image, volume = strings.TrimSpace(image), strings.TrimSpace(volume)
-	if volume == "" {
-		return fmt.Errorf("volume de données du conteneur %s introuvable", *container)
-	}
-	runArgs := []string{
-		"run", "-d", "--name", updaterName,
-		"--user", "0:0",
-		"-e", "FORGENET_INSTALL_DIR=" + *installDir,
-		"-v", "/var/run/docker.sock:/var/run/docker.sock",
-		"-v", *installDir + ":" + *installDir,
-		"-v", volume + ":" + dataMount,
-		image, "update", "apply", "--to", *to, "--install-dir", *installDir,
-	}
-	if *pre {
-		runArgs = append(runArgs, "--pre")
-	}
-	if *force {
-		runArgs = append(runArgs, "--force")
-	}
-	id, err := d.Run(ctx, runArgs...)
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(stdout, "Mise à jour lancée dans le conteneur %s (%s).\n", updaterName, strings.TrimSpace(id)[:min(12, len(strings.TrimSpace(id)))])
+	_, err = fmt.Fprintf(stdout, "Mise à jour lancée dans le conteneur %s (%s).\n", update.UpdaterName, id)
 	return err
 }
 

@@ -108,6 +108,16 @@ type DockerConfig struct {
 	PublishHost string `mapstructure:"publish_host"`
 }
 
+// UpdatesConfig règle la vérification des nouvelles versions (ADR-0011).
+type UpdatesConfig struct {
+	// Check active la lecture quotidienne des releases sur l'API GitHub, le
+	// seul appel sortant du serveur. Faux : aucune nouvelle version n'est
+	// annoncée (la mise à jour reste possible à la main).
+	Check bool `mapstructure:"check"`
+	// CheckInterval sépare deux vérifications (24 h par défaut).
+	CheckInterval time.Duration `mapstructure:"check_interval"`
+}
+
 // MetricsConfig règle la collecte des métriques de l'hôte.
 type MetricsConfig struct {
 	// StoragePath désigne le système de fichiers dont l'occupation est
@@ -189,6 +199,7 @@ type Config struct {
 	Metrics     MetricsConfig  `mapstructure:"metrics"`
 	Proxy       ProxyConfig    `mapstructure:"proxy"`
 	Web         WebConfig      `mapstructure:"web"`
+	Updates     UpdatesConfig  `mapstructure:"updates"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -269,6 +280,9 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("docker.publish_host doit être une adresse IP : %q", c.Docker.PublishHost)
 	}
 
+	if c.Updates.CheckInterval < time.Hour {
+		return fmt.Errorf("updates.check_interval doit valoir au moins 1h : %s", c.Updates.CheckInterval)
+	}
 	if !filepath.IsAbs(c.Metrics.StoragePath) {
 		return fmt.Errorf("metrics.storage_path doit être un chemin absolu : %q", c.Metrics.StoragePath)
 	}
@@ -343,6 +357,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("proxy.dashboard_upstream", "")
 
 	v.SetDefault("web.root", "")
+
+	v.SetDefault("updates.check", true)
+	v.SetDefault("updates.check_interval", 24*time.Hour)
 }
 
 // dockerName reprend la règle de Docker pour un nom de réseau ou de conteneur.

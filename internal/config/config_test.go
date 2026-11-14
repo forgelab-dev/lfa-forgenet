@@ -310,3 +310,21 @@ func TestLoad_WebRoot(t *testing.T) {
 	_, err = config.Load("")
 	require.ErrorContains(t, err, "web.root")
 }
+
+func TestLoad_Updates(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.True(t, cfg.Updates.Check, "la vérification est active par défaut (ADR-0011)")
+	assert.Equal(t, 24*time.Hour, cfg.Updates.CheckInterval)
+
+	t.Setenv("FORGENET_UPDATES_CHECK", "false")
+	cfg, err = config.Load("")
+	require.NoError(t, err)
+	assert.False(t, cfg.Updates.Check)
+
+	t.Setenv("FORGENET_UPDATES_CHECK_INTERVAL", "5m")
+	_, err = config.Load("")
+	require.ErrorContains(t, err, "updates.check_interval")
+}

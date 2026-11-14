@@ -45,6 +45,9 @@ services:
       # Dossier d'installation sur l'hôte : le conteneur de mise à jour y
       # trouve docker-compose.yml et .env (ADR-0011).
       FORGENET_INSTALL_DIR: ${FORGENET_INSTALL_DIR:-/opt/forgenet}
+      # Lecture quotidienne des releases sur GitHub, seul appel sortant du
+      # serveur ; « false » la coupe (ADR-0011).
+      FORGENET_UPDATES_CHECK: ${FORGENET_UPDATES_CHECK:-true}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /proc:/host/proc:ro
