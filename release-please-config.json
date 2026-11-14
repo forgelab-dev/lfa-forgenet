@@ -14,7 +14,8 @@
         { "type": "generic", "path": "deploy/install.sh" },
         { "type": "generic", "path": "deploy/.env.example" },
         { "type": "generic", "path": "README.md" },
-        { "type": "generic", "path": "README.en.md" }
+        { "type": "generic", "path": "README.en.md" },
+        { "type": "generic", "path": "site/index.html" }
       ],
       "changelog-sections": [
         { "type": "feat", "section": "Fonctionnalités" },
