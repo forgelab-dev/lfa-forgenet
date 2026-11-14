@@ -32,6 +32,7 @@ import (
 	transportGRPC "github.com/forgelab-dev/lfa-forgenet/internal/transport/grpc"
 	transportHTTP "github.com/forgelab-dev/lfa-forgenet/internal/transport/http"
 	"github.com/forgelab-dev/lfa-forgenet/internal/transport/ws"
+	"github.com/forgelab-dev/lfa-forgenet/internal/update"
 	"github.com/forgelab-dev/lfa-forgenet/internal/version"
 	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
 )
@@ -171,12 +172,26 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	deploymentAPI := transportGRPC.NewDeploymentServiceServer(deployments, logger)
 	domainAPI := transportGRPC.NewDomainServiceServer(domainService, logger)
 	metricsAPI := transportGRPC.NewMetricsServiceServer(recorder, engine, logger)
+	// Annonce des nouvelles versions et mise à jour depuis le dashboard
+	// (ADR-0011). Sans FORGENET_INSTALL_DIR (installation hors install.sh),
+	// les versions sont annoncées mais la mise à jour se fait à la main.
+	current := version.Get().Version
+	checker := update.NewChecker(update.Source{UserAgent: "forgenet/" + current}, current, cfg.Updates.CheckInterval, logger)
+	installDir := os.Getenv("FORGENET_INSTALL_DIR")
+	updateAPI := transportGRPC.NewUpdateServiceServer(transportGRPC.UpdateDeps{
+		Checker: checker, CheckEnabled: cfg.Updates.Check, Current: current,
+		InstallDir: installDir, DataDir: filepath.Dir(cfg.Database.Path), Auditor: auditor,
+		Launch: func(ctx context.Context, o update.LaunchOptions) (string, error) {
+			return update.Launch(ctx, update.CLI{}, o)
+		},
+	}, logger)
 	for _, registrar := range []grpc.ServiceRegistrar{grpcServer.GRPCServer(), connectAPI.Registrar()} {
 		forgenetv1.RegisterAuthServiceServer(registrar, authAPI)
 		forgenetv1.RegisterContainerServiceServer(registrar, containerAPI)
 		forgenetv1.RegisterDeploymentServiceServer(registrar, deploymentAPI)
 		forgenetv1.RegisterDomainServiceServer(registrar, domainAPI)
 		forgenetv1.RegisterMetricsServiceServer(registrar, metricsAPI)
+		forgenetv1.RegisterUpdateServiceServer(registrar, updateAPI)
 	}
 	connectAPI.Mount(httpServer.Mux())
 
@@ -212,6 +227,9 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 		{name: "gRPC", transport: grpcServer},
 		{name: "déploiements", transport: deployments},
 		{name: "relevé des mesures", transport: recorder},
+	}
+	if cfg.Updates.Check {
+		servers = append(servers, server{name: "vérification des mises à jour", transport: checker})
 	}
 	if domainService != nil {
 		// Réconcilie Caddy, le réseau et les conteneurs au démarrage, et
