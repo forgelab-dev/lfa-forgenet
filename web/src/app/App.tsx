@@ -10,6 +10,7 @@ import { SessionProvider } from '../features/auth/SessionProvider';
 import { ContainersPage } from '../features/containers/ContainersPage';
 import { DeploymentsPage } from '../features/deployments/DeploymentsPage';
 import { DomainsPage } from '../features/domains/DomainsPage';
+import { MonitoringPage } from '../features/monitoring/MonitoringPage';
 import { OverviewPage } from '../features/overview/OverviewPage';
 import { createApiTransport, type TransportFactory } from '../lib/api/client';
 import { AppShell } from './AppShell';
@@ -77,6 +78,7 @@ function SessionGate() {
             <Route path="/" component={OverviewPage} />
             <Route path="/conteneurs" component={ContainersPage} />
             <Route path="/deploiements" component={DeploymentsPage} />
+            <Route path="/surveillance" component={MonitoringPage} />
             <Route path="/domaines" component={DomainsPage} />
             {sections
               .filter((section) => section.upcoming)

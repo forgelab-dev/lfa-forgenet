@@ -96,10 +96,11 @@ export function SessionProvider({ transportFactory, children }: Props) {
   }, [api, close]);
 
   const retry = useCallback(() => setState({ status: 'checking' }), []);
+  const expire = useCallback(() => close({ status: 'anonymous', notice: 'expired' }), [close]);
 
   const session = useMemo<Session>(
-    () => ({ state, api, login, logout, retry }),
-    [state, api, login, logout, retry]
+    () => ({ state, api, login, logout, retry, token: tokens.get, expire }),
+    [state, api, login, logout, retry, tokens, expire]
   );
 
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;

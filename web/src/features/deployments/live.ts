@@ -1,9 +1,9 @@
 import type { Timestamp } from '@bufbuild/protobuf/wkt';
-import { Code, ConnectError } from '@connectrpc/connect';
 import { useEffect, useRef, useState } from 'react';
 
 import type { Deployment, DeploymentLogEntry } from '../../gen/forgenet/v1/deploy_pb';
 import { describeError } from '../../lib/api/errors';
+import { isTransient, retryDelay, sleep } from '../../lib/live/retry';
 import { useApi } from '../auth/session';
 
 /**
@@ -18,33 +18,6 @@ export type Link = 'connecting' | 'live' | 'reconnecting' | 'done' | 'error';
 
 /** Garde-fou de mémoire : le serveur borne déjà un journal à 5 000 lignes. */
 const maxLines = 5000;
-
-/** Une coupure réseau ou un abonné décroché se rattrapent ; un refus, non. */
-function isTransient(err: unknown): boolean {
-  const { code } = ConnectError.from(err);
-  return (
-    code === Code.Unavailable ||
-    code === Code.Unknown ||
-    code === Code.DeadlineExceeded ||
-    code === Code.Internal ||
-    code === Code.Aborted
-  );
-}
-
-/** Attente avant la reconnexion n : 1, 2, 4, 8 puis 10 secondes. */
-export function retryDelay(attempt: number): number {
-  return Math.min(1000 * 2 ** attempt, 10_000);
-}
-
-function sleep(ms: number, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(resolve, ms);
-    signal.addEventListener('abort', () => {
-      clearTimeout(timer);
-      resolve();
-    });
-  });
-}
 
 /**
  * Ouvre un flux et le rouvre après une coupure, jusqu'à sa fin normale ou un
