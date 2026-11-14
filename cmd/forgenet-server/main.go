@@ -55,10 +55,14 @@ func main() {
 var errAlreadyReported = errors.New("erreur déjà journalisée")
 
 // run lit les options, charge la configuration et sert jusqu'à l'annulation de ctx.
-// « forgenet-server user … » administre les comptes au lieu de servir.
+// « forgenet-server user … » administre les comptes et « forgenet-server
+// update … » met l'installation à jour (ADR-0011), au lieu de servir.
 func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) error {
 	if len(args) > 0 && args[0] == "user" {
 		return runUser(ctx, args[1:], stdin, stdout)
+	}
+	if len(args) > 0 && args[0] == "update" {
+		return runUpdate(ctx, args[1:], stdout)
 	}
 
 	flags := flag.NewFlagSet("forgenet-server", flag.ContinueOnError)
