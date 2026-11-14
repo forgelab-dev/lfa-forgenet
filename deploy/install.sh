@@ -35,6 +35,7 @@ ADMIN_EMAIL="${FORGENET_ADMIN_EMAIL-}"
 SOURCE_DIR=""
 DOMAIN_SET=0
 UPDATE=0
+RESTORE=""
 VERSION_SET=0
 EMAIL_SET=0
 [ -n "${FORGENET_DOMAIN+x}" ] && DOMAIN_SET=1
@@ -62,6 +63,9 @@ Usage : sudo bash install.sh [options]
   --update            Met à jour une installation existante : sauvegarde, bascule,
                       retour arrière automatique en cas d'échec. Sans --version,
                       vise la dernière version publiée.
+  --restore DOSSIER   Revient à une sauvegarde de /opt/forgenet/sauvegardes
+                      (son nom ou son chemin) : base, .env et fichiers
+                      d'installation, avec la version qu'ils désignent.
   --admin-user NOM    Nom du premier administrateur (sinon demandé).
   --admin-email ADR   Adresse du premier administrateur (sinon demandée).
   --dir CHEMIN        Dossier d'installation (défaut : /opt/forgenet).
@@ -86,6 +90,7 @@ while [ $# -gt 0 ]; do
 	--dir) need_value "$@"; INSTALL_DIR="$2"; shift 2 ;;
 	--source) need_value "$@"; SOURCE_DIR="$2"; shift 2 ;;
 	--update) UPDATE=1; shift ;;
+	--restore) need_value "$@"; RESTORE="$2"; shift 2 ;;
 	-h | --help) usage; exit 0 ;;
 	*) die "option inconnue : $1 (voir --help)" ;;
 	esac
@@ -106,6 +111,9 @@ if [ -n "$ACME_EMAIL" ] && ! [[ "$ACME_EMAIL" =~ $email_re ]]; then
 fi
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || die "version invalide : « $VERSION » (exemple : 0.1.0)"
 [[ "$INSTALL_DIR" = /* ]] || die "--dir attend un chemin absolu"
+if [ -n "$RESTORE" ] && [ "$UPDATE" -eq 1 ]; then
+	die "--restore et --update ne vont pas ensemble"
+fi
 
 # --- 1. Système ---------------------------------------------------------------
 
@@ -434,6 +442,51 @@ version_ge() {
 	[ "$(printf '%s\n%s\n' "${1%%-*}" "${2%%-*}" | sort -V | head -n 1)" = "${2%%-*}" ]
 }
 
+# Sauvegardes gardées, comme le moteur de mise à jour du serveur.
+readonly BACKUP_KEEP=5
+
+# backup_installed copie la base, .env et les fichiers d'installation avant
+# qu'une version d'avant 0.2.0 soit réinstallée par ce script : même dossier
+# et même format que les sauvegardes du serveur (ADR-0011), qui les tient
+# ensuite dans son décompte. Le serveur est arrêté le temps de la copie, pour
+# une base cohérente, puis relancé tout de suite : si la suite échoue,
+# l'ancienne version reste en service. Les sites déployés ne s'arrêtent pas.
+backup_installed() {
+	local from="$1"
+	if ! docker container inspect forgenet-server >/dev/null 2>&1; then
+		warn "aucun conteneur forgenet-server : pas de base à sauvegarder"
+		return 0
+	fi
+	local root="$INSTALL_DIR/sauvegardes" dir
+	dir="$root/$(date -u +%Y%m%d-%H%M%S)-$(printf '%s' "$from" | tr -c '0-9a-z.-' '_')"
+	info "Sauvegarde de la base et de la configuration ($from)"
+	mkdir -p "$root"
+	mkdir -m 0700 "$dir"
+	local was_running
+	was_running="$(docker inspect -f '{{.State.Running}}' forgenet-server)"
+	docker stop -t 30 forgenet-server >/dev/null || die "arrêt du serveur impossible : rien n'a été modifié"
+	local name
+	for name in forgenet.db forgenet.db-wal forgenet.db-shm; do
+		docker cp -q "forgenet-server:/var/lib/forgenet/$name" "$dir/$name" 2>/dev/null || true
+	done
+	if [ "$was_running" = true ]; then
+		docker start forgenet-server >/dev/null || die "le serveur ne redémarre pas après la copie : docker start forgenet-server"
+	fi
+	[ -f "$dir/forgenet.db" ] || die "base introuvable dans le conteneur : réinstallation arrêtée, rien n'a été modifié"
+	for name in .env docker-compose.yml Caddyfile.base; do
+		if [ -f "$INSTALL_DIR/$name" ]; then
+			cp -p "$INSTALL_DIR/$name" "$dir/$name"
+		fi
+	done
+	# Les noms commencent par la date : l'ordre alphabétique est chronologique.
+	local old
+	find "$root" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | head -n "-$BACKUP_KEEP" |
+		while IFS= read -r old; do rm -rf -- "${root:?}/$old"; done
+	ok "sauvegarde : $dir"
+	printf '    Pour y revenir : arrêtez le serveur, remettez ces fichiers en place\n'
+	printf '    (voir « Revenir à une sauvegarde » dans le README), puis relancez.\n'
+}
+
 # run_update confie la mise à jour au serveur en place quand il sait la faire :
 # sauvegarde, bascule, santé, retour arrière automatique. Sinon, ce script
 # réinstalle simplement la version qu'il porte, comme avant.
@@ -443,6 +496,7 @@ run_update() {
 	installed="$(docker exec forgenet-server forgenet-server -version 2>/dev/null | awk '{print $2}')"
 	if [ -z "$installed" ] || ! version_ge "$installed" "$SELF_UPDATE_SINCE"; then
 		warn "la version installée (${installed:-inconnue}) ne sait pas encore se mettre à jour : réinstallation vers $VERSION par ce script"
+		backup_installed "${installed:-inconnue}"
 		return 1
 	fi
 	local to="latest"
@@ -467,7 +521,50 @@ run_update() {
 	exit 0
 }
 
+# restore_backup remet une sauvegarde faite par ce script ou par le serveur
+# (même format) : la base dans le volume du serveur, puis .env et les fichiers
+# d'installation, qui ramènent la version d'alors. La copie dans le volume
+# passe par un conteneur de l'image en place, qui a déjà sh : rien à
+# télécharger, et la base garde le propriétaire du dossier de données.
+restore_backup() {
+	[ "$(id -u)" -eq 0 ] || die "lancez le script en root : sudo bash install.sh --restore …"
+	[ -f "$INSTALL_DIR/.env" ] || die "aucune installation dans $INSTALL_DIR"
+	local dir="$RESTORE"
+	[[ "$dir" = /* ]] || dir="$INSTALL_DIR/sauvegardes/$dir"
+	dir="${dir%/}"
+	[ -f "$dir/forgenet.db" ] && [ -f "$dir/.env" ] ||
+		die "$dir n'est pas une sauvegarde ForgeNet (forgenet.db et .env attendus) ; elles sont dans $INSTALL_DIR/sauvegardes"
+	local image
+	image="$(docker inspect -f '{{.Config.Image}}' forgenet-server 2>/dev/null)" || die "conteneur forgenet-server introuvable"
+	VERSION="$(sed -n 's/^FORGENET_VERSION=//p' "$dir/.env" | head -n 1)"
+	info "Retour à la sauvegarde $(basename "$dir") (ForgeNet ${VERSION:-?})"
+	compose stop server
+	# shellcheck disable=SC2016 # développé par le sh du conteneur
+	docker run --rm --user 0 --entrypoint sh --volumes-from forgenet-server \
+		-v "$dir:/sauvegarde:ro" "$image" -c '
+			set -e
+			cd /var/lib/forgenet
+			rm -f forgenet.db-wal forgenet.db-shm
+			for f in forgenet.db forgenet.db-wal forgenet.db-shm; do
+				if [ -f "/sauvegarde/$f" ]; then cp "/sauvegarde/$f" "$f"; fi
+			done
+			chown "$(stat -c %u:%g .)" forgenet.db*' ||
+		die "copie de la base impossible ; le serveur est arrêté : relancez-le avec docker start forgenet-server"
+	local name
+	for name in .env docker-compose.yml Caddyfile.base; do
+		if [ -f "$dir/$name" ]; then
+			cp -p "$dir/$name" "$INSTALL_DIR/$name"
+		fi
+	done
+	start_stack
+	ok "ForgeNet est revenu à la sauvegarde $(basename "$dir")"
+}
+
 main() {
+	if [ -n "$RESTORE" ]; then
+		restore_backup
+		exit 0
+	fi
 	if [ "$UPDATE" -eq 1 ]; then
 		run_update || true
 	fi
