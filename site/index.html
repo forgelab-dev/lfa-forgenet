@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ForgeNet · PaaS open source auto-hébergé</title>
+<meta name="description" content="ForgeNet est un PaaS open source et auto-hébergé : déployez vos applications Docker Compose, publiez-les en HTTPS, surveillez votre serveur et mettez-le à jour en un clic.">
+<link rel="canonical" href="https://forgenet.lucidforgeafrica.com/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#0b0f17">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:site_name" content="ForgeNet">
+<meta property="og:title" content="ForgeNet · PaaS open source auto-hébergé">
+<meta property="og:description" content="Déployez vos stacks Docker Compose avec HTTPS automatique sur n'importe quel VPS Debian ou Ubuntu, sans dépendance cloud.">
+<meta property="og:url" content="https://forgenet.lucidforgeafrica.com/">
+<meta property="og:image" content="https://forgenet.lucidforgeafrica.com/img/partage.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="ForgeNet : votre PaaS open source, auto-hébergé en une commande.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css">
+<style>
+@font-face { font-family: 'Bricolage'; src: url('fonts/bricolage-grotesque-latin-wght-normal.woff2') format('woff2'); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: 'JBMono'; src: url('fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2'); font-weight: 100 800; font-display: swap; }
+
+/* Tokens du dashboard (direction « salle des machines ») : acier bleui teinte 255,
+   or LucidForge réservé aux actions et à l'élément actif, couleurs d'état à part. */
+:root {
+  --iron-950: oklch(0.155 0.012 255); --iron-900: oklch(0.19 0.014 255); --iron-850: oklch(0.225 0.015 255);
+  --iron-800: oklch(0.27 0.016 255); --iron-700: oklch(0.34 0.017 255); --iron-500: oklch(0.55 0.018 255);
+  --iron-300: oklch(0.76 0.014 255); --iron-100: oklch(0.95 0.006 255);
+  --gold-300: oklch(0.86 0.12 88); --gold-400: oklch(0.78 0.15 85); --gold-950: oklch(0.24 0.05 80);
+  --ok: oklch(0.78 0.14 155); --ok-dim: oklch(0.42 0.07 155); --warn: oklch(0.8 0.13 65);
+  --inflow: oklch(0.8 0.08 230);
+  --sans: 'Bricolage', ui-sans-serif, sans-serif; --mono: 'JBMono', ui-monospace, monospace;
+  --radius: 14px; --radius-sm: 8px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--iron-950); color: var(--iron-100); font-family: var(--sans); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; line-height: 1.55; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--gold-400); outline-offset: 3px; border-radius: 4px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+.mono { font-family: var(--mono); }
+.muted { color: var(--iron-300); }
+.i { font-size: 1.15em; line-height: 0; vertical-align: -0.15em; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+
+/* Navigation : une ligne, 64 px. */
+header.nav { position: sticky; top: 0; z-index: 20; background: color-mix(in oklch, var(--iron-950) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid color-mix(in oklch, var(--iron-800) 70%, transparent); }
+.nav .wrap { height: 64px; display: flex; align-items: center; gap: 28px; }
+.mark { display: inline-flex; align-items: center; gap: 10px; font-size: 19px; text-decoration: none; }
+.mark b { font-weight: 700; letter-spacing: -0.01em; } .mark span { color: var(--iron-300); }
+.nav nav { display: flex; gap: 24px; margin-left: auto; font-size: 15px; }
+.nav nav a { text-decoration: none; color: var(--iron-300); } .nav nav a:hover { color: var(--iron-100); }
+.pill { font-family: var(--mono); font-size: 13px; color: var(--iron-300); text-decoration: none; border: 1px solid var(--iron-700); border-radius: 999px; padding: 4px 10px; }
+
+.btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; border-radius: 999px; font-weight: 600; font-size: 16px; text-decoration: none; white-space: nowrap; transition: transform .2s var(--ease), background-color .2s; cursor: pointer; border: 0; font-family: inherit; }
+.btn:active { transform: translateY(1px) scale(.98); }
+.btn-gold { background: var(--gold-400); color: var(--iron-950); } .btn-gold:hover { background: var(--gold-300); }
+.btn.done { background: var(--ok); }
+.btn-quiet { background: transparent; color: var(--iron-100); box-shadow: inset 0 0 0 1px var(--iron-700); } .btn-quiet:hover { box-shadow: inset 0 0 0 1px var(--iron-500); background: var(--iron-900); }
+
+/* Héros : texte à gauche, la grille des conteneurs à droite. */
+.hero { min-height: calc(100dvh - 64px); display: grid; align-items: center; padding: 56px 0 72px; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 36px 48px; align-items: start; }
+.hero .wrap { width: 100%; }
+.hero-head { grid-column: 1 / -1; }
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--gold-300); background: var(--gold-950); border: 1px solid color-mix(in oklch, var(--gold-400) 40%, transparent); border-radius: 999px; padding: 6px 14px; text-decoration: none; }
+.hero h1 { margin-top: 26px; font-size: clamp(2.4rem, 5vw, 4.4rem); line-height: 1.02; letter-spacing: -0.035em; font-weight: 700; }
+.hero h1 em { font-style: normal; color: var(--gold-400); }
+.hero .lead { margin-top: 0; font-size: 19px; color: var(--iron-300); max-width: 44ch; }
+.hero .ctas { margin-top: 34px; display: flex; gap: 12px; flex-wrap: wrap; }
+.word { display: inline-block; white-space: nowrap; }
+
+.rack { position: relative; margin: 0; aspect-ratio: 8 / 5; max-width: 480px; justify-self: end; width: 100%; }
+.rack .grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(6, 1fr); gap: 8px; }
+.cell { border-radius: 6px; background: var(--iron-900); box-shadow: inset 0 0 0 1px var(--iron-800); position: relative; overflow: hidden; }
+.cell::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: 22%; height: 14%; min-height: 3px; background: var(--ok); opacity: var(--lit, 0); border-radius: 999px; box-shadow: 0 0 12px color-mix(in oklch, var(--ok) 60%, transparent); }
+.cell.gold::after { background: var(--gold-400); box-shadow: 0 0 12px color-mix(in oklch, var(--gold-400) 60%, transparent); }
+.cell.gold { box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--gold-400) 45%, transparent); }
+.rack figcaption { position: absolute; left: 0; bottom: -34px; font-family: var(--mono); font-size: 13px; color: var(--iron-300); }
+
+/* Installer : une commande, en grand. */
+section { padding: 120px 0; }
+.install { padding-top: 40px; }
+.install h2, .sec-title { font-size: clamp(2rem, 3.6vw, 3rem); letter-spacing: -0.03em; line-height: 1.08; font-weight: 700; max-width: 22ch; }
+.cmd { margin-top: 34px; display: flex; align-items: stretch; border-radius: var(--radius); background: var(--iron-900); box-shadow: inset 0 0 0 1px var(--iron-800); overflow: hidden; }
+.cmd pre { margin: 0; padding: 26px 28px; font-family: var(--mono); font-size: clamp(13px, 1.25vw, 16px); line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; flex: 1; min-width: 0; }
+.cmd pre .p { color: var(--iron-500); user-select: none; } .cmd pre .c { color: var(--iron-500); }
+.cmd button { border: 0; border-left: 1px solid var(--iron-800); background: var(--iron-850); color: var(--iron-100); font: 600 15px var(--sans); padding: 0 26px; cursor: pointer; display: flex; align-items: center; gap: 8px; min-width: 132px; justify-content: center; }
+.cmd button:hover { background: var(--iron-800); }
+.cmd button.done { color: var(--ok); }
+.steps { margin-top: 26px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.steps p { color: var(--iron-300); font-size: 16px; display: flex; gap: 12px; align-items: baseline; }
+.steps p b { color: var(--iron-100); font-weight: 600; }
+.steps .i { color: var(--ok); }
+
+/* Bento : six cases, deux avec de vraies captures. */
+.bento { margin-top: 48px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(210px, auto); gap: 14px; }
+.tile { border-radius: var(--radius); background: var(--iron-900); box-shadow: inset 0 0 0 1px var(--iron-800); padding: 26px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; position: relative; }
+.tile h3 { font-size: 21px; letter-spacing: -0.015em; font-weight: 650; }
+.tile p { color: var(--iron-300); font-size: 15.5px; max-width: 40ch; }
+.tile .i { color: var(--iron-300); font-size: 22px; }
+.t-deploy { grid-column: span 2; grid-row: span 2; }
+.t-watch { grid-column: span 4; }
+.shot { margin-top: auto; border-radius: var(--radius-sm); overflow: hidden; box-shadow: 0 0 0 1px var(--iron-700), 0 24px 60px -20px oklch(0.1 0.02 255 / .8); }
+.shot img { display: block; width: 100%; height: auto; }
+.t-deploy .shot { margin-right: -60px; margin-bottom: -60px; }
+.t-watch { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.4fr); gap: 28px; align-items: center; }
+.t-watch .shot { margin: 0 -60px -60px 0; }
+.t-https { background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklch, var(--ok) 18%, transparent), transparent 60%), var(--iron-900); }
+.t-sign { background: repeating-linear-gradient(135deg, transparent 0 14px, color-mix(in oklch, var(--iron-700) 35%, transparent) 14px 15px), var(--iron-900); }
+.chip { align-self: flex-start; font-family: var(--mono); font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--iron-850); color: var(--iron-300); box-shadow: inset 0 0 0 1px var(--iron-700); }
+.wave { margin-top: auto; display: flex; gap: 4px; align-items: flex-end; height: 44px; }
+.wave i { flex: 1; background: var(--inflow); opacity: .7; border-radius: 2px; height: 30%; transform-origin: bottom; }
+
+/* Démo : pleine largeur, une vraie capture animée. */
+.demo figure { margin: 48px 0 0; border-radius: var(--radius); overflow: hidden; box-shadow: 0 0 0 1px var(--iron-700), 0 40px 120px -40px oklch(0.78 0.15 85 / .25); }
+.demo figure img { display: block; width: 100%; height: auto; }
+.demo figcaption { margin-top: 16px; color: var(--iron-300); font-size: 15px; }
+
+.mesure { margin-top: 14px; font-size: 14px; }
+.demo-domaine { margin-top: 72px; display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.4fr); gap: 40px; align-items: center; }
+.demo-domaine h3 { font-size: clamp(1.6rem, 2.6vw, 2.2rem); letter-spacing: -0.025em; line-height: 1.1; font-weight: 700; }
+.demo-domaine p { margin-top: 14px; font-size: 17px; max-width: 40ch; }
+.demo-domaine figure { margin: 0; border-radius: var(--radius); overflow: hidden; box-shadow: 0 0 0 1px var(--iron-700); }
+.demo-domaine img { display: block; width: 100%; height: auto; }
+@media (max-width: 960px) { .demo-domaine { grid-template-columns: minmax(0, 1fr); } }
+
+/* Pourquoi : titre collant à gauche, affirmations à droite. */
+.why .wrap { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 64px; align-items: start; }
+.why .sticky { position: sticky; top: 112px; }
+.why .sticky p { margin-top: 18px; color: var(--iron-300); max-width: 40ch; font-size: 17px; }
+.claims { display: grid; gap: 18px; }
+.claim { padding: 30px; border-radius: var(--radius); background: var(--iron-900); box-shadow: inset 0 0 0 1px var(--iron-800); }
+.claim h3 { font-size: 26px; letter-spacing: -0.02em; line-height: 1.15; font-weight: 650; }
+.claim p { margin-top: 10px; color: var(--iron-300); font-size: 16px; max-width: 52ch; }
+.state { display: inline-block; margin-bottom: 14px; font-family: var(--mono); font-size: 12px; padding: 4px 10px; border-radius: 999px; }
+.state.ok { color: var(--ok); background: color-mix(in oklch, var(--ok) 12%, transparent); }
+.state.part { color: var(--warn); background: color-mix(in oklch, var(--warn) 12%, transparent); }
+.state.next { color: var(--iron-300); background: var(--iron-850); }
+
+/* La suite : rangée défilante, à la main. */
+.next-row { margin-top: 44px; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(250px, 300px); gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 14px; }
+.next-row article { scroll-snap-align: start; padding: 24px; border-radius: var(--radius); box-shadow: inset 0 0 0 1px var(--iron-800); }
+.next-row h3 { font-size: 19px; font-weight: 650; letter-spacing: -0.01em; margin-top: 14px; }
+.next-row p { margin-top: 8px; color: var(--iron-300); font-size: 15px; }
+.next-row .i { font-size: 26px; color: var(--gold-400); }
+.link { display: inline-flex; gap: 8px; align-items: center; margin-top: 20px; color: var(--gold-300); text-decoration: none; font-weight: 600; }
+.link:hover { color: var(--gold-400); }
+
+.inspect { margin-top: 14px; font-size: 15px; }
+.stars { margin-left: 4px; padding: 2px 9px; border-radius: 999px; background: var(--iron-850); box-shadow: inset 0 0 0 1px var(--iron-700); font-size: 13px; color: var(--iron-100); }
+.audiences { margin: 30px 0 0; display: grid; gap: 18px; }
+.audiences dt { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 17px; }
+.audiences dt .i { color: var(--gold-400); }
+.audiences dd { margin: 6px 0 0; color: var(--iron-300); font-size: 16px; max-width: 44ch; }
+.end-lead { margin-top: 24px; color: var(--iron-300); font-size: 19px; max-width: 52ch; }
+
+/* Fin : l'invitation à tester, en très grand. */
+.end { text-align: left; padding-bottom: 140px; }
+.end h2 { font-size: clamp(2.6rem, 6.4vw, 5.6rem); line-height: 1.02; letter-spacing: -0.04em; font-weight: 700; max-width: 18ch; }
+.end h2 .gold { color: var(--gold-400); }
+.end .ctas { margin-top: 40px; display: flex; gap: 12px; flex-wrap: wrap; }
+.char { display: inline-block; }
+
+footer { border-top: 1px solid var(--iron-800); padding: 36px 0 48px; color: var(--iron-300); font-size: 14px; }
+footer .wrap { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+footer nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px 20px; }
+footer nav a { white-space: nowrap; }
+footer a { text-decoration: none; } footer a:hover { color: var(--iron-100); }
+/* Zone tactile de 44 px au moins pour les petits liens, sans changer leur dessin. */
+.mark, .pill, .eyebrow, .link, footer a { position: relative; }
+.mark::after, .pill::after, .eyebrow::after, .link::after, footer a::after { content: ""; position: absolute; left: -4px; right: -4px; top: 50%; height: 44px; transform: translateY(-50%); }
+
+/* Bandeau de relecture de la maquette : absent du vrai site. */
+
+@media (max-width: 960px) {
+  .hero .wrap, .why .wrap { grid-template-columns: minmax(0, 1fr); }
+  .rack { justify-self: stretch; max-width: 520px; margin-top: 8px; }
+  .why .sticky { position: static; }
+  .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .t-watch { grid-column: span 2; grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; gap: 12px; }
+  .nav nav a:not(.pill) { display: none; }
+}
+@media (max-width: 640px) {
+  .wrap { padding: 0 16px; }
+  section { padding: 80px 0; }
+  .hero { padding: 32px 0 64px; min-height: auto; }
+  .hero .lead { font-size: 17px; }
+  .bento { grid-template-columns: 1fr; }
+  .t-deploy, .t-watch { grid-column: span 1; grid-row: auto; }
+  .t-deploy .shot, .t-watch .shot { margin: 0 -40px -40px 0; }
+  .cmd { flex-direction: column; }
+  .cmd button { border-left: 0; border-top: 1px solid var(--iron-800); min-height: 52px; }
+  .cmd pre { padding: 20px; font-size: 13px; }
+  .nav nav { gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="mark" href="#titre" aria-label="ForgeNet, haut de page">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="5" y="3" width="14" height="5" rx="1.5" fill="oklch(0.78 0.15 85)"/><rect x="3" y="10" width="18" height="5" rx="1.5" fill="oklch(0.76 0.014 255)"/><rect x="3" y="17" width="18" height="4" rx="1.5" fill="oklch(0.55 0.018 255)"/></svg>
+      <b>Forge<span>Net</span></b>
+    </a>
+    <nav aria-label="Navigation principale">
+      <a href="#fonctions">Fonctions</a>
+      <a href="#demo">Démo</a>
+      <a href="#installer">Installer</a>
+      <a class="pill" href="https://github.com/forgelab-dev/lfa-forgenet">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="titre">
+    <div class="wrap">
+      <div class="hero-head">
+        <a class="eyebrow" href="https://github.com/forgelab-dev/lfa-forgenet/releases/tag/v0.3.0">v0.3.0 publiée, en alpha <i class="ph ph-arrow-right i" aria-hidden="true"></i></a> <!-- x-release-please-version -->
+        <h1 id="titre" class="split">Votre PaaS open source, <em>auto-hébergé en une commande.</em></h1>
+      </div>
+      <div>
+        <p class="lead">Déployez vos stacks Docker Compose avec HTTPS automatique sur n'importe quel VPS Debian ou Ubuntu, sans dépendance cloud.</p>
+        <div class="ctas">
+          <a class="btn btn-gold" href="#installer"><i class="ph ph-terminal-window i" aria-hidden="true"></i>Tester la v0.3.0 (1 commande)</a> <!-- x-release-please-version -->
+          <a class="btn btn-quiet" href="https://github.com/forgelab-dev/lfa-forgenet"><i class="ph ph-star i" aria-hidden="true"></i>Soutenir sur GitHub<span class="stars mono" id="stars" hidden></span></a>
+        </div>
+      </div>
+      <figure class="rack" aria-label="Un serveur dont les conteneurs démarrent les uns après les autres">
+        <div class="grid" id="grid"></div>
+        <figcaption>48 emplacements, un serveur, vos règles.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="install" id="installer" aria-labelledby="t-install">
+    <div class="wrap">
+      <h2 id="t-install">Transparent, léger, prêt en moins d'une minute.</h2>
+      <div class="cmd">
+        <pre id="cmd"><span class="p">$ </span>curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/v0.3.0/deploy/install.sh<!-- x-release-please-version -->
+<span class="p">$ </span>less install.sh   <span class="c"># relisez un script avant de le lancer en root</span>
+<span class="p">$ </span>sudo bash install.sh --domain forgenet.exemple.org</pre>
+        <button type="button" id="copy"><i class="ph ph-copy i" aria-hidden="true"></i><span>Copier</span></button>
+      </div>
+      <p class="mesure muted">Mesuré le 14 novembre 2026 : 36 secondes sur un VPS vierge (Ubuntu 24.04, 2 vCPU), installation de Docker comprise.</p>
+      <a class="link inspect" href="https://github.com/forgelab-dev/lfa-forgenet/blob/v0.3.0/deploy/install.sh">Inspecter le script install.sh avant exécution <i class="ph ph-arrow-up-right i" aria-hidden="true"></i></a> <!-- x-release-please-version -->
+      <div class="steps">
+        <p><i class="ph ph-check-circle i" aria-hidden="true"></i><span><b>Installe Docker</b> s'il manque, depuis le dépôt officiel, clé vérifiée.</span></p>
+        <p><i class="ph ph-check-circle i" aria-hidden="true"></i><span><b>Démarre le serveur et Caddy</b> dans des conteneurs durcis.</span></p>
+        <p><i class="ph ph-check-circle i" aria-hidden="true"></i><span><b>Crée le premier administrateur</b>, puis vous ouvrez le dashboard.</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="fonctions" aria-labelledby="t-fonctions">
+    <div class="wrap">
+      <h2 id="t-fonctions" class="sec-title">Ce que fait ForgeNet, dès aujourd'hui.</h2>
+      <div class="bento">
+        <article class="tile t-deploy reveal">
+          <i class="ph ph-stack i" aria-hidden="true"></i>
+          <h3>Déployer une stack Compose</h3>
+          <p>Collez votre fichier, suivez chaque étape en direct avec son journal. Les déploiements passent en file, un à la fois.</p>
+          <div class="shot"><img src="img/deploiements.webp" width="1280" height="760" alt="Écran Déploiements : la stack boutique déployée avec succès, et son journal ligne à ligne" loading="lazy"></div>
+        </article>
+        <article class="tile t-https reveal">
+          <i class="ph ph-globe-hemisphere-west i" aria-hidden="true"></i>
+          <h3>Domaines et HTTPS</h3>
+          <p>Un domaine par service, certificat Let's Encrypt et redirection HTTPS par Caddy.</p>
+        </article>
+        <article class="tile reveal">
+          <i class="ph ph-shield-check i" aria-hidden="true"></i>
+          <h3>Droits vérifiés à chaque appel</h3>
+          <p>Rôles administrateur et membre, tentatives de connexion limitées, journal d'audit.</p>
+        </article>
+        <article class="tile t-sign reveal">
+          <i class="ph ph-arrows-clockwise i" aria-hidden="true"></i>
+          <h3>Mise à jour en un clic</h3>
+          <p>Une nouvelle version s'annonce dans le dashboard. Elle s'installe après une sauvegarde, sur une image signée par cosign, avec retour automatique si elle ne démarre pas.</p>
+          <span class="chip">cosign verify</span>
+        </article>
+        <article class="tile reveal">
+          <i class="ph ph-wifi-medium i" aria-hidden="true"></i>
+          <h3>Tient sur une connexion lente</h3>
+          <p>Flux compressés, reprise après coupure, pause quand l'onglet est caché.</p>
+          <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </article>
+        <article class="tile t-watch reveal">
+          <div>
+            <i class="ph ph-pulse i" aria-hidden="true"></i>
+            <h3 style="margin-top:10px">Surveiller le serveur et chaque conteneur</h3>
+            <p style="margin-top:10px">Processeur, mémoire, disque et réseau en direct, avec la dernière heure. Une alerte visuelle dès 85 % de mémoire ou de disque.</p>
+          </div>
+          <div class="shot"><img src="img/surveillance.webp" width="1280" height="760" alt="Écran Surveillance : processeur, mémoire, disque et réseau du serveur, puis le tableau des conteneurs" loading="lazy"></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="demo" id="demo" aria-labelledby="t-demo">
+    <div class="wrap">
+      <h2 id="t-demo" class="sec-title">Vingt secondes, sur un vrai serveur.</h2>
+      <figure>
+        <img src="img/demo.gif" width="860" height="510" alt="Démonstration : connexion, déploiement d'une stack Compose suivi en direct, puis l'écran Surveillance" loading="lazy">
+      </figure>
+      <p class="demo-cap muted" style="margin-top:16px">Connexion, déploiement d'une stack de deux services, puis leurs mesures en direct, sur un VPS de test à Madrid. Rien n'est simulé.</p>
+      <div class="demo-domaine">
+        <div>
+          <h3>Un domaine, et le HTTPS suit.</h3>
+          <p class="muted">Sur un vrai VPS : la boutique est déployée, son domaine est ajouté depuis le dashboard, et Caddy obtient son certificat Let's Encrypt cinq secondes plus tard.</p>
+        </div>
+        <figure><img src="img/domaine-https.gif" width="860" height="511" alt="Ajout du domaine boutique.forgenet-test.lucidforgeafrica.com depuis l'écran Domaines, puis la boutique servie en HTTPS" loading="lazy"></figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="why" aria-labelledby="t-why">
+    <div class="wrap">
+      <div class="sticky">
+        <h2 id="t-why" class="sec-title">Conçu pour la sobriété et l'indépendance.</h2>
+        <p>Pour les contextes où la bande passante et le budget comptent, et où les données doivent rester chez soi.</p>
+        <dl class="audiences">
+          <div><dt><i class="ph ph-user i" aria-hidden="true"></i>Développeurs solos</dt><dd>Zéro configuration réseau complexe : vos conteneurs sont en ligne avec SSL dès le premier déploiement.</dd></div>
+          <div><dt><i class="ph ph-users-three i" aria-hidden="true"></i>Petites équipes</dt><dd>Gérez les accès et surveillez la consommation RAM et CPU sans installer une usine à gaz.</dd></div>
+        </dl>
+      </div>
+      <div class="claims">
+        <article class="claim reveal"><span class="state ok">disponible</span><h3>Vos données ne quittent pas votre serveur.</h3><p>Le dashboard, l'API et les mesures tournent chez vous. Aucune télémétrie, aucun service tiers pour afficher l'interface.</p></article>
+        <article class="claim reveal"><span class="state part">en partie</span><h3>Conçu pour le bas débit.</h3><p>Flux compressés et reprise propre aujourd'hui. Le mode dégradé, avec file d'attente des commandes hors ligne, est en route.</p></article>
+        <article class="claim reveal"><span class="state next">en route</span><h3>Une IA d'administration, locale.</h3><p>Un assistant propulsé par Ollama, qui lit vos journaux sur la machine elle-même, sans appel à une API externe.</p></article>
+        <article class="claim reveal"><span class="state next">en route</span><h3>Quitter son PaaS actuel en minutes.</h3><p>Import des projets Coolify, CapRover, Dokploy et Portainer, à partir de leurs fichiers existants.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-next">
+    <div class="wrap">
+      <h2 id="t-next" class="sec-title">La suite, au grand jour.</h2>
+      <div class="next-row" tabindex="0" aria-label="Prochaines fonctions, défilement horizontal">
+        <article><i class="ph ph-arrow-counter-clockwise i" aria-hidden="true"></i><h3>Retour arrière</h3><p>Revenir à la version précédente d'un déploiement, en un clic.</p></article>
+        <article><i class="ph ph-git-branch i" aria-hidden="true"></i><h3>Déployer depuis Git</h3><p>Un push sur la branche choisie lance le déploiement.</p></article>
+        <article><i class="ph ph-device-mobile i" aria-hidden="true"></i><h3>Application mobile</h3><p>Surveiller et redémarrer depuis le téléphone, avec confirmation biométrique.</p></article>
+        <article><i class="ph ph-database i" aria-hidden="true"></i><h3>Sauvegardes des applications</h3><p>Planifiées vers un MinIO auto-hébergé, vérifiées et restaurables.</p></article>
+        <article><i class="ph ph-storefront i" aria-hidden="true"></i><h3>Marketplace</h3><p>Postgres, Redis, MinIO et d'autres services, en un clic.</p></article>
+      </div>
+      <a class="link" href="https://github.com/forgelab-dev/lfa-forgenet/blob/main/docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md">Lire la matrice fonctionnelle complète <i class="ph ph-arrow-up-right i" aria-hidden="true"></i></a>
+    </div>
+  </section>
+
+  <section class="end" aria-labelledby="t-end">
+    <div class="wrap">
+      <h2 id="t-end" class="kinetic">Prêt à reprendre le contrôle de <span class="gold">vos déploiements ?</span></h2>
+      <p class="end-lead">Le projet est en développement actif. Testez-le sur un serveur de pré-production et partagez vos retours.</p>
+      <div class="ctas">
+        <button type="button" class="btn btn-gold" id="copy-end"><i class="ph ph-copy i" aria-hidden="true"></i><span>Copier la commande d'installation</span></button>
+        <a class="btn btn-quiet" href="https://github.com/forgelab-dev/lfa-forgenet/discussions"><i class="ph ph-chat-circle-text i" aria-hidden="true"></i>Donner un avis</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>ForgeNet, par LucidForge Africa. Licence Apache 2.0.</span>
+    <nav aria-label="Pied de page">
+      <a href="https://github.com/forgelab-dev/lfa-forgenet">Code source</a>
+      <a href="https://github.com/forgelab-dev/lfa-forgenet/releases">Versions</a>
+      <a href="https://github.com/forgelab-dev/lfa-forgenet/blob/main/SECURITY.md">Sécurité</a>
+      <a href="https://don.lucidforgeafrica.com/forgenet">Soutenir le projet</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module">
+import { animate, stagger, createTimeline, onScroll, utils } from 'https://cdn.jsdelivr.net/npm/animejs@4.5.0/+esm';
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Les 48 emplacements du serveur ; six resteront éteints, un passera en or (le dashboard).
+const grid = document.getElementById('grid');
+const cells = Array.from({ length: 48 }, (_, i) => {
+  const c = document.createElement('div');
+  c.className = 'cell' + (i === 19 ? ' gold' : '');
+  grid.append(c);
+  return c;
+});
+const dark = new Set([5, 14, 30, 37, 42, 47]);
+const live = cells.filter((_, i) => !dark.has(i) && i !== 19);
+
+// Copier la commande, depuis le bloc ou depuis la fin de page.
+const commandText = () => [...document.querySelectorAll('#cmd .line')].map((l) => l.textContent.replace(/^\$ /, '')).join('\n') || document.getElementById('cmd').innerText.replace(/^\$ /gm, '');
+async function copyCommand(b, idle) {
+  try { await navigator.clipboard.writeText(commandText()); } catch { /* sans presse-papiers, rien à faire */ }
+  const label = b.querySelector('span'); b.classList.add('done'); label.textContent = 'Copié !';
+  setTimeout(() => { b.classList.remove('done'); label.textContent = idle; }, 1800);
+}
+document.getElementById('copy-end').addEventListener('click', (e) => copyCommand(e.currentTarget, "Copier la commande d'installation"));
+
+// Le vrai nombre d'étoiles, lu sans compte ; rien ne s'affiche s'il est illisible.
+fetch('https://api.github.com/repos/forgelab-dev/lfa-forgenet').then((r) => (r.ok ? r.json() : null)).then((repo) => {
+  if (repo && Number.isInteger(repo.stargazers_count)) { const el = document.getElementById('stars'); el.textContent = repo.stargazers_count; el.hidden = false; el.setAttribute('aria-label', `${repo.stargazers_count} étoiles`); }
+}).catch(() => {});
+
+document.getElementById('copy').addEventListener('click', async (e) => {
+  const b = e.currentTarget; // à lire avant toute attente : il vaut null ensuite
+  const text = [...document.querySelectorAll('#cmd .line')].map((l) => l.textContent.replace(/^\$ /, '')).join('\n') || document.getElementById('cmd').innerText.replace(/^\$ /gm, '');
+  try { await navigator.clipboard.writeText(text); } catch { /* sans presse-papiers, rien à faire */ }
+  b.classList.add('done'); b.querySelector('span').textContent = 'Copié !';
+  setTimeout(() => { b.classList.remove('done'); b.querySelector('span').textContent = 'Copier'; }, 1800);
+});
+
+// Découpe en mots ou en lettres, pour les entrées de titres.
+function splitInto(el, unit, keepWords = false) {
+  const parts = [];
+  // Copie de la liste : remplacer un nœud pendant le parcours de childNodes, liste vivante, en sauterait un.
+  [...el.childNodes].forEach((node) => {
+    const text = node.textContent;
+    const wrapper = node.nodeType === 1 ? node.cloneNode(false) : document.createDocumentFragment();
+    text.split(/(\s+)/).forEach((t) => {
+      if (t === '') return;
+      if (/^\s+$/.test(t)) { wrapper.append(t); return; }
+      if (unit === 'word') { const s = document.createElement('span'); s.className = 'word'; s.textContent = t; wrapper.append(s); parts.push(s); return; }
+      const w = document.createElement('span'); if (keepWords) { w.className = 'word'; w.style.whiteSpace = 'nowrap'; }
+      [...t].forEach((ch) => { const s = document.createElement('span'); s.className = 'char'; s.textContent = ch; w.append(s); parts.push(s); });
+      wrapper.append(w);
+    });
+    node.replaceWith(wrapper);
+  });
+  return parts;
+}
+
+if (reduce) {
+  cells.forEach((c, i) => c.style.setProperty('--lit', dark.has(i) ? 0 : i === 19 ? 1 : 0.9));
+} else {
+  // Le titre arrive mot à mot : il dit d'abord de quoi il s'agit.
+  const words = splitInto(document.querySelector('.hero h1'), 'word');
+  animate(words, { y: ['0.6em', 0], opacity: [0, 1], delay: stagger(55), duration: 900, ease: 'outExpo' });
+
+  // Les conteneurs démarrent depuis le centre, puis le serveur « respire ».
+  createTimeline()
+    .add(cells, { scale: [0.6, 1], opacity: [0, 1], delay: stagger(28, { grid: [8, 6], from: 'center' }), duration: 600, ease: 'outBack' }, 200)
+    .add(live, { '--lit': [0, 0.9], delay: stagger(22, { grid: [8, 6], from: 'center' }), duration: 500, ease: 'outQuad' }, 700)
+    .add(cells[19], { '--lit': [0, 1], duration: 500, ease: 'outQuad' }, 1600)
+    .then(() => {
+      // Mesures en direct : quelques emplacements varient, comme sur l'écran Surveillance.
+      const pulse = () => {
+        const picks = utils.shuffle([...live]).slice(0, 5);
+        animate(picks, { '--lit': () => utils.random(0.35, 1, 2), duration: 1400, ease: 'inOutSine', onComplete: pulse });
+      };
+      pulse();
+    });
+
+  // La commande apparaît ligne à ligne quand on arrive dessus, dans l'ordre où on la tape.
+  const pre = document.getElementById('cmd');
+  pre.innerHTML = pre.innerHTML.split('\n').map((l) => `<span class="line" style="display:block">${l}</span>`).join('');
+  const lines = pre.querySelectorAll('.line');
+  utils.set(lines, { opacity: 0, x: -12 });
+  animate(lines, { opacity: 1, x: 0, delay: stagger(220), duration: 600, ease: 'outExpo', autoplay: onScroll({ target: pre, enter: 'bottom-=80 top' }) });
+
+  // Les cases et les affirmations entrent à leur tour, sans rejouer.
+  document.querySelectorAll('.bento, .claims').forEach((group) => {
+    const items = group.querySelectorAll('.reveal');
+    utils.set(items, { opacity: 0, y: 28 });
+    animate(items, { opacity: 1, y: 0, delay: stagger(80), duration: 800, ease: 'outExpo', autoplay: onScroll({ target: group, enter: 'bottom-=120 top' }) });
+  });
+
+  // Le débit de la case « connexion lente » ondule en continu.
+  animate('.wave i', { scaleY: () => [utils.random(0.4, 1, 2), utils.random(1, 3, 2)], delay: stagger(70), duration: 900, alternate: true, loop: true, ease: 'inOutSine' });
+
+  // La phrase finale tombe lettre à lettre.
+  const end = document.querySelector('.kinetic');
+  const letters = splitInto(end, 'char', true);
+  utils.set(letters, { opacity: 0, y: '-0.4em' });
+  animate(letters, { opacity: 1, y: 0, delay: stagger(24), duration: 700, ease: 'outBounce', autoplay: onScroll({ target: end, enter: 'bottom-=60 top' }) });
+}
+</script>
+</body>
+</html>
