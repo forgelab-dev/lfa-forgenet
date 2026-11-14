@@ -6,15 +6,19 @@
 #   docker build -f deploy/Dockerfile -t forgenet-server .
 #
 # Chaque image de base est épinglée par version et par empreinte.
+#
+# Image publiée pour amd64 et arm64 (docs/RELEASING.md) : le dashboard et le
+# binaire Go sont compilés sur la plateforme de build ($BUILDPLATFORM), pour
+# la cible, sans émulation ; seule l'image finale est propre à l'architecture.
 
-FROM node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9 AS web
+FROM --platform=$BUILDPLATFORM node:26.4.0-alpine@sha256:725aeba2364a9b16beae49e180d83bd597dbd0b15c47f1f28875c290bfd255b9 AS web
 WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY web/ ./
 RUN npm run build
 
-FROM golang:1.26.11-alpine@sha256:ae52b5bc6ed045a9ed26ab03dc19327a802a9cc9aa8b27ed57f5c6b60579b0bb AS server
+FROM --platform=$BUILDPLATFORM golang:1.26.11-alpine@sha256:ae52b5bc6ed045a9ed26ab03dc19327a802a9cc9aa8b27ed57f5c6b60579b0bb AS server
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -23,8 +27,11 @@ COPY internal/ internal/
 COPY pkg/ pkg/
 ARG VERSION=0.1.0-alpha.dev
 ARG GIT_COMMIT=unknown
-# SQLite en Go pur (modernc) : binaire statique, sans cgo.
-RUN CGO_ENABLED=0 go build -trimpath \
+ARG TARGETOS
+ARG TARGETARCH
+# SQLite en Go pur (modernc) : binaire statique, sans cgo, donc compilable
+# pour une autre architecture.
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath \
     -ldflags "-s -w -X github.com/forgelab-dev/lfa-forgenet/internal/version.Version=${VERSION} -X github.com/forgelab-dev/lfa-forgenet/internal/version.GitCommit=${GIT_COMMIT}" \
     -o /out/forgenet-server ./cmd/forgenet-server
 

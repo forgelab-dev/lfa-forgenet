@@ -27,7 +27,7 @@ readonly REPO_RAW="https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet"
 readonly DOCKER_KEY_FPR="9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
 
 INSTALL_DIR="${FORGENET_DIR:-/opt/forgenet}"
-VERSION="${FORGENET_VERSION:-0.1.0}"
+VERSION="${FORGENET_VERSION:-0.1.0}" # x-release-please-version
 DOMAIN="${FORGENET_DOMAIN-}"
 ACME_EMAIL="${FORGENET_ACME_EMAIL-}"
 ADMIN_USER="${FORGENET_ADMIN_USER-}"
@@ -56,7 +56,7 @@ Usage : sudo bash install.sh [options]
                       Sans domaine, le dashboard s'ouvre par un tunnel SSH.
                       --domain "" retire un domaine déjà configuré.
   --email ADRESSE     Adresse des avis Let's Encrypt (facultative).
-  --version X.Y.Z     Version de ForgeNet (défaut : 0.1.0).
+  --version X.Y.Z     Version de ForgeNet (défaut : celle publiée avec ce script).
   --admin-user NOM    Nom du premier administrateur (sinon demandé).
   --admin-email ADR   Adresse du premier administrateur (sinon demandée).
   --dir CHEMIN        Dossier d'installation (défaut : /opt/forgenet).
