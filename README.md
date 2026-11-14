@@ -27,7 +27,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 > ⭐ Mettez une étoile pour suivre l'avancement, ou consultez la [feuille de route](docs/ForgeNet_Document_de_Projet_v2.3.0.md#6-feuille-de-route--suivi-de-projet). Ce qui change d'une version à l'autre est dans le [CHANGELOG](CHANGELOG.md).
 
 <p align="center">
-  <img src="docs/media/demo-v0.1.0.gif" width="860" alt="Démonstration de la v0.1.0 : connexion, déploiement d'une stack Docker Compose suivi en direct, puis écran Surveillance avec les mesures du serveur et des conteneurs">
+  <img src="docs/media/demo.gif" width="860" alt="Démonstration sur un VPS de test : connexion, déploiement d'une stack Docker Compose suivi en direct, puis écran Surveillance avec les mesures du serveur et des conteneurs">
 </p>
 
 **Ce que fait la v0.1.0** :
