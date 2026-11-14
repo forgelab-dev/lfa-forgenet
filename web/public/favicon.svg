@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <rect width="24" height="24" rx="5" fill="#13161c"/>
-  <rect x="6" y="4.5" width="12" height="4" rx="1.2" fill="#e3ad25"/>
-  <rect x="4.5" y="10" width="15" height="4" rx="1.2" fill="#b4bac4"/>
-  <rect x="4.5" y="15.5" width="15" height="4" rx="1.2" fill="#6f7682"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img"><title>ForgeNet</title><rect width="48" height="48" rx="11" fill="#090c11"/><g transform="translate(6 7) scale(.75)"><path d="M3 12h33a7 7 0 0 1 7 7v2H31l-2 6h4l3 7H12l3-7h4l-2-6h-6c-4 0-6.5-3-8-9z" fill="#eceff2"/><rect x="12" y="38" width="24" height="4" rx="2" fill="#eceff2" opacity=".55"/><path d="M41 2l1.7 3.8L46.5 7.5l-3.8 1.7L41 13l-1.7-3.8L35.5 7.5l3.8-1.7z" fill="#e3ae28"/></g></svg>
