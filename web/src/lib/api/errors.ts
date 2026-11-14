@@ -16,6 +16,7 @@ export function describeError(err: unknown): string {
     case Code.AlreadyExists:
     case Code.FailedPrecondition:
     case Code.NotFound:
+    case Code.Aborted:
       return sentence(error.rawMessage) || fallback(error.code);
     default:
       return fallback(error.code);
