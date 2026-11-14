@@ -108,7 +108,7 @@ Les Pull Requests nécessitent une revue et une CI verte avant merge sur `main`.
 
 ## Conventions de commit
 
-Nous suivons [Conventional Commits](https://www.conventionalcommits.org) — le changelog en est généré automatiquement.
+Nous suivons [Conventional Commits](https://www.conventionalcommits.org) — le changelog en est généré automatiquement, et la publication d'une version est décrite dans [`docs/RELEASING.md`](docs/RELEASING.md).
 
 ```
 <type>(<scope>): <description à l'impératif>
