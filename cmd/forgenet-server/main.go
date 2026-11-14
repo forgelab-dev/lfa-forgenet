@@ -152,6 +152,12 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	}
 	deployments := deploy.New(db.Deployments(), stacks, auditor, logger, deployOpts...)
 
+	// Historique court des mesures, gardé en mémoire (ADR-0010) : le serveur
+	// relève lui-même l'hôte et les conteneurs, sans rien écrire sur le disque.
+	recorder := metrics.NewRecorder(
+		metrics.NewHostCollector(metrics.GopsutilProbe{}, engine, cfg.Metrics.StoragePath),
+		engine, engine, metrics.RecorderConfig{}, logger)
+
 	// Les mêmes services sont servis par deux portes : gRPC (CLI, mobile) et
 	// Connect sur le serveur HTTP (dashboard), avec le même garde (ADR-0006).
 	httpServer := transportHTTP.NewServer(cfg.Server, cfg.Health, healthService, logger)
@@ -160,11 +166,13 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	containerAPI := transportGRPC.NewContainerServiceServer(engine, auditor, logger)
 	deploymentAPI := transportGRPC.NewDeploymentServiceServer(deployments, logger)
 	domainAPI := transportGRPC.NewDomainServiceServer(domainService, logger)
+	metricsAPI := transportGRPC.NewMetricsServiceServer(recorder, engine, logger)
 	for _, registrar := range []grpc.ServiceRegistrar{grpcServer.GRPCServer(), connectAPI.Registrar()} {
 		forgenetv1.RegisterAuthServiceServer(registrar, authAPI)
 		forgenetv1.RegisterContainerServiceServer(registrar, containerAPI)
 		forgenetv1.RegisterDeploymentServiceServer(registrar, deploymentAPI)
 		forgenetv1.RegisterDomainServiceServer(registrar, domainAPI)
+		forgenetv1.RegisterMetricsServiceServer(registrar, metricsAPI)
 	}
 	connectAPI.Mount(httpServer.Mux())
 
@@ -198,6 +206,7 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 		{name: "HTTP", transport: httpServer},
 		{name: "gRPC", transport: grpcServer},
 		{name: "déploiements", transport: deployments},
+		{name: "relevé des mesures", transport: recorder},
 	}
 	if domainService != nil {
 		// Réconcilie Caddy, le réseau et les conteneurs au démarrage, et
