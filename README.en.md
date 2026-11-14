@@ -1,5 +1,10 @@
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/logo/forgenet-symbole-fond-sombre.svg">
+  <img src="docs/media/logo/forgenet-symbole-fond-clair.svg" width="88" height="88" alt="">
+</picture>
+
 # ForgeNet
 
 **The sovereign, self-hosted cloud that never leaves your servers.**
