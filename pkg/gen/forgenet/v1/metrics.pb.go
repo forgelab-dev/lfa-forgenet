@@ -1175,6 +1175,64 @@ func (x *StreamContainerMetricsResponse) GetMetrics() *ContainerMetrics {
 	return nil
 }
 
+// StreamAllContainerMetricsResponse est un relevé de tous les conteneurs en
+// cours d'exécution, pris au même passage. C'est le message de la route
+// WebSocket /ws/v1/metrics/containers (ADR-0010) : un client suit tous les
+// conteneurs sur une seule liaison. Un conteneur absent du relevé n'est plus en
+// cours d'exécution.
+type StreamAllContainerMetricsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Fin du passage qui a pris ces mesures.
+	CollectedAt   *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=collected_at,json=collectedAt,proto3" json:"collected_at,omitempty"`
+	Containers    []*ContainerMetrics    `protobuf:"bytes,2,rep,name=containers,proto3" json:"containers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamAllContainerMetricsResponse) Reset() {
+	*x = StreamAllContainerMetricsResponse{}
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamAllContainerMetricsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamAllContainerMetricsResponse) ProtoMessage() {}
+
+func (x *StreamAllContainerMetricsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamAllContainerMetricsResponse.ProtoReflect.Descriptor instead.
+func (*StreamAllContainerMetricsResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *StreamAllContainerMetricsResponse) GetCollectedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CollectedAt
+	}
+	return nil
+}
+
+func (x *StreamAllContainerMetricsResponse) GetContainers() []*ContainerMetrics {
+	if x != nil {
+		return x.Containers
+	}
+	return nil
+}
+
 type QueryContainerMetricsRequest struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	ContainerId string                 `protobuf:"bytes,1,opt,name=container_id,json=containerId,proto3" json:"container_id,omitempty"`
@@ -1193,7 +1251,7 @@ type QueryContainerMetricsRequest struct {
 
 func (x *QueryContainerMetricsRequest) Reset() {
 	*x = QueryContainerMetricsRequest{}
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[15]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1205,7 +1263,7 @@ func (x *QueryContainerMetricsRequest) String() string {
 func (*QueryContainerMetricsRequest) ProtoMessage() {}
 
 func (x *QueryContainerMetricsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[15]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1218,7 +1276,7 @@ func (x *QueryContainerMetricsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryContainerMetricsRequest.ProtoReflect.Descriptor instead.
 func (*QueryContainerMetricsRequest) Descriptor() ([]byte, []int) {
-	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{15}
+	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *QueryContainerMetricsRequest) GetContainerId() string {
@@ -1266,7 +1324,7 @@ type QueryContainerMetricsResponse struct {
 
 func (x *QueryContainerMetricsResponse) Reset() {
 	*x = QueryContainerMetricsResponse{}
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[16]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1278,7 +1336,7 @@ func (x *QueryContainerMetricsResponse) String() string {
 func (*QueryContainerMetricsResponse) ProtoMessage() {}
 
 func (x *QueryContainerMetricsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[16]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1291,7 +1349,7 @@ func (x *QueryContainerMetricsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryContainerMetricsResponse.ProtoReflect.Descriptor instead.
 func (*QueryContainerMetricsResponse) Descriptor() ([]byte, []int) {
-	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{16}
+	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *QueryContainerMetricsResponse) GetContainerId() string {
@@ -1316,7 +1374,7 @@ type GetSystemMetricsRequest struct {
 
 func (x *GetSystemMetricsRequest) Reset() {
 	*x = GetSystemMetricsRequest{}
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[17]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1328,7 +1386,7 @@ func (x *GetSystemMetricsRequest) String() string {
 func (*GetSystemMetricsRequest) ProtoMessage() {}
 
 func (x *GetSystemMetricsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[17]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1341,7 +1399,7 @@ func (x *GetSystemMetricsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSystemMetricsRequest.ProtoReflect.Descriptor instead.
 func (*GetSystemMetricsRequest) Descriptor() ([]byte, []int) {
-	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{17}
+	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{18}
 }
 
 type GetSystemMetricsResponse struct {
@@ -1353,7 +1411,7 @@ type GetSystemMetricsResponse struct {
 
 func (x *GetSystemMetricsResponse) Reset() {
 	*x = GetSystemMetricsResponse{}
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[18]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1365,7 +1423,7 @@ func (x *GetSystemMetricsResponse) String() string {
 func (*GetSystemMetricsResponse) ProtoMessage() {}
 
 func (x *GetSystemMetricsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[18]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1378,7 +1436,7 @@ func (x *GetSystemMetricsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSystemMetricsResponse.ProtoReflect.Descriptor instead.
 func (*GetSystemMetricsResponse) Descriptor() ([]byte, []int) {
-	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{18}
+	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GetSystemMetricsResponse) GetMetrics() *SystemMetrics {
@@ -1399,7 +1457,7 @@ type StreamSystemMetricsRequest struct {
 
 func (x *StreamSystemMetricsRequest) Reset() {
 	*x = StreamSystemMetricsRequest{}
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[19]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1411,7 +1469,7 @@ func (x *StreamSystemMetricsRequest) String() string {
 func (*StreamSystemMetricsRequest) ProtoMessage() {}
 
 func (x *StreamSystemMetricsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[19]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1424,7 +1482,7 @@ func (x *StreamSystemMetricsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamSystemMetricsRequest.ProtoReflect.Descriptor instead.
 func (*StreamSystemMetricsRequest) Descriptor() ([]byte, []int) {
-	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{19}
+	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *StreamSystemMetricsRequest) GetIntervalSeconds() uint32 {
@@ -1443,7 +1501,7 @@ type StreamSystemMetricsResponse struct {
 
 func (x *StreamSystemMetricsResponse) Reset() {
 	*x = StreamSystemMetricsResponse{}
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[20]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1455,7 +1513,7 @@ func (x *StreamSystemMetricsResponse) String() string {
 func (*StreamSystemMetricsResponse) ProtoMessage() {}
 
 func (x *StreamSystemMetricsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[20]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1468,7 +1526,7 @@ func (x *StreamSystemMetricsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StreamSystemMetricsResponse.ProtoReflect.Descriptor instead.
 func (*StreamSystemMetricsResponse) Descriptor() ([]byte, []int) {
-	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{20}
+	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *StreamSystemMetricsResponse) GetMetrics() *SystemMetrics {
@@ -1495,7 +1553,7 @@ type QuerySystemMetricsRequest struct {
 
 func (x *QuerySystemMetricsRequest) Reset() {
 	*x = QuerySystemMetricsRequest{}
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[21]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1507,7 +1565,7 @@ func (x *QuerySystemMetricsRequest) String() string {
 func (*QuerySystemMetricsRequest) ProtoMessage() {}
 
 func (x *QuerySystemMetricsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[21]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1520,7 +1578,7 @@ func (x *QuerySystemMetricsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuerySystemMetricsRequest.ProtoReflect.Descriptor instead.
 func (*QuerySystemMetricsRequest) Descriptor() ([]byte, []int) {
-	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{21}
+	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *QuerySystemMetricsRequest) GetRange() *TimeRange {
@@ -1560,7 +1618,7 @@ type QuerySystemMetricsResponse struct {
 
 func (x *QuerySystemMetricsResponse) Reset() {
 	*x = QuerySystemMetricsResponse{}
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[22]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1572,7 +1630,7 @@ func (x *QuerySystemMetricsResponse) String() string {
 func (*QuerySystemMetricsResponse) ProtoMessage() {}
 
 func (x *QuerySystemMetricsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_forgenet_v1_metrics_proto_msgTypes[22]
+	mi := &file_forgenet_v1_metrics_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1585,7 +1643,7 @@ func (x *QuerySystemMetricsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuerySystemMetricsResponse.ProtoReflect.Descriptor instead.
 func (*QuerySystemMetricsResponse) Descriptor() ([]byte, []int) {
-	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{22}
+	return file_forgenet_v1_metrics_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *QuerySystemMetricsResponse) GetSeries() []*MetricSeries {
@@ -1673,7 +1731,12 @@ const file_forgenet_v1_metrics_proto_rawDesc = "" +
 	"\fcontainer_id\x18\x01 \x01(\tR\vcontainerId\x12)\n" +
 	"\x10interval_seconds\x18\x02 \x01(\rR\x0fintervalSeconds\"Y\n" +
 	"\x1eStreamContainerMetricsResponse\x127\n" +
-	"\ametrics\x18\x01 \x01(\v2\x1d.forgenet.v1.ContainerMetricsR\ametrics\"\xdd\x01\n" +
+	"\ametrics\x18\x01 \x01(\v2\x1d.forgenet.v1.ContainerMetricsR\ametrics\"\xa1\x01\n" +
+	"!StreamAllContainerMetricsResponse\x12=\n" +
+	"\fcollected_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\vcollectedAt\x12=\n" +
+	"\n" +
+	"containers\x18\x02 \x03(\v2\x1d.forgenet.v1.ContainerMetricsR\n" +
+	"containers\"\xdd\x01\n" +
 	"\x1cQueryContainerMetricsRequest\x12!\n" +
 	"\fcontainer_id\x18\x01 \x01(\tR\vcontainerId\x12,\n" +
 	"\x05range\x18\x02 \x01(\v2\x16.forgenet.v1.TimeRangeR\x05range\x12!\n" +
@@ -1756,49 +1819,50 @@ func file_forgenet_v1_metrics_proto_rawDescGZIP() []byte {
 }
 
 var file_forgenet_v1_metrics_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_forgenet_v1_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_forgenet_v1_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_forgenet_v1_metrics_proto_goTypes = []any{
-	(MetricUnit)(0),                        // 0: forgenet.v1.MetricUnit
-	(MetricName)(0),                        // 1: forgenet.v1.MetricName
-	(*MetricKey)(nil),                      // 2: forgenet.v1.MetricKey
-	(*TimeRange)(nil),                      // 3: forgenet.v1.TimeRange
-	(*MetricSample)(nil),                   // 4: forgenet.v1.MetricSample
-	(*MetricSeries)(nil),                   // 5: forgenet.v1.MetricSeries
-	(*CpuMetrics)(nil),                     // 6: forgenet.v1.CpuMetrics
-	(*MemoryMetrics)(nil),                  // 7: forgenet.v1.MemoryMetrics
-	(*NetworkMetrics)(nil),                 // 8: forgenet.v1.NetworkMetrics
-	(*DiskIoMetrics)(nil),                  // 9: forgenet.v1.DiskIoMetrics
-	(*StorageMetrics)(nil),                 // 10: forgenet.v1.StorageMetrics
-	(*ContainerMetrics)(nil),               // 11: forgenet.v1.ContainerMetrics
-	(*SystemMetrics)(nil),                  // 12: forgenet.v1.SystemMetrics
-	(*GetContainerMetricsRequest)(nil),     // 13: forgenet.v1.GetContainerMetricsRequest
-	(*GetContainerMetricsResponse)(nil),    // 14: forgenet.v1.GetContainerMetricsResponse
-	(*StreamContainerMetricsRequest)(nil),  // 15: forgenet.v1.StreamContainerMetricsRequest
-	(*StreamContainerMetricsResponse)(nil), // 16: forgenet.v1.StreamContainerMetricsResponse
-	(*QueryContainerMetricsRequest)(nil),   // 17: forgenet.v1.QueryContainerMetricsRequest
-	(*QueryContainerMetricsResponse)(nil),  // 18: forgenet.v1.QueryContainerMetricsResponse
-	(*GetSystemMetricsRequest)(nil),        // 19: forgenet.v1.GetSystemMetricsRequest
-	(*GetSystemMetricsResponse)(nil),       // 20: forgenet.v1.GetSystemMetricsResponse
-	(*StreamSystemMetricsRequest)(nil),     // 21: forgenet.v1.StreamSystemMetricsRequest
-	(*StreamSystemMetricsResponse)(nil),    // 22: forgenet.v1.StreamSystemMetricsResponse
-	(*QuerySystemMetricsRequest)(nil),      // 23: forgenet.v1.QuerySystemMetricsRequest
-	(*QuerySystemMetricsResponse)(nil),     // 24: forgenet.v1.QuerySystemMetricsResponse
-	(*timestamppb.Timestamp)(nil),          // 25: google.protobuf.Timestamp
+	(MetricUnit)(0),                           // 0: forgenet.v1.MetricUnit
+	(MetricName)(0),                           // 1: forgenet.v1.MetricName
+	(*MetricKey)(nil),                         // 2: forgenet.v1.MetricKey
+	(*TimeRange)(nil),                         // 3: forgenet.v1.TimeRange
+	(*MetricSample)(nil),                      // 4: forgenet.v1.MetricSample
+	(*MetricSeries)(nil),                      // 5: forgenet.v1.MetricSeries
+	(*CpuMetrics)(nil),                        // 6: forgenet.v1.CpuMetrics
+	(*MemoryMetrics)(nil),                     // 7: forgenet.v1.MemoryMetrics
+	(*NetworkMetrics)(nil),                    // 8: forgenet.v1.NetworkMetrics
+	(*DiskIoMetrics)(nil),                     // 9: forgenet.v1.DiskIoMetrics
+	(*StorageMetrics)(nil),                    // 10: forgenet.v1.StorageMetrics
+	(*ContainerMetrics)(nil),                  // 11: forgenet.v1.ContainerMetrics
+	(*SystemMetrics)(nil),                     // 12: forgenet.v1.SystemMetrics
+	(*GetContainerMetricsRequest)(nil),        // 13: forgenet.v1.GetContainerMetricsRequest
+	(*GetContainerMetricsResponse)(nil),       // 14: forgenet.v1.GetContainerMetricsResponse
+	(*StreamContainerMetricsRequest)(nil),     // 15: forgenet.v1.StreamContainerMetricsRequest
+	(*StreamContainerMetricsResponse)(nil),    // 16: forgenet.v1.StreamContainerMetricsResponse
+	(*StreamAllContainerMetricsResponse)(nil), // 17: forgenet.v1.StreamAllContainerMetricsResponse
+	(*QueryContainerMetricsRequest)(nil),      // 18: forgenet.v1.QueryContainerMetricsRequest
+	(*QueryContainerMetricsResponse)(nil),     // 19: forgenet.v1.QueryContainerMetricsResponse
+	(*GetSystemMetricsRequest)(nil),           // 20: forgenet.v1.GetSystemMetricsRequest
+	(*GetSystemMetricsResponse)(nil),          // 21: forgenet.v1.GetSystemMetricsResponse
+	(*StreamSystemMetricsRequest)(nil),        // 22: forgenet.v1.StreamSystemMetricsRequest
+	(*StreamSystemMetricsResponse)(nil),       // 23: forgenet.v1.StreamSystemMetricsResponse
+	(*QuerySystemMetricsRequest)(nil),         // 24: forgenet.v1.QuerySystemMetricsRequest
+	(*QuerySystemMetricsResponse)(nil),        // 25: forgenet.v1.QuerySystemMetricsResponse
+	(*timestamppb.Timestamp)(nil),             // 26: google.protobuf.Timestamp
 }
 var file_forgenet_v1_metrics_proto_depIdxs = []int32{
 	1,  // 0: forgenet.v1.MetricKey.known:type_name -> forgenet.v1.MetricName
-	25, // 1: forgenet.v1.TimeRange.start_time:type_name -> google.protobuf.Timestamp
-	25, // 2: forgenet.v1.TimeRange.end_time:type_name -> google.protobuf.Timestamp
-	25, // 3: forgenet.v1.MetricSample.timestamp:type_name -> google.protobuf.Timestamp
+	26, // 1: forgenet.v1.TimeRange.start_time:type_name -> google.protobuf.Timestamp
+	26, // 2: forgenet.v1.TimeRange.end_time:type_name -> google.protobuf.Timestamp
+	26, // 3: forgenet.v1.MetricSample.timestamp:type_name -> google.protobuf.Timestamp
 	2,  // 4: forgenet.v1.MetricSeries.key:type_name -> forgenet.v1.MetricKey
 	0,  // 5: forgenet.v1.MetricSeries.unit:type_name -> forgenet.v1.MetricUnit
 	4,  // 6: forgenet.v1.MetricSeries.samples:type_name -> forgenet.v1.MetricSample
-	25, // 7: forgenet.v1.ContainerMetrics.collected_at:type_name -> google.protobuf.Timestamp
+	26, // 7: forgenet.v1.ContainerMetrics.collected_at:type_name -> google.protobuf.Timestamp
 	6,  // 8: forgenet.v1.ContainerMetrics.cpu:type_name -> forgenet.v1.CpuMetrics
 	7,  // 9: forgenet.v1.ContainerMetrics.memory:type_name -> forgenet.v1.MemoryMetrics
 	8,  // 10: forgenet.v1.ContainerMetrics.network:type_name -> forgenet.v1.NetworkMetrics
 	9,  // 11: forgenet.v1.ContainerMetrics.disk_io:type_name -> forgenet.v1.DiskIoMetrics
-	25, // 12: forgenet.v1.SystemMetrics.collected_at:type_name -> google.protobuf.Timestamp
+	26, // 12: forgenet.v1.SystemMetrics.collected_at:type_name -> google.protobuf.Timestamp
 	6,  // 13: forgenet.v1.SystemMetrics.cpu:type_name -> forgenet.v1.CpuMetrics
 	7,  // 14: forgenet.v1.SystemMetrics.memory:type_name -> forgenet.v1.MemoryMetrics
 	10, // 15: forgenet.v1.SystemMetrics.storage:type_name -> forgenet.v1.StorageMetrics
@@ -1806,31 +1870,33 @@ var file_forgenet_v1_metrics_proto_depIdxs = []int32{
 	9,  // 17: forgenet.v1.SystemMetrics.disk_io:type_name -> forgenet.v1.DiskIoMetrics
 	11, // 18: forgenet.v1.GetContainerMetricsResponse.metrics:type_name -> forgenet.v1.ContainerMetrics
 	11, // 19: forgenet.v1.StreamContainerMetricsResponse.metrics:type_name -> forgenet.v1.ContainerMetrics
-	3,  // 20: forgenet.v1.QueryContainerMetricsRequest.range:type_name -> forgenet.v1.TimeRange
-	2,  // 21: forgenet.v1.QueryContainerMetricsRequest.keys:type_name -> forgenet.v1.MetricKey
-	5,  // 22: forgenet.v1.QueryContainerMetricsResponse.series:type_name -> forgenet.v1.MetricSeries
-	12, // 23: forgenet.v1.GetSystemMetricsResponse.metrics:type_name -> forgenet.v1.SystemMetrics
-	12, // 24: forgenet.v1.StreamSystemMetricsResponse.metrics:type_name -> forgenet.v1.SystemMetrics
-	3,  // 25: forgenet.v1.QuerySystemMetricsRequest.range:type_name -> forgenet.v1.TimeRange
-	2,  // 26: forgenet.v1.QuerySystemMetricsRequest.keys:type_name -> forgenet.v1.MetricKey
-	5,  // 27: forgenet.v1.QuerySystemMetricsResponse.series:type_name -> forgenet.v1.MetricSeries
-	13, // 28: forgenet.v1.MetricsService.GetContainerMetrics:input_type -> forgenet.v1.GetContainerMetricsRequest
-	15, // 29: forgenet.v1.MetricsService.StreamContainerMetrics:input_type -> forgenet.v1.StreamContainerMetricsRequest
-	17, // 30: forgenet.v1.MetricsService.QueryContainerMetrics:input_type -> forgenet.v1.QueryContainerMetricsRequest
-	19, // 31: forgenet.v1.MetricsService.GetSystemMetrics:input_type -> forgenet.v1.GetSystemMetricsRequest
-	21, // 32: forgenet.v1.MetricsService.StreamSystemMetrics:input_type -> forgenet.v1.StreamSystemMetricsRequest
-	23, // 33: forgenet.v1.MetricsService.QuerySystemMetrics:input_type -> forgenet.v1.QuerySystemMetricsRequest
-	14, // 34: forgenet.v1.MetricsService.GetContainerMetrics:output_type -> forgenet.v1.GetContainerMetricsResponse
-	16, // 35: forgenet.v1.MetricsService.StreamContainerMetrics:output_type -> forgenet.v1.StreamContainerMetricsResponse
-	18, // 36: forgenet.v1.MetricsService.QueryContainerMetrics:output_type -> forgenet.v1.QueryContainerMetricsResponse
-	20, // 37: forgenet.v1.MetricsService.GetSystemMetrics:output_type -> forgenet.v1.GetSystemMetricsResponse
-	22, // 38: forgenet.v1.MetricsService.StreamSystemMetrics:output_type -> forgenet.v1.StreamSystemMetricsResponse
-	24, // 39: forgenet.v1.MetricsService.QuerySystemMetrics:output_type -> forgenet.v1.QuerySystemMetricsResponse
-	34, // [34:40] is the sub-list for method output_type
-	28, // [28:34] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	26, // 20: forgenet.v1.StreamAllContainerMetricsResponse.collected_at:type_name -> google.protobuf.Timestamp
+	11, // 21: forgenet.v1.StreamAllContainerMetricsResponse.containers:type_name -> forgenet.v1.ContainerMetrics
+	3,  // 22: forgenet.v1.QueryContainerMetricsRequest.range:type_name -> forgenet.v1.TimeRange
+	2,  // 23: forgenet.v1.QueryContainerMetricsRequest.keys:type_name -> forgenet.v1.MetricKey
+	5,  // 24: forgenet.v1.QueryContainerMetricsResponse.series:type_name -> forgenet.v1.MetricSeries
+	12, // 25: forgenet.v1.GetSystemMetricsResponse.metrics:type_name -> forgenet.v1.SystemMetrics
+	12, // 26: forgenet.v1.StreamSystemMetricsResponse.metrics:type_name -> forgenet.v1.SystemMetrics
+	3,  // 27: forgenet.v1.QuerySystemMetricsRequest.range:type_name -> forgenet.v1.TimeRange
+	2,  // 28: forgenet.v1.QuerySystemMetricsRequest.keys:type_name -> forgenet.v1.MetricKey
+	5,  // 29: forgenet.v1.QuerySystemMetricsResponse.series:type_name -> forgenet.v1.MetricSeries
+	13, // 30: forgenet.v1.MetricsService.GetContainerMetrics:input_type -> forgenet.v1.GetContainerMetricsRequest
+	15, // 31: forgenet.v1.MetricsService.StreamContainerMetrics:input_type -> forgenet.v1.StreamContainerMetricsRequest
+	18, // 32: forgenet.v1.MetricsService.QueryContainerMetrics:input_type -> forgenet.v1.QueryContainerMetricsRequest
+	20, // 33: forgenet.v1.MetricsService.GetSystemMetrics:input_type -> forgenet.v1.GetSystemMetricsRequest
+	22, // 34: forgenet.v1.MetricsService.StreamSystemMetrics:input_type -> forgenet.v1.StreamSystemMetricsRequest
+	24, // 35: forgenet.v1.MetricsService.QuerySystemMetrics:input_type -> forgenet.v1.QuerySystemMetricsRequest
+	14, // 36: forgenet.v1.MetricsService.GetContainerMetrics:output_type -> forgenet.v1.GetContainerMetricsResponse
+	16, // 37: forgenet.v1.MetricsService.StreamContainerMetrics:output_type -> forgenet.v1.StreamContainerMetricsResponse
+	19, // 38: forgenet.v1.MetricsService.QueryContainerMetrics:output_type -> forgenet.v1.QueryContainerMetricsResponse
+	21, // 39: forgenet.v1.MetricsService.GetSystemMetrics:output_type -> forgenet.v1.GetSystemMetricsResponse
+	23, // 40: forgenet.v1.MetricsService.StreamSystemMetrics:output_type -> forgenet.v1.StreamSystemMetricsResponse
+	25, // 41: forgenet.v1.MetricsService.QuerySystemMetrics:output_type -> forgenet.v1.QuerySystemMetricsResponse
+	36, // [36:42] is the sub-list for method output_type
+	30, // [30:36] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_forgenet_v1_metrics_proto_init() }
@@ -1848,7 +1914,7 @@ func file_forgenet_v1_metrics_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forgenet_v1_metrics_proto_rawDesc), len(file_forgenet_v1_metrics_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   23,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

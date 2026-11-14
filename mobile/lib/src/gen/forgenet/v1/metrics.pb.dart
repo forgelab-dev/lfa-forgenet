@@ -1422,6 +1422,86 @@ class StreamContainerMetricsResponse extends $pb.GeneratedMessage {
   ContainerMetrics ensureMetrics() => $_ensure(0);
 }
 
+/// StreamAllContainerMetricsResponse est un relevé de tous les conteneurs en
+/// cours d'exécution, pris au même passage. C'est le message de la route
+/// WebSocket /ws/v1/metrics/containers (ADR-0010) : un client suit tous les
+/// conteneurs sur une seule liaison. Un conteneur absent du relevé n'est plus en
+/// cours d'exécution.
+class StreamAllContainerMetricsResponse extends $pb.GeneratedMessage {
+  factory StreamAllContainerMetricsResponse({
+    $1.Timestamp? collectedAt,
+    $core.Iterable<ContainerMetrics>? containers,
+  }) {
+    final result = StreamAllContainerMetricsResponse._();
+    if (collectedAt != null) result.collectedAt = collectedAt;
+    if (containers != null) result.containers.addAll(containers);
+    return result;
+  }
+
+  StreamAllContainerMetricsResponse._();
+
+  factory StreamAllContainerMetricsResponse.fromBuffer(
+          $core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      StreamAllContainerMetricsResponse()..mergeFromBuffer(data, registry);
+  factory StreamAllContainerMetricsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      StreamAllContainerMetricsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'StreamAllContainerMetricsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: StreamAllContainerMetricsResponse.$_createMessage)
+    ..aOM<$1.Timestamp>(1, _omitFieldNames ? '' : 'collectedAt',
+        subBuilder: $1.Timestamp.$_createMessage)
+    ..pPM<ContainerMetrics>(2, _omitFieldNames ? '' : 'containers',
+        subBuilder: ContainerMetrics.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  StreamAllContainerMetricsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  StreamAllContainerMetricsResponse copyWith(
+          void Function(StreamAllContainerMetricsResponse) updates) =>
+      super.copyWith((message) =>
+              updates(message as StreamAllContainerMetricsResponse))
+          as StreamAllContainerMetricsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use StreamAllContainerMetricsResponse() / StreamAllContainerMetricsResponse.new instead')
+  static StreamAllContainerMetricsResponse create() =>
+      StreamAllContainerMetricsResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      StreamAllContainerMetricsResponse._();
+  @$core.override
+  StreamAllContainerMetricsResponse createEmptyInstance() =>
+      StreamAllContainerMetricsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static StreamAllContainerMetricsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<StreamAllContainerMetricsResponse>(
+          StreamAllContainerMetricsResponse.$_createMessage);
+  static StreamAllContainerMetricsResponse? _defaultInstance;
+
+  /// Fin du passage qui a pris ces mesures.
+  @$pb.TagNumber(1)
+  $1.Timestamp get collectedAt => $_getN(0);
+  @$pb.TagNumber(1)
+  set collectedAt($1.Timestamp value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCollectedAt() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCollectedAt() => $_clearField(1);
+  @$pb.TagNumber(1)
+  $1.Timestamp ensureCollectedAt() => $_ensure(0);
+
+  @$pb.TagNumber(2)
+  $pb.PbList<ContainerMetrics> get containers => $_getList(1);
+}
+
 class QueryContainerMetricsRequest extends $pb.GeneratedMessage {
   factory QueryContainerMetricsRequest({
     $core.String? containerId,
