@@ -82,7 +82,7 @@ Sur un serveur Debian ou Ubuntu, en root :
 
 <!-- x-release-please-start-version -->
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/v0.2.0/deploy/install.sh
+curl -fsSLO https://raw.githubusercontent.com/forgelab-dev/lfa-forgenet/v0.3.0/deploy/install.sh
 less install.sh   # relisez un script avant de le lancer en root
 sudo bash install.sh --domain forgenet.exemple.org --email vous@exemple.org
 ```
