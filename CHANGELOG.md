@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.1.0...v0.1.1) (2026-11-14)
+
+
+### Corrections
+
+* **web:** un nom d'image long n'élargit plus le tableau ([b5a948b](https://github.com/forgelab-dev/lfa-forgenet/commit/b5a948b6bdb5330089053f92f6fd3d7fde4793b5))
+
 ## 0.1.0 (2026-11-14)
 
 Première version publiée de ForgeNet, en **alpha** : à essayer sur un serveur de test, pas encore en production. L'installation, ce que fait cette version et ce qui manque sont décrits dans le [README](https://github.com/forgelab-dev/lfa-forgenet/blob/v0.1.0/README.md) ; l'état détaillé dans la [matrice fonctionnelle](https://github.com/forgelab-dev/lfa-forgenet/blob/v0.1.0/docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md).
