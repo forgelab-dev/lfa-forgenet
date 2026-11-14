@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.2.0...v0.3.0) (2026-11-14)
+
+
+### Fonctionnalités
+
+* **deploy:** sauvegarder les 0.1.x avant réinstallation, et --restore ([2da6ee4](https://github.com/forgelab-dev/lfa-forgenet/commit/2da6ee4bbef59a0bed34e619de4ee550dbd74eeb))
+
 ## [0.2.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.1.1...v0.2.0) (2026-11-14)
 
 
