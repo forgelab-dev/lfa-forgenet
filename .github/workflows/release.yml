@@ -44,7 +44,8 @@ jobs:
     if: needs.release-please.outputs.created == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # Écriture : joindre la fiche de release (ADR-0011).
+      contents: write
       packages: write
       # Signature cosign sans clé, par le jeton OIDC de GitHub.
       id-token: write
@@ -122,3 +123,19 @@ jobs:
             --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@refs/heads/main" \
             > /dev/null
           echo "Signature vérifiée : ${IMAGE}@${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
+
+      # La fiche désigne l'image par son empreinte : une installation qui se
+      # met à jour tire exactement l'image construite et signée ici (ADR-0011).
+      - name: Joindre la fiche de release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag }}
+          VERSION: ${{ needs.release-please.outputs.version }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "empreinte invalide : $DIGEST"; exit 1; }
+          jq -n --arg v "$VERSION" --arg i "$IMAGE" --arg d "$DIGEST" \
+            --arg u "https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}" \
+            '{schema: 1, version: $v, image: $i, digest: $d, notes_url: $u}' > forgenet-release.json
+          cat forgenet-release.json
+          gh release upload "$TAG" forgenet-release.json --clobber --repo "$GITHUB_REPOSITORY"
