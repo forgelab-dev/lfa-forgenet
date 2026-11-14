@@ -184,6 +184,7 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 			return metrics.NewHostCollector(metrics.GopsutilProbe{}, engine, cfg.Metrics.StoragePath)
 		},
 		NewContainer: func(id string) ws.ContainerCollector { return metrics.NewContainerCollector(engine, id) },
+		Sweeps:       recorder,
 		Logger:       logger,
 	})
 	metricsStreams.RegisterRoutes(httpServer.Mux())

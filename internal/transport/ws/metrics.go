@@ -19,6 +19,7 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/metrics"
@@ -80,6 +81,13 @@ type ContainerCollector interface {
 	Collect(ctx context.Context) (metrics.Container, error)
 }
 
+// SweepSource donne les passages du relevé de fond sur tous les conteneurs
+// (metrics.Recorder le satisfait).
+type SweepSource interface {
+	LatestSweep() metrics.Sweep
+	Subscribe() (signals <-chan time.Time, cancel func())
+}
+
 // Config réunit les dépendances du gestionnaire.
 type Config struct {
 	Auth TokenValidator
@@ -87,6 +95,9 @@ type Config struct {
 	// son relevé processeur précédent.
 	NewHost      func() HostCollector
 	NewContainer func(id string) ContainerCollector
+	// Sweeps sert /ws/v1/metrics/containers (tous les conteneurs) ; nil :
+	// route absente.
+	Sweeps SweepSource
 	// OriginPatterns liste les origines autorisées en plus de la même
 	// origine (motifs de github.com/coder/websocket). Les clients hors
 	// navigateur n'envoient pas d'Origin et ne sont pas concernés.
@@ -98,7 +109,8 @@ type Config struct {
 	Logger       zerolog.Logger
 }
 
-// MetricsHandler sert /ws/v1/metrics/system et /ws/v1/metrics/containers/{id}.
+// MetricsHandler sert /ws/v1/metrics/system, /ws/v1/metrics/containers (tous
+// les conteneurs, ADR-0010) et /ws/v1/metrics/containers/{id}.
 type MetricsHandler struct {
 	cfg    Config
 	slots  chan struct{}
@@ -133,6 +145,9 @@ func NewMetricsHandler(cfg Config) *MetricsHandler {
 func (h *MetricsHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /ws/v1/metrics/system", h.serveSystem)
 	mux.HandleFunc("GET /ws/v1/metrics/containers/{id}", h.serveContainer)
+	if h.cfg.Sweeps != nil {
+		mux.HandleFunc("GET /ws/v1/metrics/containers", h.serveAllContainers)
+	}
 }
 
 // Close ferme les flux en cours (code 1001, « arrêt du serveur ») et attend
@@ -144,7 +159,7 @@ func (h *MetricsHandler) Close() {
 
 func (h *MetricsHandler) serveSystem(w http.ResponseWriter, r *http.Request) {
 	collector := h.cfg.NewHost()
-	h.serve(w, r, DefaultSystemInterval, func(ctx context.Context) (proto.Message, error) {
+	h.serve(w, r, everyInterval(DefaultSystemInterval), func(ctx context.Context) (proto.Message, error) {
 		m, err := collector.Collect(ctx)
 		if err != nil {
 			return nil, err
@@ -155,7 +170,7 @@ func (h *MetricsHandler) serveSystem(w http.ResponseWriter, r *http.Request) {
 
 func (h *MetricsHandler) serveContainer(w http.ResponseWriter, r *http.Request) {
 	collector := h.cfg.NewContainer(r.PathValue("id"))
-	h.serve(w, r, DefaultContainerInterval, func(ctx context.Context) (proto.Message, error) {
+	h.serve(w, r, everyInterval(DefaultContainerInterval), func(ctx context.Context) (proto.Message, error) {
 		m, err := collector.Collect(ctx)
 		if err != nil {
 			return nil, err
@@ -164,12 +179,62 @@ func (h *MetricsHandler) serveContainer(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+// serveAllContainers suit tous les conteneurs sur une seule liaison : chaque
+// passage du relevé de fond (toutes les 10 s) part en un message. Le démon
+// Docker n'est pas sollicité de plus, quel que soit le nombre d'abonnés.
+func (h *MetricsHandler) serveAllContainers(w http.ResponseWriter, r *http.Request) {
+	signals, cancel := h.cfg.Sweeps.Subscribe()
+	defer cancel()
+	pace := func(r *http.Request) (<-chan time.Time, func(), error) {
+		if r.URL.Query().Has("interval") {
+			return nil, nil, errors.New("interval n'est pas réglable ici : tous les conteneurs sont relevés au rythme du serveur")
+		}
+		return signals, func() {}, nil
+	}
+	h.serve(w, r, pace, func(ctx context.Context) (proto.Message, error) {
+		// Juste après le démarrage du serveur, le premier passage n'a pas
+		// encore eu lieu : on l'attend plutôt que d'annoncer zéro conteneur.
+		if h.cfg.Sweeps.LatestSweep().At.IsZero() {
+			select {
+			case <-signals:
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
+		sweep := h.cfg.Sweeps.LatestSweep()
+		msg := &forgenetv1.StreamAllContainerMetricsResponse{
+			CollectedAt: timestamppb.New(sweep.At),
+			Containers:  make([]*forgenetv1.ContainerMetrics, len(sweep.Containers)),
+		}
+		for i, c := range sweep.Containers {
+			msg.Containers[i] = metricspb.ToContainerMetrics(c)
+		}
+		return msg, nil
+	})
+}
+
 type sample func(ctx context.Context) (proto.Message, error)
+
+// pacer lit les paramètres de la requête et renvoie le signal de chaque
+// nouvelle mesure, avec sa fonction d'arrêt.
+type pacer func(r *http.Request) (tick <-chan time.Time, stop func(), err error)
+
+// everyInterval mesure à intervalle fixe, réglable par le paramètre interval.
+func everyInterval(def time.Duration) pacer {
+	return func(r *http.Request) (<-chan time.Time, func(), error) {
+		interval, err := parseInterval(r.URL.Query().Get("interval"), def)
+		if err != nil {
+			return nil, nil, err
+		}
+		ticker := time.NewTicker(interval)
+		return ticker.C, ticker.Stop, nil
+	}
+}
 
 // serve fait tous les refus en HTTP, avant la poignée de main : un client
 // reçoit 400, 401, 403, 404 ou 503 plutôt qu'une connexion aussitôt fermée.
 // La première mesure est prise avant, pour qu'un conteneur inconnu donne 404.
-func (h *MetricsHandler) serve(w http.ResponseWriter, r *http.Request, defaultInterval time.Duration, next sample) {
+func (h *MetricsHandler) serve(w http.ResponseWriter, r *http.Request, pace pacer, next sample) {
 	h.wg.Add(1)
 	defer h.wg.Done()
 
@@ -177,11 +242,12 @@ func (h *MetricsHandler) serve(w http.ResponseWriter, r *http.Request, defaultIn
 	if !h.authorize(r.Context(), w, token) {
 		return
 	}
-	interval, err := parseInterval(r.URL.Query().Get("interval"), defaultInterval)
+	tick, stop, err := pace(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	defer stop()
 
 	select {
 	case h.slots <- struct{}{}:
@@ -213,10 +279,10 @@ func (h *MetricsHandler) serve(w http.ResponseWriter, r *http.Request, defaultIn
 		h.logger.Debug().Err(err).Msg("poignée de main WebSocket refusée")
 		return
 	}
-	h.stream(conn, token, interval, first, next)
+	h.stream(conn, token, tick, first, next)
 }
 
-func (h *MetricsHandler) stream(conn *websocket.Conn, token string, interval time.Duration, first proto.Message, next sample) {
+func (h *MetricsHandler) stream(conn *websocket.Conn, token string, tick <-chan time.Time, first proto.Message, next sample) {
 	defer func() { _ = conn.CloseNow() }()
 
 	// CloseRead lit et ignore les messages du client : ctx est annulé quand
@@ -228,8 +294,6 @@ func (h *MetricsHandler) stream(conn *websocket.Conn, token string, interval tim
 	if err := send(ctx, conn, first); err != nil {
 		return
 	}
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
 	lastCheck := time.Now()
 
 	for {
@@ -239,7 +303,7 @@ func (h *MetricsHandler) stream(conn *websocket.Conn, token string, interval tim
 		case <-h.ctx.Done():
 			_ = conn.Close(websocket.StatusGoingAway, "arrêt du serveur")
 			return
-		case <-ticker.C:
+		case <-tick:
 		}
 
 		if time.Since(lastCheck) >= h.cfg.RecheckEvery {
@@ -313,6 +377,8 @@ func (h *MetricsHandler) stillAuthorized(ctx context.Context, token string) bool
 
 func (h *MetricsHandler) refuse(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, context.Canceled):
+		// Le client est parti avant la première mesure : personne à prévenir.
 	case errors.Is(err, orchestrator.ErrNotFound):
 		http.Error(w, "conteneur introuvable", http.StatusNotFound)
 	case errors.Is(err, orchestrator.ErrInvalidArgument):
