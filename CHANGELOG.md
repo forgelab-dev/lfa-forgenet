@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.4.1...v0.5.0) (2026-11-16)
+
+
+### Fonctionnalités
+
+* **deploy:** commande forgenet d'administration sur le serveur ([256f014](https://github.com/forgelab-dev/lfa-forgenet/commit/256f014d08fb8c828c11285aa92430fa0fdbe034)), closes [#71](https://github.com/forgelab-dev/lfa-forgenet/issues/71)
+
+
+### Corrections
+
+* **version:** afficher la vraie date de compilation ([0ff83e0](https://github.com/forgelab-dev/lfa-forgenet/commit/0ff83e09c2063e2cf0b818983c517d0e2c45c859)), closes [#71](https://github.com/forgelab-dev/lfa-forgenet/issues/71)
+
 ## [0.4.1](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.4.0...v0.4.1) (2026-11-16)
 
 
