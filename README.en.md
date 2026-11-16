@@ -103,7 +103,7 @@ It installs Docker if missing (official repository, verified key), writes `/opt/
 
 **Restoring a backup** — `sudo bash install.sh --restore 20261114-150834-0.1.1` (the name of a folder in `/opt/forgenet/sauvegardes/`) puts back the database, `.env` and the install files, and therefore the version of that time, then restarts the server. Deployed sites keep running.
 
-**Server reboot** — ForgeNet and Caddy come back on their own, but applications whose `docker-compose.yml` says nothing about it do not yet ([#70](https://github.com/forgelab-dev/lfa-forgenet/issues/70)): until then, give their services `restart: unless-stopped`.
+**Server reboot** — ForgeNet and Caddy come back on their own. Since the release after 0.4.0, so do applications: every service that does not set `restart:` is deployed with `restart: unless-stopped` ([#70](https://github.com/forgelab-dev/lfa-forgenet/issues/70)). A value written in the file is kept (`no` included), a one-off task that another service waits for with `service_completed_successfully` is never restarted, and a service stopped from the dashboard stays stopped. The stored and displayed file remains yours. An application deployed before that release gets the policy on its next deployment: after updating, redeploy it once from the form with the same file. The design is in [ADR-0012](docs/decisions/0012-relance-des-applications-apres-un-redemarrage.md) (in French).
 
 **Requirements** — Debian or Ubuntu, x86_64 or ARM64, 2 GB RAM, ports 80 and 443 free.
 
