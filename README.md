@@ -96,15 +96,31 @@ sudo bash install.sh --domain forgenet.exemple.org --email vous@exemple.org
 
 Le script vient du tag de la version : il installe l'image de cette même version, `ghcr.io/forgelab-dev/forgenet-server`, signée par cosign. Sa vérification est décrite dans [`docs/RELEASING.md`](docs/RELEASING.md#vérifier-une-image-publiée).
 
-Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écrit `/opt/forgenet`, démarre le serveur et Caddy, puis crée le premier administrateur. Lancé sans terminal (cloud-init par exemple), il tire son mot de passe au hasard et le range dans `/opt/forgenet/admin-password`, lisible par root seul : gardez ce fichier, le changement de mot de passe n'existe pas encore ([#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)). Le script se relance sans risque, par exemple pour ajouter un domaine ou changer de version (`bash install.sh --help`).
+Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écrit `/opt/forgenet`, démarre le serveur et Caddy, puis crée le premier administrateur. Lancé sans terminal (cloud-init par exemple), il tire son mot de passe au hasard et le range dans `/opt/forgenet/admin-password`, lisible par root seul : gardez ce fichier, le changement de mot de passe n'existe pas encore ([#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)). Le script se relance sans risque, par exemple pour ajouter un domaine ou changer de version (`bash install.sh --help`). Il installe aussi la commande d'administration `forgenet`, décrite plus bas.
 
 **Sans domaine**, le dashboard n'écoute que sur le serveur : ouvrez-le par un tunnel SSH, `ssh -N -L 8080:127.0.0.1:8080 utilisateur@serveur`, puis `http://localhost:8080`. Les raisons de ce choix sont dans l'[ADR-0009](docs/decisions/0009-service-du-dashboard-en-production.md).
 
-**Mise à jour** — une nouvelle version est annoncée aux administrateurs en haut du dashboard, et « Mettre à jour » l'installe. En terminal, `sudo bash install.sh --update` fait la même chose : sauvegarde de la base et de la configuration dans `/opt/forgenet/sauvegardes/`, bascule sur l'image signée de la release, contrôle de santé, et retour automatique à la version précédente en cas d'échec. Une version plus ancienne que celle en place est refusée. Le fonctionnement est décrit dans l'[ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md). Depuis une 0.1.x, qui ne sait pas encore se mettre à jour elle-même, le script fait la même sauvegarde puis réinstalle, sans retour automatique : en cas de souci, revenez à la sauvegarde.
+**Mise à jour** — une nouvelle version est annoncée aux administrateurs en haut du dashboard, et « Mettre à jour » l'installe. En terminal, `sudo forgenet update` fait la même chose : sauvegarde de la base et de la configuration dans `/opt/forgenet/sauvegardes/`, bascule sur l'image signée de la release, contrôle de santé, et retour automatique à la version précédente en cas d'échec. Une version plus ancienne que celle en place est refusée. Le fonctionnement est décrit dans l'[ADR-0011](docs/decisions/0011-mise-a-jour-depuis-le-dashboard.md). Depuis une 0.1.x, qui ne sait pas encore se mettre à jour elle-même, le script fait la même sauvegarde puis réinstalle, sans retour automatique : en cas de souci, revenez à la sauvegarde.
 
-**Revenir à une sauvegarde** — `sudo bash install.sh --restore 20261114-150834-0.1.1` (le nom d'un dossier de `/opt/forgenet/sauvegardes/`) remet la base, `.env` et les fichiers d'installation, donc la version d'alors, puis redémarre le serveur. Les sites déployés ne s'arrêtent pas.
+**Revenir à une sauvegarde** — `sudo forgenet backups` liste les sauvegardes, avec leur date et leur version, et `sudo forgenet restore 20261114-150834-0.1.1` remet la base, `.env` et les fichiers d'installation, donc la version d'alors, puis redémarre le serveur. Les sites déployés ne s'arrêtent pas.
 
 **Redémarrage du serveur** — ForgeNet et Caddy repartent seuls. Depuis la 0.4.1, les applications aussi : chaque service qui ne précise pas `restart:` est déployé avec `restart: unless-stopped` ([#70](https://github.com/forgelab-dev/lfa-forgenet/issues/70)). Une valeur écrite dans le fichier est respectée (`no` compris), une tâche ponctuelle qu'un autre service attend par `service_completed_successfully` n'est jamais relancée, et un service arrêté depuis le dashboard reste arrêté. Le fichier enregistré et affiché reste le vôtre. Une application déployée avant la 0.4.1 reçoit la politique à son prochain déploiement : après la mise à jour, redéployez-la une fois depuis le formulaire avec le même fichier. Le fonctionnement est décrit dans l'[ADR-0012](docs/decisions/0012-relance-des-applications-apres-un-redemarrage.md).
+
+**Administration en terminal** — depuis la 0.5.0, `install.sh` installe la commande `forgenet` dans `/usr/local/bin` ([#71](https://github.com/forgelab-dev/lfa-forgenet/issues/71)) : plus besoin de `docker exec` ni de `docker compose -f /opt/forgenet/…`.
+
+| Commande | Effet |
+| --- | --- |
+| `forgenet version` | version du serveur (révision, date de compilation) et de la commande |
+| `forgenet status` | état du serveur et de Caddy, santé, dernière mise à jour, applications ; code de sortie 1 si le serveur n'est pas sain |
+| `forgenet logs [-f] [-n N] [caddy\|maj]` | journaux du serveur, de Caddy ou de la dernière mise à jour |
+| `forgenet update check` | dernière version publiée, comparée à celle en place |
+| `sudo forgenet update [--version X.Y.Z]` | mise à jour, avec sauvegarde et retour arrière automatique |
+| `sudo forgenet backups` · `sudo forgenet restore SAUVEGARDE` | lister les sauvegardes, revenir à l'une d'elles |
+| `forgenet user create --username NOM --email ADRESSE` | créer un compte (mot de passe demandé) |
+
+`forgenet help` donne le détail. Les commandes marquées `sudo` demandent root, les autres marchent aussi pour un membre du groupe `docker`. Une mise à jour faite depuis le dashboard ne touche pas à la commande : `forgenet version` le signale, et `sudo forgenet update` la remet à niveau. Sur une installation antérieure à la 0.5.0, lancez une fois le `install.sh` de la nouvelle version (`sudo bash install.sh`), qui l'ajoute. À ne pas confondre avec `forgenet-cli`, le client d'API à distance prévu pour les scripts et la CI. Le choix est expliqué dans l'[ADR-0013](docs/decisions/0013-commande-forgenet-sur-le-serveur.md).
+
+**Désinstaller** — `sudo docker compose --project-directory /opt/forgenet down` arrête le serveur et Caddy ; les applications déployées, chacune dans sa pile `forgenet-<projet>`, se suppriment avant depuis le dashboard. Retirez ensuite la commande et le dossier : `sudo rm /usr/local/bin/forgenet` et `sudo rm -r /opt/forgenet` (ses sauvegardes partent avec lui : copiez-les avant si besoin). La base et les certificats restent dans les volumes Docker `forgenet_forgenet-data`, `forgenet_caddy-data`, `forgenet_caddy-config` et `forgenet_caddy-admin`, jusqu'à leur suppression par `docker volume rm`.
 
 **Prérequis** — Debian ou Ubuntu, x86_64 ou ARM64, 2 Go de RAM, ports 80 et 443 libres.
 
@@ -116,7 +132,8 @@ git clone https://github.com/forgelab-dev/lfa-forgenet.git
 cd lfa-forgenet/deploy
 cp .env.example .env && chmod 600 .env   # puis remplissez-le
 docker compose up -d
-docker compose exec server forgenet-server user create --username admin --email vous@exemple.org
+sudo install -m 0755 forgenet /usr/local/bin/forgenet   # commande d'administration
+forgenet user create --username admin --email vous@exemple.org
 ```
 
 </details>
