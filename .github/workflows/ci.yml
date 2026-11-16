@@ -224,8 +224,12 @@ jobs:
         uses: actions/checkout@v4
 
       # shellcheck est fourni par l'image ubuntu-latest des runners.
-      - name: Lint install script
-        run: shellcheck deploy/install.sh
+      - name: Lint install script and admin command
+        run: shellcheck deploy/install.sh deploy/forgenet deploy/tests/forgenet_test.sh
+
+      # Doublures de docker et de id : aucun conteneur, aucun droit root.
+      - name: Test admin command
+        run: bash deploy/tests/forgenet_test.sh
 
       # Valeurs factices : on vérifie la syntaxe et l'interpolation, rien n'est lancé.
       - name: Validate compose file

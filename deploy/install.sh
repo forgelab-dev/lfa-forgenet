@@ -15,7 +15,9 @@
 #   2. installe Docker depuis le dépôt officiel s'il manque (clé vérifiée) ;
 #   3. écrit /opt/forgenet : docker-compose.yml, Caddyfile.base et .env (0600),
 #      avec une clé de session aléatoire et le groupe du socket Docker ;
-#   4. démarre le serveur et Caddy, puis crée le premier administrateur.
+#   4. démarre le serveur et Caddy, puis crée le premier administrateur ;
+#   5. installe la commande d'administration /usr/local/bin/forgenet et range
+#      une copie de ce script dans /opt/forgenet (forgenet update, restore).
 #
 # Il ne touche ni au pare-feu, ni à SSH, ni aux autres conteneurs.
 
@@ -110,7 +112,9 @@ if [ -n "$ACME_EMAIL" ] && ! [[ "$ACME_EMAIL" =~ $email_re ]]; then
 	die "adresse Let's Encrypt invalide : « $ACME_EMAIL »"
 fi
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || die "version invalide : « $VERSION » (exemple : 0.1.0)"
-[[ "$INSTALL_DIR" = /* ]] || die "--dir attend un chemin absolu"
+# Le dossier finit dans .env et dans la commande forgenet : chemin absolu,
+# caractères sûrs seulement.
+[[ "$INSTALL_DIR" =~ ^/[A-Za-z0-9._/-]+$ ]] || die "--dir attend un chemin absolu fait de lettres, chiffres, . _ - et / (reçu : « $INSTALL_DIR »)"
 if [ -n "$RESTORE" ] && [ "$UPDATE" -eq 1 ]; then
 	die "--restore et --update ne vont pas ensemble"
 fi
@@ -235,13 +239,25 @@ ensure_docker() {
 
 # --- 3. Fichiers ----------------------------------------------------------------
 
+# download copie un fichier du dossier deploy/ de la version $VERSION (ou de
+# --source) dans $2 ; il échoue sans arrêter le script.
+download() {
+	local name="$1" out="$2"
+	if [ -n "$SOURCE_DIR" ]; then
+		cp "$SOURCE_DIR/$name" "$out" 2>/dev/null
+	else
+		curl -fsSL "$REPO_RAW/v${VERSION}/deploy/$name" -o "$out"
+	fi
+}
+
 fetch_file() {
 	local name="$1" dest="$2" tmp
 	tmp="$(mktemp)"
-	if [ -n "$SOURCE_DIR" ]; then
-		cp "$SOURCE_DIR/$name" "$tmp" || die "$SOURCE_DIR/$name introuvable"
-	elif ! curl -fsSL "$REPO_RAW/v${VERSION}/deploy/$name" -o "$tmp"; then
+	if ! download "$name" "$tmp"; then
 		rm -f "$tmp"
+		if [ -n "$SOURCE_DIR" ]; then
+			die "$SOURCE_DIR/$name introuvable"
+		fi
 		die "téléchargement de $name impossible pour la version $VERSION (version publiée ?)"
 	fi
 	install -m 0644 "$tmp" "$dest"
@@ -430,8 +446,53 @@ summary() {
 		echo "    puis ouvrez http://localhost:8080"
 		echo "    Pour un domaine plus tard : sudo bash install.sh --domain forgenet.exemple.org"
 	fi
+	echo "    Administration : forgenet status, forgenet logs, sudo forgenet update (forgenet help)"
 	echo "    Fichiers : $INSTALL_DIR (gardez .env secret : il contient la clé de session)"
 	echo "    Pare-feu : seuls 22 (SSH), 80 et 443 ont besoin d'être ouverts."
+}
+
+# --- 5. Commande d'administration ------------------------------------------------
+
+readonly COMMAND_PATH=/usr/local/bin/forgenet
+
+# place_file écrit $1 à la place de $2 par un renommage : un script en cours
+# d'exécution (forgenet update lance la copie d'install.sh) garde l'ancien
+# fichier ouvert au lieu de lire un fichier réécrit sous lui.
+place_file() {
+	local src="$1" dest="$2" mode="$3" tmp
+	tmp="$(mktemp "$(dirname "$dest")/.forgenet.XXXXXX")"
+	cat "$src" >"$tmp"
+	chmod "$mode" "$tmp"
+	mv -f "$tmp" "$dest"
+}
+
+# install_command installe la commande forgenet de la version $VERSION et
+# range une copie d'install.sh dans le dossier d'installation, que
+# « forgenet update » et « forgenet restore » relancent (#71). Elle n'arrête
+# jamais le script : une version publiée avant la commande ne l'a pas, et
+# ForgeNet marche sans elle.
+install_command() {
+	local tmp_cmd tmp_installer
+	tmp_cmd="$(mktemp)"
+	tmp_installer="$(mktemp)"
+	# L'absence est un cas prévu : pas de message de curl.
+	if ! download forgenet "$tmp_cmd" 2>/dev/null || ! download install.sh "$tmp_installer" 2>/dev/null ||
+		! grep -q '^readonly DEFAULT_DIR=' "$tmp_cmd"; then
+		rm -f "$tmp_cmd" "$tmp_installer"
+		if [ -f "$COMMAND_PATH" ]; then
+			warn "la version $VERSION n'a pas de commande forgenet : celle en place est gardée"
+		else
+			warn "la version $VERSION n'a pas de commande forgenet : ForgeNet marche sans elle"
+		fi
+		return 0
+	fi
+	# Le dossier a été validé : ni « | » ni « & » ni « \ » à échapper pour sed.
+	sed -i "s|^readonly DEFAULT_DIR=.*|readonly DEFAULT_DIR=\"$INSTALL_DIR\"|" "$tmp_cmd"
+	install -d -m 0755 "$(dirname "$COMMAND_PATH")"
+	place_file "$tmp_cmd" "$COMMAND_PATH" 0755
+	place_file "$tmp_installer" "$INSTALL_DIR/install.sh" 0700
+	rm -f "$tmp_cmd" "$tmp_installer"
+	ok "commande $COMMAND_PATH (aide : forgenet help)"
 }
 
 # Première version dont le serveur sait se mettre à jour lui-même (ADR-0011).
@@ -505,8 +566,9 @@ run_update() {
 	local started
 	started="$(docker exec forgenet-server forgenet-server update start --to "$to")" || die "mise à jour refusée (message ci-dessus)"
 	printf '%s\n' "$started"
-	# Déjà à jour : rien n'a été lancé.
-	case "$started" in *"Mise à jour lancée"*) ;; *) exit 0 ;; esac
+	# Déjà à jour : rien n'a été lancé, mais la commande forgenet est remise
+	# au niveau de la version en place.
+	case "$started" in *"Mise à jour lancée"*) ;; *) refresh_command; exit 0 ;; esac
 	sleep 2
 	# Le conteneur reste après la fin : ses journaux se lisent jusqu'au bout.
 	docker logs -f forgenet-updater 2>&1 || true
@@ -514,11 +576,24 @@ run_update() {
 	state="$(docker exec forgenet-server cat /var/lib/forgenet/maj/etat.json 2>/dev/null || true)"
 	reason="$(printf '%s\n' "$state" | sed -n 's/^ *"raison": "\(.*\)",*$/\1/p')"
 	case "$state" in
-	*'"resultat": "reussie"'*) ok "mise à jour terminée : $(docker exec forgenet-server forgenet-server -version)" ;;
+	*'"resultat": "reussie"'*)
+		ok "mise à jour terminée : $(docker exec forgenet-server forgenet-server -version)"
+		refresh_command
+		;;
 	*'"resultat": "annulee"'*) die "mise à jour annulée, retour à $installed : ${reason:-raison inconnue}" ;;
 	*) die "mise à jour en échec : ${reason:-état illisible}" ;;
 	esac
 	exit 0
+}
+
+# refresh_command installe la commande forgenet de la version en place,
+# lue dans .env après la mise à jour.
+refresh_command() {
+	local installed
+	installed="$(get_env FORGENET_VERSION)"
+	[[ "$installed" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || return 0
+	VERSION="$installed"
+	install_command
 }
 
 # restore_backup remet une sauvegarde faite par ce script ou par le serveur
@@ -573,6 +648,7 @@ main() {
 	check_ports
 	write_files
 	start_stack
+	install_command
 	create_admin
 	check_dns
 	summary

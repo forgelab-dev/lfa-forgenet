@@ -1,0 +1,333 @@
+#!/usr/bin/env bash
+#
+# forgenet : administration de ForgeNet depuis le terminal du serveur (#71).
+#
+# Installée par install.sh dans /usr/local/bin, elle relaie vers le conteneur
+# du serveur ou vers la copie d'install.sh rangée dans le dossier
+# d'installation : plus besoin de « docker exec forgenet-server … » ni de
+# « docker compose -f /opt/forgenet/… ». Aide : forgenet help
+#
+# À ne pas confondre avec forgenet-cli, le client d'API à distance (jetons
+# d'API, scripts, CI).
+
+set -euo pipefail
+
+readonly CMD_VERSION="0.4.1" # x-release-please-version
+# Dossier d'installation : install.sh remplace cette ligne quand il installe
+# ailleurs (--dir) ; FORGENET_DIR l'emporte pour une commande.
+readonly DEFAULT_DIR="/opt/forgenet"
+readonly SERVER=forgenet-server
+readonly CADDY=forgenet-caddy
+readonly UPDATER=forgenet-updater
+
+INSTALL_DIR="${FORGENET_DIR:-$DEFAULT_DIR}"
+
+die() {
+	printf 'forgenet : %s\n' "$*" >&2
+	exit 1
+}
+
+usage() {
+	cat <<'EOF'
+Administration de ForgeNet sur ce serveur.
+
+Usage : forgenet COMMANDE [options]
+
+  version                 Version du serveur (révision, date de compilation)
+                          et de cette commande.
+  status                  État du serveur et de Caddy, santé, dernière mise à
+                          jour, applications déployées. Code 1 si le serveur
+                          n'est pas en marche et sain.
+  logs [-f] [-n N] [caddy|maj]
+                          Journaux du serveur, de Caddy ou de la dernière mise
+                          à jour : les N dernières lignes (100 par défaut), -f
+                          pour les suivre.
+  update check [--pre]    Dernière version publiée, comparée à celle en place.
+  update [--version X.Y.Z]
+                          Met à jour : sauvegarde, bascule, contrôle de santé,
+                          retour arrière automatique en cas d'échec (root).
+                          Met aussi cette commande à jour.
+  backups                 Sauvegardes gardées, de la plus récente à la plus
+                          ancienne (root).
+  restore DOSSIER         Revient à une sauvegarde : son nom, tel que
+                          « forgenet backups » l'affiche (root).
+  user create --username NOM --email ADRESSE [--role admin|member]
+                          Crée un compte ; le mot de passe est demandé.
+  help                    Cette aide.
+
+Le dossier d'installation est /opt/forgenet, ou celui choisi à l'installation ;
+FORGENET_DIR le remplace. Les commandes sans « (root) » marchent aussi pour un
+membre du groupe docker.
+EOF
+}
+
+need_root() {
+	[ "$(id -u)" -eq 0 ] || die "« forgenet $1 » demande root : sudo forgenet $1"
+}
+
+need_docker() {
+	command -v docker >/dev/null 2>&1 || die "Docker est introuvable sur ce serveur"
+	docker info >/dev/null 2>&1 ||
+		die "Docker ne répond pas : lancez la commande en root (sudo) ou depuis un membre du groupe docker, et vérifiez « systemctl status docker »"
+}
+
+# container_state affiche « état santé » d'un conteneur, ou rien s'il n'existe pas.
+container_state() {
+	docker inspect -f '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' "$1" 2>/dev/null || true
+}
+
+need_server() {
+	case "$(container_state "$SERVER")" in
+	running*) ;;
+	"") die "le conteneur $SERVER n'existe pas : ForgeNet est-il installé (install.sh) ?" ;;
+	*) die "le serveur ForgeNet est arrêté : « forgenet status » donne son état, « forgenet logs » ses journaux" ;;
+	esac
+}
+
+# installer renvoie la copie d'install.sh rangée par l'installation.
+installer() {
+	local script="$INSTALL_DIR/install.sh"
+	[ -f "$script" ] ||
+		die "$script introuvable : relancez install.sh une fois (sudo bash install.sh), qui l'y range"
+	printf '%s' "$script"
+}
+
+# server_version lit la version du binaire en service (« 0.4.1 »).
+server_version() {
+	docker exec "$SERVER" "$SERVER" -version 2>/dev/null | awk '{print $2}'
+}
+
+cmd_version() {
+	[ $# -eq 0 ] || die "« forgenet version » ne prend pas d'option"
+	need_docker
+	need_server
+	local line
+	line="$(docker exec "$SERVER" "$SERVER" -version)" || die "version du serveur illisible"
+	# « forgenet-server 0.4.1 (révision, date, go) »
+	local v rest
+	v="$(printf '%s' "$line" | awk '{print $2}')"
+	rest="$(printf '%s' "$line" | sed -n 's/^[^(]*(\([^,]*\), *\([^,]*\),.*$/révision \1, compilé le \2/p')"
+	printf 'ForgeNet %s (%s)\n' "$v" "${rest:-$line}"
+	printf 'Commande forgenet %s\n' "$CMD_VERSION"
+	if [ -n "$v" ] && [ "$v" != "$CMD_VERSION" ]; then
+		printf 'La commande date d'"'"'une autre version : « sudo forgenet update » la remet à niveau.\n'
+	fi
+}
+
+cmd_status() {
+	[ $# -eq 0 ] || die "« forgenet status » ne prend pas d'option"
+	need_docker
+	local server caddy code=0 status health
+	server="$(container_state "$SERVER")"
+	caddy="$(container_state "$CADDY")"
+
+	read -r status health <<<"${server:-absent}"
+	case "$status/$health" in
+	running/healthy) printf 'Serveur : en marche, sain\n' ;;
+	running/starting) printf 'Serveur : en marche, contrôle de santé en cours\n'; code=1 ;;
+	running/unhealthy) printf 'Serveur : en marche, mais ne répond pas (contrôle de santé en échec)\n'; code=1 ;;
+	running/*) printf 'Serveur : en marche\n' ;;
+	absent/*) printf 'Serveur : conteneur %s absent\n' "$SERVER"; code=1 ;;
+	*) printf 'Serveur : %s\n' "$status"; code=1 ;;
+	esac
+	read -r status health <<<"${caddy:-absent}"
+	case "$status" in
+	running) printf 'Caddy : en marche\n' ;;
+	absent) printf 'Caddy : conteneur %s absent\n' "$CADDY"; code=1 ;;
+	*) printf 'Caddy : %s\n' "$status"; code=1 ;;
+	esac
+
+	if [ "${server%% *}" = running ]; then
+		printf 'Version : %s\n' "$(server_version || true)"
+		local state result from to reason
+		state="$(docker exec "$SERVER" cat /var/lib/forgenet/maj/etat.json 2>/dev/null || true)"
+		if [ -n "$state" ]; then
+			result="$(json_field resultat "$state")"
+			from="$(json_field de "$state")"
+			to="$(json_field vers "$state")"
+			reason="$(json_field raison "$state")"
+			case "$result" in
+			reussie) printf 'Dernière mise à jour : %s → %s, réussie\n' "$from" "$to" ;;
+			annulee) printf 'Dernière mise à jour : %s → %s, annulée (%s)\n' "$from" "$to" "${reason:-raison inconnue}" ;;
+			echec) printf 'Dernière mise à jour : %s → %s, en échec (%s)\n' "$from" "$to" "${reason:-raison inconnue}" ;;
+			en_cours) printf 'Mise à jour en cours : %s → %s\n' "$from" "$to" ;;
+			esac
+		fi
+	fi
+
+	# Chaque application déployée est une pile Compose « forgenet-<projet> ».
+	local apps
+	apps="$(compose_stacks | awk '$1 ~ /^forgenet-/' || true)"
+	if [ -z "$apps" ]; then
+		printf 'Applications : aucune\n'
+	else
+		printf 'Applications :\n'
+		printf '%s\n' "$apps" | while read -r name state; do
+			printf '  %-24s %s\n' "${name#forgenet-}" "$(app_state "$state")"
+		done
+	fi
+	return "$code"
+}
+
+# compose_stacks écrit « nom état » pour chaque pile Compose du serveur.
+# « docker compose ls » n'a que les formats table et json ; le JSON est lu
+# sans jq, objet par objet : ni les noms ni les états n'ont de guillemets.
+compose_stacks() {
+	docker compose ls --all --format json 2>/dev/null | grep -o '{[^}]*}' |
+		sed -n 's/.*"Name":"\([^"]*\)".*"Status":"\([^"]*\)".*/\1 \2/p'
+}
+
+# app_state traduit l'état d'une pile (« running(2) », « exited(1) »…).
+app_state() {
+	local s="$1" out="" part n
+	for part in $(printf '%s' "$s" | tr -d ' ' | tr ',' ' '); do
+		n="${part#*(}"
+		n="${n%)}"
+		case "$part" in
+		running*) part="$n en marche" ;;
+		exited*) part="$n arrêté(s)" ;;
+		restarting*) part="$n en redémarrage" ;;
+		paused*) part="$n en pause" ;;
+		esac
+		out="${out:+$out, }$part"
+	done
+	printf '%s' "$out"
+}
+
+# json_field lit une valeur texte d'etat.json (une clé par ligne, écrit par
+# le serveur) sans dépendre de jq.
+json_field() {
+	printf '%s\n' "$2" | sed -n "s/^ *\"$1\": *\"\\(.*\\)\",*\$/\\1/p" | head -n 1
+}
+
+cmd_logs() {
+	local follow=() lines=100 target="$SERVER"
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		-f | --follow) follow=(-f); shift ;;
+		-n)
+			[ $# -ge 2 ] || die "-n attend un nombre de lignes"
+			[[ "$2" =~ ^[0-9]+$ ]] || die "-n attend un nombre de lignes, pas « $2 »"
+			lines="$2"; shift 2 ;;
+		caddy) target="$CADDY"; shift ;;
+		maj) target="$UPDATER"; shift ;;
+		server | serveur) target="$SERVER"; shift ;;
+		*) die "option inconnue pour « forgenet logs » : $1 (voir forgenet help)" ;;
+		esac
+	done
+	need_docker
+	if [ -z "$(container_state "$target")" ]; then
+		[ "$target" = "$UPDATER" ] && die "aucune mise à jour lancée depuis ce serveur : pas de journal"
+		die "le conteneur $target n'existe pas"
+	fi
+	exec docker logs --tail "$lines" "${follow[@]}" "$target"
+}
+
+cmd_update() {
+	if [ "${1-}" = check ]; then
+		shift
+		local pre=()
+		while [ $# -gt 0 ]; do
+			case "$1" in
+			--pre) pre=(--pre); shift ;;
+			*) die "option inconnue pour « forgenet update check » : $1" ;;
+			esac
+		done
+		need_docker
+		need_server
+		exec docker exec "$SERVER" "$SERVER" update check "${pre[@]}"
+	fi
+	local args=(--update --dir "$INSTALL_DIR")
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		--version)
+			[ $# -ge 2 ] || die "--version attend un numéro (exemple : 0.5.0)"
+			args+=(--version "$2"); shift 2 ;;
+		*) die "option inconnue pour « forgenet update » : $1 (voir forgenet help)" ;;
+		esac
+	done
+	need_root update
+	need_docker
+	local script
+	script="$(installer)"
+	exec bash "$script" "${args[@]}"
+}
+
+cmd_backups() {
+	[ $# -eq 0 ] || die "« forgenet backups » ne prend pas d'option"
+	need_root backups
+	local root="$INSTALL_DIR/sauvegardes" dir name v found=0
+	if [ -d "$root" ]; then
+		# Les noms commencent par la date : l'ordre inverse est le plus récent d'abord.
+		while IFS= read -r name; do
+			dir="$root/$name"
+			[ -f "$dir/forgenet.db" ] || continue
+			if [ "$found" -eq 0 ]; then
+				printf '%-28s %-20s %s\n' "SAUVEGARDE" "DATE (UTC)" "VERSION"
+				found=1
+			fi
+			# Une sauvegarde sans .env reste listée, version inconnue.
+			v=""
+			[ -r "$dir/.env" ] && v="$(sed -n 's/^FORGENET_VERSION=//p' "$dir/.env" | head -n 1)"
+			printf '%-28s %-20s %s\n' "$name" "$(backup_date "$name")" "${v:-?}"
+		done < <(find "$root" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -r)
+	fi
+	if [ "$found" -eq 0 ]; then
+		printf 'Aucune sauvegarde dans %s (une sauvegarde est faite avant chaque mise à jour).\n' "$root"
+		return 0
+	fi
+	printf '\nPour revenir à l'"'"'une d'"'"'elles : sudo forgenet restore SAUVEGARDE\n'
+}
+
+# backup_date lit la date du nom « 20261116-121202-0.4.0 ».
+backup_date() {
+	local n="$1"
+	if [[ "$n" =~ ^([0-9]{4})([0-9]{2})([0-9]{2})-([0-9]{2})([0-9]{2})([0-9]{2}) ]]; then
+		printf '%s-%s-%s %s:%s:%s' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" \
+			"${BASH_REMATCH[4]}" "${BASH_REMATCH[5]}" "${BASH_REMATCH[6]}"
+	else
+		printf '?'
+	fi
+}
+
+cmd_restore() {
+	[ $# -eq 1 ] || die "usage : sudo forgenet restore SAUVEGARDE (la liste : sudo forgenet backups)"
+	case "$1" in
+	-*) die "usage : sudo forgenet restore SAUVEGARDE (la liste : sudo forgenet backups)" ;;
+	esac
+	need_root restore
+	need_docker
+	local script
+	script="$(installer)"
+	exec bash "$script" --dir "$INSTALL_DIR" --restore "$1"
+}
+
+cmd_user() {
+	[ $# -gt 0 ] || die "usage : forgenet user create --username NOM --email ADRESSE [--role admin|member]"
+	need_docker
+	need_server
+	# -t seulement dans un terminal : le mot de passe est alors saisi masqué ;
+	# sinon il est lu sur l'entrée standard.
+	local tty=(-i)
+	[ -t 0 ] && [ -t 1 ] && tty=(-it)
+	exec docker exec "${tty[@]}" "$SERVER" "$SERVER" user "$@"
+}
+
+main() {
+	[[ "$INSTALL_DIR" = /* ]] || die "FORGENET_DIR attend un chemin absolu"
+	local cmd="${1-help}"
+	[ $# -gt 0 ] && shift
+	case "$cmd" in
+	version | --version) cmd_version "$@" ;;
+	status) cmd_status "$@" ;;
+	logs) cmd_logs "$@" ;;
+	update) cmd_update "$@" ;;
+	backups) cmd_backups "$@" ;;
+	restore) cmd_restore "$@" ;;
+	user) cmd_user "$@" ;;
+	help | -h | --help) usage ;;
+	*) die "commande inconnue : $cmd (la liste : forgenet help)" ;;
+	esac
+}
+
+main "$@"
