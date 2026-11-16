@@ -76,6 +76,66 @@ func TestEngine_RealComposeLifecycle(t *testing.T) {
 		"--volumes retire les données")
 }
 
+// TestEngine_RealComposeRestartPolicy vérifie sur un vrai démon que chaque
+// service reçoit la bonne politique, puis qu'un service sans politique écrite
+// revient seul quand son processus s'arrête, ce que fait Docker au démarrage du
+// serveur (#70).
+func TestEngine_RealComposeRestartPolicy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("test d'intégration Compose sauté avec -short")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	engine, err := compose.New(config.DockerConfig{})
+	require.NoError(t, err)
+	if err := engine.Ping(ctx); err != nil {
+		t.Skipf("docker compose indisponible : %v", err)
+	}
+	if err := exec.CommandContext(ctx, "docker", "info").Run(); err != nil {
+		t.Skipf("démon Docker indisponible : %v", err)
+	}
+
+	project := ids.New("forgenet-test")
+	t.Cleanup(func() {
+		cleanup, done := context.WithTimeout(context.Background(), time.Minute)
+		defer done()
+		_ = engine.Remove(cleanup, project, true)
+	})
+
+	var journal []string
+	out := func(_ compose.OutputStream, line string) { journal = append(journal, line) }
+	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/restart.compose.yaml"), out))
+	assert.Contains(t, journal, "Relance après un redémarrage du serveur (restart: unless-stopped) ajoutée à : app, web")
+
+	services := byService(ctx, t, engine, project)
+	require.Len(t, services, 4)
+	assert.Equal(t, "unless-stopped", inspect(ctx, t, services["web"].ID, "{{.HostConfig.RestartPolicy.Name}}"))
+	assert.Equal(t, "unless-stopped", inspect(ctx, t, services["app"].ID, "{{.HostConfig.RestartPolicy.Name}}"))
+	assert.Equal(t, "no", inspect(ctx, t, services["fixe"].ID, "{{.HostConfig.RestartPolicy.Name}}"), "une valeur écrite est gardée")
+	assert.Equal(t, "no", inspect(ctx, t, services["migrate"].ID, "{{.HostConfig.RestartPolicy.Name}}"), "une tâche ponctuelle n'est pas relancée")
+	assert.Equal(t, orchestrator.StateExited, services["migrate"].State)
+
+	// Le processus principal s'arrête sans que personne n'arrête le conteneur :
+	// Docker relance web, pas fixe.
+	for _, name := range []string{"web", "fixe"} {
+		require.NoError(t, exec.CommandContext(ctx, "docker", "exec", services[name].ID, "nginx", "-s", "quit").Run())
+	}
+	require.Eventually(t, func() bool {
+		return inspect(ctx, t, services["web"].ID, "{{.RestartCount}} {{.State.Running}}") == "1 true"
+	}, time.Minute, 200*time.Millisecond, "web revient seul")
+	require.Eventually(t, func() bool {
+		return inspect(ctx, t, services["fixe"].ID, "{{.State.Running}}") == "false"
+	}, time.Minute, 200*time.Millisecond)
+	assert.Equal(t, "0", inspect(ctx, t, services["fixe"].ID, "{{.RestartCount}}"), "fixe reste arrêté")
+
+	// Un nouveau déploiement du même fichier ne recrée rien : la politique fait
+	// partie de la configuration appliquée, elle ne change pas d'un déploiement
+	// à l'autre.
+	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/restart.compose.yaml"), nil))
+	assert.Equal(t, services["app"].ID, byService(ctx, t, engine, project)["app"].ID)
+}
+
 func TestEngine_RealComposeRejectsInvalidFile(t *testing.T) {
 	if testing.Short() {
 		t.Skip("test d'intégration Compose sauté avec -short")
@@ -119,6 +179,14 @@ func byService(ctx context.Context, t *testing.T, engine *compose.Engine, projec
 		out[s.Service] = s
 	}
 	return out
+}
+
+// inspect lit un champ du conteneur avec un modèle de `docker inspect`.
+func inspect(ctx context.Context, t *testing.T, id, format string) string {
+	t.Helper()
+	out, err := exec.CommandContext(ctx, "docker", "inspect", "--format", format, id).Output()
+	require.NoError(t, err)
+	return strings.TrimSpace(string(out))
 }
 
 // containerEnv lit une variable d'environnement du conteneur.
