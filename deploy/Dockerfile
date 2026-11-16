@@ -27,12 +27,15 @@ COPY internal/ internal/
 COPY pkg/ pkg/
 ARG VERSION=0.1.0-alpha.dev
 ARG GIT_COMMIT=unknown
+# Date du commit compilé (RFC3339, UTC), fournie par la CI : la même source
+# donne la même date, contrairement à l'heure de la construction.
+ARG BUILD_DATE=unknown
 ARG TARGETOS
 ARG TARGETARCH
 # SQLite en Go pur (modernc) : binaire statique, sans cgo, donc compilable
 # pour une autre architecture.
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath \
-    -ldflags "-s -w -X github.com/forgelab-dev/lfa-forgenet/internal/version.Version=${VERSION} -X github.com/forgelab-dev/lfa-forgenet/internal/version.GitCommit=${GIT_COMMIT}" \
+    -ldflags "-s -w -X github.com/forgelab-dev/lfa-forgenet/internal/version.Version=${VERSION} -X github.com/forgelab-dev/lfa-forgenet/internal/version.GitCommit=${GIT_COMMIT} -X github.com/forgelab-dev/lfa-forgenet/internal/version.BuildDate=${BUILD_DATE}" \
     -o /out/forgenet-server ./cmd/forgenet-server
 
 FROM docker:29.9.3-cli@sha256:5a7af0dcb0e46c803efe9b45371dd21cb500e5b4453250394ac6f06d49b6e6f1
