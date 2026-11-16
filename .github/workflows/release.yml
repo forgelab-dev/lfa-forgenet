@@ -88,6 +88,12 @@ jobs:
             org.opencontainers.image.title=ForgeNet Server
             org.opencontainers.image.licenses=Apache-2.0
 
+      # Date du commit de la release, en UTC : « forgenet version » l'affiche
+      # comme date de compilation.
+      - name: Date de compilation
+        id: build_date
+        run: echo "value=$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       - name: Construction et publication
         id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -101,6 +107,7 @@ jobs:
           build-args: |
             VERSION=${{ needs.release-please.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
+            BUILD_DATE=${{ steps.build_date.outputs.value }}
           provenance: mode=max
           sbom: true
 

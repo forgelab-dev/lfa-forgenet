@@ -3,7 +3,6 @@ package version
 
 import (
 	"runtime"
-	"time"
 )
 
 var (
@@ -11,8 +10,10 @@ var (
 	Version = "0.4.1" // x-release-please-version
 	// GitCommit est le hash du commit git source.
 	GitCommit = "unknown"
-	// BuildDate est la date de compilation au format RFC3339.
-	BuildDate = time.Now().UTC().Format(time.RFC3339)
+	// BuildDate est la date de compilation au format RFC3339, fixée par
+	// -ldflags. Sans elle, « unknown » : l'heure de démarrage du processus,
+	// donnée avant, passait pour une date de compilation.
+	BuildDate = "unknown"
 )
 
 // BuildInfo regroupe l'ensemble des informations de version et d'environnement de compilation.
