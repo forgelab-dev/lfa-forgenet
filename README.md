@@ -15,7 +15,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Status](https://img.shields.io/badge/statut-alpha%20v0.4.1)](#-état-du-projet) <!-- x-release-please-version -->
+[![Status](https://img.shields.io/static/v1?label=statut&message=alpha%20v0.4.1&color=orange)](#-état-du-projet) <!-- x-release-please-version -->
 
 **Français** · [English](README.en.md)
 
