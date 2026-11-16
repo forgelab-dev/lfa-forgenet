@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.4.0...v0.4.1) (2026-11-16)
+
+
+### Corrections
+
+* **compose:** relancer les applications après un redémarrage du serveur ([50f19f8](https://github.com/forgelab-dev/lfa-forgenet/commit/50f19f86d25a24ab0744e9d16bbd3edb0f3446a8)), closes [#70](https://github.com/forgelab-dev/lfa-forgenet/issues/70)
+
 ## [0.4.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.3.0...v0.4.0) (2026-11-14)
 
 
