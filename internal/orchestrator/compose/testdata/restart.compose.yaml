@@ -1,0 +1,17 @@
+# Stack des tests de la politique de redémarrage (#70) : un service sans
+# politique, un autre qui refuse explicitement d'être relancé, et une tâche
+# ponctuelle dont dépend une application.
+services:
+  web:
+    image: nginx:alpine
+  fixe:
+    image: nginx:alpine
+    restart: "no"
+  migrate:
+    image: alpine:3.21
+    command: ["true"]
+  app:
+    image: nginx:alpine
+    depends_on:
+      migrate:
+        condition: service_completed_successfully

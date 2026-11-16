@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -18,17 +19,37 @@ import (
 
 const stack = "services:\n  web:\n    image: nginx:alpine\n"
 
+// resolved est la sortie de `config --format json` pour stack, dont le service
+// a déjà une politique : aucun fichier complémentaire n'est ajouté.
+const resolved = `{"name":"forgenet-validation","services":{"web":{"image":"nginx:alpine","restart":"always"}}}`
+
 // fakeRunner enregistre les commandes et répond selon la sous-commande.
 type fakeRunner struct {
-	calls   []compose.Command
-	outputs map[string][]byte
-	errs    map[string]error
+	calls     []compose.Command
+	outputs   map[string][]byte
+	errs      map[string]error
+	overrides []string // contenu des fichiers complémentaires, lu pendant la commande
 }
 
 func (f *fakeRunner) Run(_ context.Context, cmd compose.Command) ([]byte, error) {
 	f.calls = append(f.calls, cmd)
+	// Le premier -f est l'entrée standard ; les suivants sont des fichiers.
+	for i, a := range cmd.Args {
+		if a == "-f" && i+1 < len(cmd.Args) && cmd.Args[i+1] != "-" {
+			content, err := os.ReadFile(cmd.Args[i+1])
+			if err != nil {
+				return nil, err
+			}
+			f.overrides = append(f.overrides, string(content))
+		}
+	}
 	sub := subcommand(cmd.Args)
 	return f.outputs[sub], f.errs[sub]
+}
+
+// deployRunner répond à la lecture du modèle par config.
+func deployRunner(config string) *fakeRunner {
+	return &fakeRunner{outputs: map[string][]byte{"config": []byte(config)}}
 }
 
 func subcommand(args []string) string {
@@ -49,15 +70,15 @@ func newEngine(t *testing.T, cfg config.DockerConfig, r *fakeRunner) *compose.En
 }
 
 func TestDeploy_ValidatesThenStartsAndWaits(t *testing.T) {
-	r := &fakeRunner{}
+	r := deployRunner(resolved)
 	e := newEngine(t, config.DockerConfig{}, r)
 
 	require.NoError(t, e.Deploy(context.Background(), "prj_0a1b2c3d4e5f6a7b", []byte(stack), nil))
 	require.Len(t, r.calls, 2)
 
-	assert.Equal(t, []string{"-p", "forgenet-validation", "-f", "-", "config", "--quiet"}, r.calls[0].Args)
+	assert.Equal(t, []string{"-p", "forgenet-validation", "-f", "-", "config", "--format", "json"}, r.calls[0].Args)
 	assert.Equal(t, []string{
-		"-p", "prj_0a1b2c3d4e5f6a7b", "-f", "-", "up",
+		"-p", "prj_0a1b2c3d4e5f6a7b", "--project-directory", r.calls[1].Dir, "-f", "-", "up",
 		"--detach", "--wait", "--wait-timeout", "90", "--remove-orphans", "--quiet-pull",
 	}, r.calls[1].Args)
 	for _, c := range r.calls {
@@ -111,13 +132,79 @@ func TestValidate_ClassifiesErrors(t *testing.T) {
 
 func TestDeploy_StartFailureIsReturned(t *testing.T) {
 	failure := &compose.CommandError{Args: []string{"up"}, ExitCode: 1, Output: "container web is unhealthy"}
-	r := &fakeRunner{errs: map[string]error{"up": failure}}
+	r := deployRunner(resolved)
+	r.errs = map[string]error{"up": failure}
 	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), nil)
 
 	var cmdErr *compose.CommandError
 	require.ErrorAs(t, err, &cmdErr)
 	assert.NotErrorIs(t, err, compose.ErrInvalidFile, "un échec au démarrage n'est pas un fichier invalide")
 	assert.Equal(t, "docker compose up : code 1 : container web is unhealthy", err.Error())
+}
+
+// Un service sans politique de redémarrage reçoit unless-stopped par un
+// fichier complémentaire ; une politique écrite par l'utilisateur, sous l'une
+// ou l'autre forme, est gardée, et une tâche ponctuelle n'est jamais relancée.
+func TestDeploy_AddsRestartPolicyOnlyWhereMissing(t *testing.T) {
+	model := `{"name":"forgenet-validation","services":{
+		"web":      {"image":"nginx:alpine"},
+		"cache":    {"image":"redis:7-alpine","restart":"no"},
+		"toujours": {"image":"nginx:alpine","restart":"always"},
+		"swarm":    {"image":"nginx:alpine","deploy":{"resources":{},"restart_policy":{"condition":"on-failure"}}},
+		"limites":  {"image":"nginx:alpine","deploy":{"resources":{"limits":{"memory":"64m"}}}},
+		"migrate":  {"image":"alpine","command":["true"]},
+		"app":      {"image":"nginx:alpine","depends_on":{
+			"migrate":{"condition":"service_completed_successfully","required":true},
+			"cache":{"condition":"service_started","required":true}}}
+	}}`
+	r := deployRunner(model)
+	e := newEngine(t, config.DockerConfig{}, r)
+	var journal []string
+	out := func(_ compose.OutputStream, line string) { journal = append(journal, line) }
+
+	require.NoError(t, e.Deploy(context.Background(), "prj_1", []byte(stack), out))
+	require.Len(t, r.calls, 2)
+	up := r.calls[1].Args
+	require.Len(t, up, 15)
+	// Le dossier du projet reste le dossier de travail : un chemin relatif du
+	// fichier ne se résout pas dans le dossier du fichier complémentaire.
+	assert.Equal(t, []string{"-p", "prj_1", "--project-directory", r.calls[1].Dir, "-f", "-", "-f"}, up[:7])
+	assert.Equal(t, []string{"up", "--detach", "--wait", "--wait-timeout", "90", "--remove-orphans", "--quiet-pull"}, up[8:])
+	assert.Equal(t, stack, string(r.calls[1].Stdin), "le fichier de l'utilisateur passe tel quel")
+
+	require.Len(t, r.overrides, 1)
+	assert.JSONEq(t, `{"services":{
+		"app":{"restart":"unless-stopped"},
+		"limites":{"restart":"unless-stopped"},
+		"web":{"restart":"unless-stopped"}}}`, r.overrides[0])
+	assert.Equal(t, []string{"Relance après un redémarrage du serveur (restart: unless-stopped) ajoutée à : app, limites, web"}, journal)
+
+	// Le fichier complémentaire n'est pas dans le dossier de travail, qui reste
+	// vide, et il est supprimé après la commande.
+	override := up[7]
+	assert.NotEqual(t, r.calls[1].Dir, filepath.Dir(override))
+	entries, err := os.ReadDir(r.calls[1].Dir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+	assert.NoFileExists(t, override)
+}
+
+func TestDeploy_RemovesOverrideWhenStartFails(t *testing.T) {
+	r := deployRunner(`{"services":{"web":{"image":"nginx:alpine"},"worker":{"image":"alpine"}}}`)
+	r.errs = map[string]error{"up": &compose.CommandError{Args: []string{"up"}, ExitCode: 1, Output: "boom"}}
+
+	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), nil)
+	require.Error(t, err)
+	require.Len(t, r.overrides, 1)
+	assert.JSONEq(t, `{"services":{"web":{"restart":"unless-stopped"},"worker":{"restart":"unless-stopped"}}}`, r.overrides[0])
+	assert.NoFileExists(t, r.calls[1].Args[7])
+}
+
+func TestDeploy_UnreadableModelStopsBeforeUp(t *testing.T) {
+	r := deployRunner("pas du json")
+	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), nil)
+	require.Error(t, err)
+	assert.Len(t, r.calls, 1, "up n'est pas lancé")
 }
 
 func TestRemove_KeepsVolumesUnlessAsked(t *testing.T) {

@@ -98,6 +98,7 @@ type Engine struct {
 	runner      Runner
 	env         []string
 	dir         string
+	overrideDir string // fichiers complémentaires (politique de redémarrage), hors de dir
 	waitTimeout time.Duration
 }
 
@@ -117,11 +118,16 @@ func New(cfg config.DockerConfig, opts ...Option) (*Engine, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("création du dossier de travail Compose : %w", err)
 	}
+	overrideDir := filepath.Join(os.TempDir(), "forgenet-compose-overrides")
+	if err := os.MkdirAll(overrideDir, 0o700); err != nil {
+		return nil, fmt.Errorf("création du dossier des fichiers complémentaires : %w", err)
+	}
 
 	e := &Engine{
 		runner:      execRunner{},
 		env:         commandEnv(os.Getenv, cfg.Host),
 		dir:         dir,
+		overrideDir: overrideDir,
 		waitTimeout: defaultWaitTimeout,
 	}
 	for _, opt := range opts {
@@ -153,37 +159,71 @@ func ValidProjectName(name string) bool {
 
 // Validate vérifie le fichier sans rien créer.
 func (e *Engine) Validate(ctx context.Context, content []byte) error {
+	_, err := e.config(ctx, content, "--quiet")
+	return err
+}
+
+// config lance `config` sur le fichier, avec args en plus, et renvoie sa sortie.
+func (e *Engine) config(ctx context.Context, content []byte, args ...string) ([]byte, error) {
 	if len(bytes.TrimSpace(content)) == 0 {
-		return fmt.Errorf("%w : fichier vide", ErrInvalidFile)
+		return nil, fmt.Errorf("%w : fichier vide", ErrInvalidFile)
 	}
-	_, err := e.run(ctx, content, "-p", validationProject, "-f", "-", "config", "--quiet")
+	out, err := e.run(ctx, content, append([]string{"-p", validationProject, "-f", "-", "config"}, args...)...)
 	// Seul un refus de la commande dit que le fichier est en cause ; une
 	// annulation ou une commande absente remontent telles quelles.
 	var cmdErr *CommandError
 	if errors.As(err, &cmdErr) {
-		return fmt.Errorf("%w : %w", ErrInvalidFile, err)
+		return nil, fmt.Errorf("%w : %w", ErrInvalidFile, err)
 	}
-	return err
+	return out, err
 }
 
 // Deploy crée la stack ou la met à jour : seuls les services modifiés sont
 // recréés, et ceux retirés du fichier sont supprimés. Il rend la main quand les
 // services tournent et que ceux qui ont une sonde de santé sont sains. La
 // progression de `up` est passée à out, si elle est fournie.
+//
+// Un service sans politique de redémarrage reçoit DefaultRestart, pour revenir
+// seul après un redémarrage du serveur (#70) : sans cela, Docker applique `no`
+// et l'application reste arrêtée.
 func (e *Engine) Deploy(ctx context.Context, project string, content []byte, out OutputFunc) error {
 	if err := checkProject(project); err != nil {
 		return err
 	}
-	// La validation sépare un fichier refusé (ErrInvalidFile) d'un échec du
-	// démarrage, avant de toucher à la stack en place.
-	if err := e.Validate(ctx, content); err != nil {
+	// La lecture du modèle valide aussi le fichier : elle sépare un fichier
+	// refusé (ErrInvalidFile) d'un échec du démarrage, avant de toucher à la
+	// stack en place.
+	resolved, err := e.config(ctx, content, "--format", "json")
+	if err != nil {
 		return err
 	}
+	services, err := servicesWithoutRestart(resolved)
+	if err != nil {
+		return err
+	}
+
+	files := []string{"-f", "-"}
+	if len(services) > 0 {
+		override, err := e.restartOverride(services)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = os.Remove(override) }()
+		files = append(files, "-f", override)
+		if out != nil {
+			out(Stdout, restartNotice(services))
+		}
+	}
+
+	// Sans --project-directory, Compose prendrait le dossier du fichier
+	// complémentaire comme dossier du projet, puisque l'entrée standard n'en a
+	// pas : un chemin relatif comme « ./donnees » changerait d'emplacement.
 	// --quiet-pull garde les événements de téléchargement par service, sans
 	// une ligne par couche et par pourcentage.
-	_, err := e.runWithOutput(ctx, content, out, "-p", project, "-f", "-", "up",
-		"--detach", "--wait", "--wait-timeout", seconds(e.waitTimeout),
+	args := append([]string{"-p", project, "--project-directory", e.dir}, files...)
+	args = append(args, "up", "--detach", "--wait", "--wait-timeout", seconds(e.waitTimeout),
 		"--remove-orphans", "--quiet-pull")
+	_, err = e.runWithOutput(ctx, content, out, args...)
 	return err
 }
 
