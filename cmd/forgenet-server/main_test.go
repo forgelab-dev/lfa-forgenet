@@ -1,15 +1,19 @@
 package main_test
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/quotedprintable"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -318,4 +322,150 @@ func TestUserSetPassword_FromCommandLine(t *testing.T) {
 	user, err := db.Users().GetUserByUsername(context.Background(), "admin")
 	require.NoError(t, err)
 	assert.NoError(t, auth.CheckPassword(user.PasswordHash, "mot-de-passe-retrouve"))
+}
+
+func TestUserLoginLink_PendingAdmin(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "forgenet.db")
+	configFile := writeConfig(t, fmt.Sprintf("database:\n  path: %q\n", dbPath))
+	run := func(args ...string) (string, int) {
+		cmd := exec.Command(binPath, append([]string{"user"}, append(args, "--config", configFile)...)...)
+		cmd.Stdin = strings.NewReader("")
+		out, err := cmd.CombinedOutput()
+		return string(out), exitCode(t, err)
+	}
+
+	out, code := run("create", "--username", "admin", "--email", "admin@forgenet.test", "--no-password")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "forgenet user login-link --username admin")
+
+	out, code = run("login-link", "--username", "admin")
+	require.Equal(t, 0, code, out)
+	assert.Regexp(t, `  http://127\.0\.0\.1:8080/acces#[A-Za-z0-9_-]{43}\n`, out)
+	assert.Contains(t, out, "ssh -N -L 8080:127.0.0.1:8080", "sans domaine, le tunnel est expliqué")
+	token := out[strings.Index(out, "#")+1:]
+	token = token[:strings.IndexByte(token, '\n')]
+
+	out, code = run("login-link", "--username", "admin", "--send")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "n'est pas configuré")
+
+	out, code = run("login-link", "--username", "personne")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "aucun compte")
+
+	db, err := sqlite.Open(context.Background(), config.DatabaseConfig{Path: dbPath, BusyTimeout: time.Second})
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	user, err := db.Users().GetUserByUsername(context.Background(), "admin")
+	require.NoError(t, err)
+	assert.Equal(t, auth.UnusablePassword, user.PasswordHash)
+	_, err = db.ActionTokens().GetActiveActionToken(context.Background(), auth.HashToken(token), time.Now())
+	require.NoError(t, err, "le lien affiché est enregistré par son empreinte")
+}
+
+func TestUserLoginLink_SendsTheLinkByMail(t *testing.T) {
+	relay := newPlainRelay(t)
+	dbPath := filepath.Join(t.TempDir(), "forgenet.db")
+	configFile := writeConfig(t, fmt.Sprintf(`database:
+  path: %q
+proxy:
+  enabled: true
+  dashboard_host: forgenet.exemple.org
+  dashboard_upstream: forgenet-server:8080
+smtp:
+  host: 127.0.0.1
+  port: %d
+  tls: none
+  from: forgenet@exemple.org
+`, dbPath, relay.port))
+	run := func(args ...string) (string, int) {
+		cmd := exec.Command(binPath, append([]string{"user"}, append(args, "--config", configFile)...)...)
+		out, err := cmd.CombinedOutput()
+		return string(out), exitCode(t, err)
+	}
+
+	out, code := run("create", "--username", "admin", "--email", "admin@forgenet.test", "--no-password")
+	require.Equal(t, 0, code, out)
+	out, code = run("login-link", "--username", "admin", "--send")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "envoyé à l'adresse du compte admin")
+	assert.NotContains(t, out, "acces#", "le lien envoyé n'est pas affiché")
+	assert.NotContains(t, out, "admin@forgenet.test", "l'adresse n'est pas affichée")
+
+	data := relay.received()
+	assert.Contains(t, data, "To: <admin@forgenet.test>")
+	_, body, ok := strings.Cut(data, "\r\n\r\n")
+	require.True(t, ok, data)
+	decoded, err := io.ReadAll(quotedprintable.NewReader(strings.NewReader(body)))
+	require.NoError(t, err)
+	assert.Regexp(t, `https://forgenet\.exemple\.org/acces#[A-Za-z0-9_-]{43}`, string(decoded))
+	assert.NotContains(t, string(decoded), "ssh -N", "avec un domaine, pas de tunnel")
+}
+
+// plainRelay est un relais SMTP local sans TLS (smtp.tls=none), qui garde le
+// dernier message reçu.
+type plainRelay struct {
+	port int
+	mu   sync.Mutex
+	data string
+}
+
+func newPlainRelay(t *testing.T) *plainRelay {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = ln.Close() })
+	r := &plainRelay{port: ln.Addr().(*net.TCPAddr).Port}
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go r.handle(conn)
+		}
+	}()
+	return r
+}
+
+func (r *plainRelay) handle(conn net.Conn) {
+	defer func() { _ = conn.Close() }()
+	rd := bufio.NewReader(conn)
+	say := func(s string) { _, _ = conn.Write([]byte(s + "\r\n")) }
+	say("220 relais local")
+	for {
+		line, err := rd.ReadString('\n')
+		if err != nil {
+			return
+		}
+		switch strings.ToUpper(strings.SplitN(strings.TrimSpace(line), " ", 2)[0]) {
+		case "EHLO", "HELO", "MAIL", "RCPT":
+			say("250 OK")
+		case "DATA":
+			say("354 envoyez")
+			var b strings.Builder
+			for {
+				l, err := rd.ReadString('\n')
+				if err != nil || l == ".\r\n" {
+					break
+				}
+				b.WriteString(l)
+			}
+			r.mu.Lock()
+			r.data = b.String()
+			r.mu.Unlock()
+			say("250 reçu")
+		case "QUIT":
+			say("221 au revoir")
+			return
+		default:
+			say("502 inconnu")
+		}
+	}
+}
+
+func (r *plainRelay) received() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.data
 }
