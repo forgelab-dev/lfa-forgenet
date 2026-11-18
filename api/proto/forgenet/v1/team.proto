@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package forgenet.v1;
+
+import "forgenet/v1/auth.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1";
+
+// --- ENUMS ---
+
+// MemberStatus dit où en est un compte (ADR-0014).
+enum MemberStatus {
+  MEMBER_STATUS_UNSPECIFIED = 0;
+  // Le compte a son mot de passe et peut se connecter.
+  MEMBER_STATUS_ACTIVE = 1;
+  // Le compte attend son mot de passe, et une invitation valable court.
+  MEMBER_STATUS_INVITED = 2;
+  // Le compte attend son mot de passe, mais aucune invitation valable ne
+  // court : elle a expiré, ou le compte a été créé sans elle.
+  MEMBER_STATUS_INVITATION_EXPIRED = 3;
+}
+
+// --- MODELS ---
+
+// Member est un compte du serveur, vu par un administrateur. Le mot de passe
+// et ses empreintes ne quittent jamais le serveur.
+message Member {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  UserRole role = 4;
+  MemberStatus status = 5;
+  // Fin de validité de l'invitation en cours ; absente hors MEMBER_STATUS_INVITED.
+  google.protobuf.Timestamp invitation_expires_at = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+// --- REQUEST / RESPONSE MESSAGES ---
+
+message ListMembersRequest {}
+
+message ListMembersResponse {
+  // Par ancienneté, le plus ancien en tête.
+  repeated Member members = 1;
+  // Vrai si un relais SMTP est configuré : les invitations partent alors par
+  // e-mail ; sinon, le lien est rendu une fois à l'administrateur.
+  bool mail_enabled = 2;
+}
+
+message InviteMemberRequest {
+  string username = 1;
+  string email = 2;
+  // USER_ROLE_ADMIN ou USER_ROLE_MEMBER.
+  UserRole role = 3;
+}
+
+// InvitationResult est la réponse commune à une invitation et à son renvoi.
+message InvitationResult {
+  Member member = 1;
+  // Vrai si le lien est parti par e-mail (en tâche de fond).
+  bool emailed = 2;
+  // Le lien d'invitation, seulement quand il n'est pas parti par e-mail. Il
+  // n'est jamais rendu une seconde fois : un nouveau lien annule celui-ci.
+  string invitation_url = 3;
+  // Vrai si le dashboard n'a pas de domaine : le lien s'ouvre par un tunnel
+  // SSH (ADR-0009), et l'invité doit le savoir.
+  bool local_dashboard = 4;
+}
+
+message InviteMemberResponse {
+  InvitationResult result = 1;
+}
+
+message RenewInvitationRequest {
+  string user_id = 1;
+}
+
+message RenewInvitationResponse {
+  InvitationResult result = 1;
+}
+
+// --- SERVICE ---
+
+// TeamService gère les membres du serveur et leurs invitations (ADR-0014).
+// Réservé aux administrateurs.
+service TeamService {
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+
+  // InviteMember crée le compte sans mot de passe utilisable et fait un lien
+  // d'invitation valable 7 jours. Nom ou adresse déjà pris : ALREADY_EXISTS.
+  // Champ invalide : INVALID_ARGUMENT.
+  rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
+
+  // RenewInvitation refait le lien d'un compte qui n'a pas encore choisi son
+  // mot de passe ; le nouveau lien annule l'ancien. Compte déjà actif :
+  // FAILED_PRECONDITION. Compte inconnu : NOT_FOUND.
+  rpc RenewInvitation(RenewInvitationRequest) returns (RenewInvitationResponse);
+}

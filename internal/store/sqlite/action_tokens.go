@@ -58,6 +58,12 @@ func (s *actionTokensStore) GetActiveActionToken(ctx context.Context, tokenHash 
 		tokenHash, formatTime(now)))
 }
 
+func (s *actionTokensStore) ListActiveActionTokens(ctx context.Context, purpose store.ActionPurpose, now time.Time) ([]*store.ActionToken, error) {
+	return queryAll(ctx, s.db, "liste des liens", scanActionToken,
+		selectActionToken+` WHERE purpose = ? AND used_at IS NULL AND expires_at > ? ORDER BY created_at ASC`,
+		string(purpose), formatTime(now))
+}
+
 func (s *actionTokensStore) RedeemActionToken(ctx context.Context, tokenHash string, now time.Time, passwordHash string) (*store.ActionToken, int64, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

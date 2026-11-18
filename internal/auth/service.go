@@ -37,6 +37,12 @@ var (
 // bcrypt). Le compte s'ouvre par un lien à usage unique (ADR-0014).
 const UnusablePassword = "!"
 
+// HasPassword dit si le compte a choisi son mot de passe. Sans lui, il ne
+// s'ouvre que par un lien à usage unique.
+func HasPassword(u *store.User) bool {
+	return u.PasswordHash != UnusablePassword
+}
+
 // LinkTTL donne la durée de validité d'un lien selon son usage (ADR-0014).
 func LinkTTL(purpose store.ActionPurpose) time.Duration {
 	switch purpose {
