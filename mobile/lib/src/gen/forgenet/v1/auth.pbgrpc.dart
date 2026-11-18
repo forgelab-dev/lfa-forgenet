@@ -59,6 +59,18 @@ class AuthServiceClient extends $grpc.Client {
     return $createUnaryCall(_$getCurrentUser, request, options: options);
   }
 
+  /// ChangePassword change le mot de passe du compte connecté, puis ferme ses
+  /// autres sessions et jetons. Un mot de passe actuel incorrect ou un nouveau
+  /// mot de passe refusé répond INVALID_ARGUMENT (jamais UNAUTHENTICATED, qui
+  /// fermerait la session du demandeur) ; des échecs répétés répondent
+  /// RESOURCE_EXHAUSTED. Le changement est inscrit au journal d'audit.
+  $grpc.ResponseFuture<$0.ChangePasswordResponse> changePassword(
+    $0.ChangePasswordRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$changePassword, request, options: options);
+  }
+
   // method descriptors
 
   static final _$login = $grpc.ClientMethod<$0.LoginRequest, $0.LoginResponse>(
@@ -75,6 +87,11 @@ class AuthServiceClient extends $grpc.Client {
           '/forgenet.v1.AuthService/GetCurrentUser',
           ($0.GetCurrentUserRequest value) => value.writeToBuffer(),
           $0.GetCurrentUserResponse.fromBuffer);
+  static final _$changePassword =
+      $grpc.ClientMethod<$0.ChangePasswordRequest, $0.ChangePasswordResponse>(
+          '/forgenet.v1.AuthService/ChangePassword',
+          ($0.ChangePasswordRequest value) => value.writeToBuffer(),
+          $0.ChangePasswordResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('forgenet.v1.AuthService')
@@ -105,6 +122,15 @@ abstract class AuthServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.GetCurrentUserRequest.fromBuffer(value),
         ($0.GetCurrentUserResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.ChangePasswordRequest,
+            $0.ChangePasswordResponse>(
+        'ChangePassword',
+        changePassword_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.ChangePasswordRequest.fromBuffer(value),
+        ($0.ChangePasswordResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.LoginResponse> login_Pre(
@@ -131,4 +157,13 @@ abstract class AuthServiceBase extends $grpc.Service {
 
   $async.Future<$0.GetCurrentUserResponse> getCurrentUser(
       $grpc.ServiceCall call, $0.GetCurrentUserRequest request);
+
+  $async.Future<$0.ChangePasswordResponse> changePassword_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.ChangePasswordRequest> $request) async {
+    return changePassword($call, await $request);
+  }
+
+  $async.Future<$0.ChangePasswordResponse> changePassword(
+      $grpc.ServiceCall call, $0.ChangePasswordRequest request);
 }
