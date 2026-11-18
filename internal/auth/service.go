@@ -18,8 +18,15 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 )
 
-// ErrInvalidRole est retourné lorsqu'un compte est créé sans rôle reconnu.
-var ErrInvalidRole = errors.New("rôle inconnu (valeurs acceptées : admin, member)")
+var (
+	// ErrInvalidRole est retourné lorsqu'un compte est créé sans rôle reconnu.
+	ErrInvalidRole = errors.New("rôle inconnu (valeurs acceptées : admin, member)")
+	// ErrWrongCurrentPassword est retourné quand le mot de passe actuel donné
+	// pour un changement ne correspond pas.
+	ErrWrongCurrentPassword = errors.New("le mot de passe actuel est incorrect")
+	// ErrSamePassword est retourné quand le nouveau mot de passe est l'actuel.
+	ErrSamePassword = errors.New("le nouveau mot de passe doit être différent de l'actuel")
+)
 
 // Result regroupe les données retournées lors d'une connexion réussie.
 type Result struct {
@@ -35,6 +42,13 @@ type Service interface {
 	CreateAPIToken(ctx context.Context, userID, name string, role store.Role, ttl time.Duration) (string, *store.Session, error)
 	ValidateToken(ctx context.Context, tokenString string) (*Claims, error)
 	RevokeSession(ctx context.Context, sessionID string) error
+	// ChangePassword change le mot de passe du compte après vérification de
+	// l'actuel, et ferme ses sessions et jetons sauf keepSessionID. Renvoie
+	// le nombre de sessions fermées.
+	ChangePassword(ctx context.Context, userID, keepSessionID, current, next string) (int64, error)
+	// ResetPassword fixe le mot de passe d'un compte sans l'actuel, pour la
+	// commande lancée sur le serveur, et ferme toutes ses sessions.
+	ResetPassword(ctx context.Context, username, next string) (int64, error)
 }
 
 type authService struct {
@@ -254,6 +268,51 @@ func (s *authService) RevokeSession(ctx context.Context, sessionID string) error
 	}
 	s.audit(ctx, audit.UserIDFromContext(ctx), "session.revoke", "session:"+sessionID, nil)
 	return nil
+}
+
+func (s *authService) ChangePassword(ctx context.Context, userID, keepSessionID, current, next string) (int64, error) {
+	user, err := s.store.Users().GetUserByID(ctx, userID)
+	if err != nil {
+		return 0, lookupError(err, "utilisateur")
+	}
+	if CheckPassword(user.PasswordHash, current) != nil {
+		s.audit(ctx, user.ID, "user.password_change_failed", "user:"+user.ID, map[string]any{"reason": "mot de passe actuel incorrect"})
+		return 0, ErrWrongCurrentPassword
+	}
+	// L'actuel vient d'être vérifié : comparer les textes suffit, sans
+	// second hachage.
+	if next == current {
+		return 0, ErrSamePassword
+	}
+	revoked, err := s.setPassword(ctx, user, next, keepSessionID)
+	if err != nil {
+		return 0, err
+	}
+	s.audit(ctx, user.ID, "user.password_change", "user:"+user.ID, map[string]any{"revoked_sessions": revoked})
+	return revoked, nil
+}
+
+func (s *authService) ResetPassword(ctx context.Context, username, next string) (int64, error) {
+	user, err := s.store.Users().GetUserByUsername(ctx, strings.TrimSpace(username))
+	if err != nil {
+		return 0, err
+	}
+	revoked, err := s.setPassword(ctx, user, next, "")
+	if err != nil {
+		return 0, err
+	}
+	// Aucun compte n'agit : c'est un accès à la machine du serveur, comme
+	// « user create ».
+	s.audit(ctx, "", "user.password_reset", "user:"+user.ID, map[string]any{"username": user.Username, "revoked_sessions": revoked})
+	return revoked, nil
+}
+
+func (s *authService) setPassword(ctx context.Context, user *store.User, next, keepSessionID string) (int64, error) {
+	hash, err := HashPassword(next)
+	if err != nil {
+		return 0, err
+	}
+	return s.store.Users().SetPassword(ctx, user.ID, hash, keepSessionID)
 }
 
 func (s *authService) findUser(ctx context.Context, usernameOrEmail string) (*store.User, error) {
