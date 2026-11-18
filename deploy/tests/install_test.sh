@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
-# Tests des réglages SMTP d'install.sh (ADR-0014), sans root ni Docker : les
-# fonctions sont chargées (FORGENET_INSTALL_LIB=1) et écrivent dans un dossier
-# temporaire. Lancement : bash deploy/tests/install_test.sh
+# Tests d'install.sh pour l'ADR-0014 (réglages SMTP, premier administrateur
+# sans terminal), sans root ni Docker : les fonctions sont chargées
+# (FORGENET_INSTALL_LIB=1) et écrivent dans un dossier temporaire ; compose est
+# remplacé par une doublure. Lancement : bash deploy/tests/install_test.sh
 
 set -uo pipefail
 
@@ -72,6 +73,43 @@ check "envoi coupé" "$(value FORGENET_SMTP_HOST)$(value FORGENET_SMTP_USER)$(va
 
 run --smtp-host smtp.exemple.org --smtp-from envois@exemple.org
 check "relais sans identifiant" "$(value FORGENET_SMTP_HOST):$(value FORGENET_SMTP_USER)" "smtp.exemple.org:"
+
+# --- Premier administrateur sans terminal -----------------------------------
+
+# admin lance create_admin sans terminal, avec une doublure de compose qui
+# note ses appels dans $WORK/appels et répond comme le serveur : login-link
+# affiche un faux lien, --send réussit sauf si ENVOI_ECHOUE=1.
+admin() {
+	rm -f "$WORK/install/.admin-created" "$WORK/install/premier-acces" "$WORK/appels"
+	# shellcheck disable=SC2016
+	FORGENET_INSTALL_LIB=1 FORGENET_DIR="$WORK/install" APPELS="$WORK/appels" \
+		FORGENET_ADMIN_USER=chef FORGENET_ADMIN_EMAIL=chef@exemple.org \
+		setsid -w bash -c '. "$0" && compose() {
+			printf "%s\n" "$*" >>"$APPELS"
+			case "$*" in
+			*"login-link"*"--send"*) [ "${ENVOI_ECHOUE:-0}" != 1 ] || { echo "relais injoignable" >&2; return 1; } ;;
+			*"login-link"*) echo "  http://127.0.0.1:8080/acces#JETON-SECRET" ;;
+			esac
+		} && create_admin' "$SCRIPT" </dev/null >"$WORK/out" 2>&1
+}
+
+: >"$WORK/install/.env"
+admin
+check "compte créé sans mot de passe" "$(grep -c -- 'user create --no-password --username chef' "$WORK/appels")" "1"
+check "lien écrit dans premier-acces" "$(grep -c 'acces#JETON-SECRET' "$WORK/install/premier-acces")" "1"
+check "premier-acces en 0600" "$(stat -c %a "$WORK/install/premier-acces")" "600"
+check "lien jamais affiché" "$(grep -c 'JETON-SECRET' "$WORK/out")" "0"
+check "plus de admin-password" "$([ -e "$WORK/install/admin-password" ] && echo présent || echo absent)" "absent"
+
+printf 'FORGENET_SMTP_HOST=smtp.exemple.org\n' >"$WORK/install/.env"
+admin
+check "avec relais : lien envoyé" "$(grep -c -- 'login-link --username chef --send' "$WORK/appels")" "1"
+check "avec relais : pas de fichier" "$([ -e "$WORK/install/premier-acces" ] && echo présent || echo absent)" "absent"
+
+ENVOI_ECHOUE=1 admin
+check "envoi refusé : lien écrit dans le fichier" "$(grep -c 'acces#JETON-SECRET' "$WORK/install/premier-acces")" "1"
+check "envoi refusé : raison donnée" "$(grep -c 'relais injoignable' "$WORK/out")" "1"
+check "envoi refusé : lien jamais affiché" "$(grep -c 'JETON-SECRET' "$WORK/out")" "0"
 
 printf '\n%d vérifications, %d en échec\n' "$((pass + fail))" "$fail"
 [ "$fail" -eq 0 ]
