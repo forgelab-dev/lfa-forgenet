@@ -1,7 +1,7 @@
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { memoryLocation } from 'wouter/memory-location';
 
@@ -167,6 +167,12 @@ describe('UpdateBanner', () => {
     await act(() => vi.advanceTimersByTimeAsync(2100));
     expect(await screen.findByText(/est installé/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Recharger le dashboard' })).toBeInTheDocument();
+
+    // La barre latérale suit sans attendre le rechargement (#74) : plus
+    // « 0.2.0, 0.3.0 disponible » sous l'avis « 0.3.0 est installé ».
+    const nav = screen.getByRole('navigation', { name: 'Navigation principale' }).parentElement!;
+    await waitFor(() => expect(within(nav).getByText('0.3.0')).toBeInTheDocument());
+    expect(within(nav).queryByText('disponible')).toBeNull();
   });
 
   it('montre un refus du serveur dans la confirmation', async () => {
