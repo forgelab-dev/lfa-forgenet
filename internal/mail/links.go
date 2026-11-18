@@ -71,3 +71,19 @@ func PasswordResetMessage(to, username, url string, local bool) Message {
 	b.WriteString("ne change pas, et le lien expirera de lui-même.\n\n— ForgeNet\n")
 	return Message{To: to, Subject: "Nouveau mot de passe ForgeNet", Body: b.String()}
 }
+
+// InvitationMessage est l'e-mail d'invitation d'un membre, envoyé au nom de
+// l'administrateur qui invite.
+func InvitationMessage(to, username, inviter, url string, local bool) Message {
+	var b strings.Builder
+	fmt.Fprintf(&b, "Bonjour %s,\n\n", username)
+	fmt.Fprintf(&b, "%s vous invite sur son serveur ForgeNet, avec le compte %s.\n", inviter, username)
+	b.WriteString("Choisissez votre mot de passe en ouvrant ce lien, valable 7 jours et une seule fois :\n\n")
+	fmt.Fprintf(&b, "  %s\n\n", url)
+	if local {
+		b.WriteString(tunnelHint + "\n")
+	}
+	fmt.Fprintf(&b, "Lien expiré ? Demandez-en un nouveau à %s.\n", inviter)
+	b.WriteString("Si vous n'attendiez pas cette invitation, ignorez cet e-mail.\n\n— ForgeNet\n")
+	return Message{To: to, Subject: inviter + " vous invite sur ForgeNet", Body: b.String()}
+}
