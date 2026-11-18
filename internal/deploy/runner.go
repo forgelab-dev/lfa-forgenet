@@ -134,11 +134,15 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 	if !s.acquire(d.ProjectID) {
 		return false
 	}
+	run := &execution{done: make(chan struct{})}
+	// Fermé en tout dernier, après la libération du projet : Cancel attend ce
+	// signal pour rendre la main sur un projet vraiment libre.
+	defer close(run.done)
 	defer s.release(d.ProjectID)
 
 	ctx, cancel := context.WithTimeout(runCtx, s.timeout)
 	defer cancel()
-	run := &execution{cancel: cancel}
+	run.cancel = cancel
 	s.mu.Lock()
 	s.running[d.ID] = run
 	s.mu.Unlock()
