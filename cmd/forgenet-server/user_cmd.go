@@ -16,6 +16,7 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/audit"
 	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
+	"github.com/forgelab-dev/lfa-forgenet/internal/mail"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
 )
@@ -29,9 +30,15 @@ import (
 // preuve, comme pour « create ». Le mot de passe est lu sur l'entrée standard
 // (saisie masquée dans un terminal), jamais en argument, pour ne pas rester
 // dans l'historique du shell.
+//
+// « user create --no-password » crée un compte qui choisira son mot de passe
+// par un lien, et « user login-link » fait ce lien de première connexion :
+// affiché, ou envoyé à l'adresse du compte avec --send (ADR-0014). C'est ce
+// qu'install.sh fait sans terminal, au lieu d'écrire un mot de passe en clair.
 var errUserUsage = errors.New("usage :\n" +
-	"  forgenet-server user create --username NOM --email ADRESSE [--role admin|member] [--config FICHIER]\n" +
+	"  forgenet-server user create --username NOM --email ADRESSE [--role admin|member] [--no-password] [--config FICHIER]\n" +
 	"  forgenet-server user set-password --username NOM [--config FICHIER]\n" +
+	"  forgenet-server user login-link --username NOM [--send] [--config FICHIER]\n" +
 	"(mot de passe sur l'entrée standard)")
 
 // runUser traite la sous-commande « user ».
@@ -44,6 +51,8 @@ func runUser(ctx context.Context, args []string, stdin io.Reader, stdout io.Writ
 		return runUserCreate(ctx, args[1:], stdin, stdout)
 	case "set-password":
 		return runUserSetPassword(ctx, args[1:], stdin, stdout)
+	case "login-link":
+		return runUserLoginLink(ctx, args[1:], stdout)
 	default:
 		return errUserUsage
 	}
@@ -53,10 +62,12 @@ func runUserCreate(ctx context.Context, args []string, stdin io.Reader, stdout i
 	flags := flag.NewFlagSet("forgenet-server user create", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	var configPath, username, email, role string
+	var noPassword bool
 	flags.StringVar(&configPath, "config", "", "Chemin vers le fichier de configuration (YAML)")
 	flags.StringVar(&username, "username", "", "Nom d'utilisateur")
 	flags.StringVar(&email, "email", "", "Adresse email")
 	flags.StringVar(&role, "role", string(store.RoleAdmin), "Rôle : admin ou member")
+	flags.BoolVar(&noPassword, "no-password", false, "Créer le compte sans mot de passe : il le choisira par un lien (user login-link)")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("%w ; %w", err, errUserUsage)
 	}
@@ -66,13 +77,20 @@ func runUserCreate(ctx context.Context, args []string, stdin io.Reader, stdout i
 		return err
 	}
 
-	password, err := readPassword(stdin, stdout, "Mot de passe : ")
-	if err != nil {
-		return err
+	var password string
+	if !noPassword {
+		if password, err = readPassword(stdin, stdout, "Mot de passe : "); err != nil {
+			return err
+		}
 	}
 
-	return withAuth(ctx, cfg, func(authService auth.Service) error {
-		user, err := authService.Register(ctx, username, email, password, store.Role(role))
+	return withAuth(ctx, cfg, func(authService auth.Service, _ store.Store) error {
+		var user *store.User
+		if noPassword {
+			user, err = authService.RegisterWithoutPassword(ctx, username, email, store.Role(role))
+		} else {
+			user, err = authService.Register(ctx, username, email, password, store.Role(role))
+		}
 		if errors.Is(err, store.ErrConflict) {
 			return errors.New("ce nom d'utilisateur ou cette adresse email existe déjà")
 		}
@@ -80,6 +98,9 @@ func runUserCreate(ctx context.Context, args []string, stdin io.Reader, stdout i
 			return err
 		}
 		_, err = fmt.Fprintf(stdout, "Compte %s créé (rôle %s, identifiant %s).\n", user.Username, user.Role, user.ID)
+		if err == nil && noPassword {
+			_, err = fmt.Fprintf(stdout, "Il s'ouvrira par son lien de première connexion : forgenet user login-link --username %s\n", user.Username)
+		}
 		return err
 	})
 }
@@ -107,7 +128,7 @@ func runUserSetPassword(ctx context.Context, args []string, stdin io.Reader, std
 		return err
 	}
 
-	return withAuth(ctx, cfg, func(authService auth.Service) error {
+	return withAuth(ctx, cfg, func(authService auth.Service, _ store.Store) error {
 		revoked, err := authService.ResetPassword(ctx, username, password)
 		if errors.Is(err, store.ErrNotFound) {
 			return fmt.Errorf("aucun compte ne s'appelle %q", strings.TrimSpace(username))
@@ -120,14 +141,73 @@ func runUserSetPassword(ctx context.Context, args []string, stdin io.Reader, std
 	})
 }
 
+// runUserLoginLink fait un lien de première connexion pour un compte. Être sur
+// la machine du serveur en est la preuve, comme pour « set-password ». Sans
+// --send, le lien est écrit sur la sortie standard, qu'install.sh redirige
+// vers un fichier root quand il n'a pas de terminal : il ne doit finir dans
+// aucun journal.
+func runUserLoginLink(ctx context.Context, args []string, stdout io.Writer) error {
+	flags := flag.NewFlagSet("forgenet-server user login-link", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	var configPath, username string
+	var send bool
+	flags.StringVar(&configPath, "config", "", "Chemin vers le fichier de configuration (YAML)")
+	flags.StringVar(&username, "username", "", "Nom d'utilisateur")
+	flags.BoolVar(&send, "send", false, "Envoyer le lien à l'adresse du compte au lieu de l'afficher")
+	if err := flags.Parse(args); err != nil {
+		return fmt.Errorf("%w ; %w", err, errUserUsage)
+	}
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return fmt.Errorf("--username est obligatoire ; %w", errUserUsage)
+	}
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return err
+	}
+	if send && !cfg.SMTP.Enabled() {
+		return fmt.Errorf("%w ; sans --send, le lien s'affiche ici", mail.ErrDisabled)
+	}
+
+	return withAuth(ctx, cfg, func(authService auth.Service, db store.Store) error {
+		user, err := db.Users().GetUserByUsername(ctx, username)
+		if errors.Is(err, store.ErrNotFound) {
+			return fmt.Errorf("aucun compte ne s'appelle %q", username)
+		}
+		if err != nil {
+			return err
+		}
+		token, _, err := authService.CreateAccessLink(ctx, user.ID, store.PurposeFirstLogin, "system:cli")
+		if err != nil {
+			return err
+		}
+		local := strings.TrimSpace(cfg.Proxy.DashboardHost) == ""
+		url := mail.AccessURL(mail.DashboardURL(cfg.Proxy.DashboardHost), token)
+
+		if !send {
+			_, err = fmt.Fprint(stdout, mail.FirstLoginText(user.Username, url, local))
+			return err
+		}
+		sendCtx, cancel := context.WithTimeout(ctx, mail.DefaultTimeout)
+		defer cancel()
+		if err := mail.NewSMTP(cfg.SMTP).Send(sendCtx, mail.FirstLoginMessage(user.Email, user.Username, url, local)); err != nil {
+			return fmt.Errorf("le relais n'a pas pris le lien : %w", err)
+		}
+		// L'adresse n'est pas répétée : cette sortie peut finir dans un journal.
+		_, err = fmt.Fprintf(stdout, "Lien de première connexion envoyé à l'adresse du compte %s (valable 24 heures).\n", user.Username)
+		return err
+	})
+}
+
 // withAuth ouvre la base et le service d'authentification le temps de fn.
-func withAuth(ctx context.Context, cfg *config.Config, fn func(auth.Service) error) error {
+func withAuth(ctx context.Context, cfg *config.Config, fn func(auth.Service, store.Store) error) error {
 	db, err := sqlite.Open(ctx, cfg.Database)
 	if err != nil {
 		return fmt.Errorf("base de données : %w", err)
 	}
 	defer func() { _ = db.Close() }()
-	return fn(auth.NewService(db, cfg.Auth, audit.NewAuditor(db.Audit(), zerolog.Nop())))
+	return fn(auth.NewService(db, cfg.Auth, audit.NewAuditor(db.Audit(), zerolog.Nop())), db)
 }
 
 // readNewPassword demande deux fois le mot de passe dans un terminal, où une
