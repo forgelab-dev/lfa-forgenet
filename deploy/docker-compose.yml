@@ -19,6 +19,10 @@ services:
     image: ghcr.io/forgelab-dev/forgenet-server:${FORGENET_VERSION:?FORGENET_VERSION manquante dans .env}${FORGENET_IMAGE_DIGEST:+@${FORGENET_IMAGE_DIGEST}}
     container_name: forgenet-server
     restart: unless-stopped
+    # Range le conteneur parmi ceux de ForgeNet, à part des applications
+    # (orchestrator.SystemLabel).
+    labels:
+      forgenet.system: "true"
     # Utilisateur sans droits de l'image ; le groupe du socket Docker lui donne
     # accès au démon, seul privilège dont il a besoin.
     user: "10001:10001"
@@ -70,6 +74,8 @@ services:
     image: caddy:2.11.9-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
     container_name: forgenet-caddy
     restart: unless-stopped
+    labels:
+      forgenet.system: "true"
     # root dans le conteneur pour ses volumes, mais groupe 10001 : le socket
     # d'administration, créé en 0660, n'est ouvert qu'au serveur.
     user: "0:10001"
