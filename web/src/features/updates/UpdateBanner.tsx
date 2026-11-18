@@ -45,8 +45,17 @@ export function UpdateBanner() {
   const updates = useUpdates();
   const status = updates?.status;
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
-  // Stable : le suivi relance ses relectures quand ce rappel change.
-  const onFinished = useCallback((run: UpdateRun) => setPhase({ kind: 'finished', run }), []);
+  const refresh = updates?.refresh;
+  // Stable : le suivi relance ses relectures quand ce rappel change. L'état
+  // est relu à la fin, sans quoi la barre latérale garderait l'ancienne
+  // version et la mise à jour « disponible » jusqu'au rechargement (#74).
+  const onFinished = useCallback(
+    (run: UpdateRun) => {
+      setPhase({ kind: 'finished', run });
+      void refresh?.();
+    },
+    [refresh]
+  );
 
   if (!updates || !status) {
     return null;
