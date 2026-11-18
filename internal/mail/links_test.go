@@ -36,3 +36,14 @@ func TestPasswordResetMessage(t *testing.T) {
 	assert.NotContains(t, msg.Body, "ssh -N")
 	assert.Contains(t, PasswordResetMessage("a@b.org", "a", "u", true).Body, "ssh -N")
 }
+
+func TestInvitationMessage(t *testing.T) {
+	msg := InvitationMessage("bio@exemple.org", "bio", "ana", "https://f.exemple.org/acces#jeton", false)
+	assert.Equal(t, "bio@exemple.org", msg.To)
+	assert.Equal(t, "ana vous invite sur ForgeNet", msg.Subject)
+	assert.Contains(t, msg.Body, "ana vous invite sur son serveur ForgeNet, avec le compte bio.")
+	assert.Contains(t, msg.Body, "  https://f.exemple.org/acces#jeton\n")
+	assert.Contains(t, msg.Body, "valable 7 jours")
+	assert.NotContains(t, msg.Body, "ssh -N")
+	assert.Contains(t, InvitationMessage("a@b.org", "a", "c", "u", true).Body, "ssh -N")
+}
