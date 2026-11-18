@@ -86,7 +86,7 @@ function renderApp(server: Server) {
     JSON.stringify({ token: 'jeton', expiresAt: Date.now() + 3_600_000 })
   );
   // Page à venir, sans appel à l'API : seuls les avis du bandeau s'affichent.
-  const location = memoryLocation({ path: '/equipe' });
+  const location = memoryLocation({ path: '/assistant' });
   render(<App transportFactory={server.factory} locationHook={location.hook} />);
 }
 

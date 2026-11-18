@@ -108,8 +108,7 @@ export const navigation: SectionGroup[] = [
         path: '/equipe',
         label: 'Équipe',
         icon: Users,
-        upcoming: true,
-        summary: 'Inviter des membres et choisir ce que chacun peut faire sur le serveur.',
+        summary: 'Les comptes du serveur : inviter un membre, suivre son invitation, la renvoyer.',
       },
       {
         path: '/reglages',
