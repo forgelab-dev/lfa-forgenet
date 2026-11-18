@@ -168,7 +168,7 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 ### 2.9 Paramètres & Compte
 - [ ] Profil, tokens API, préférences de notification `🔓 CE` — *v0.6.0, en partie : la page « Mon compte » montre le nom, l'adresse et le rôle du compte ; ils ne se modifient pas encore, et les jetons API comme les notifications restent à faire*
 - [x] Changer son mot de passe, dans le dashboard et en terminal (`user set-password`) `🔓 CE` — *v0.6.0 (#72) : page « Mon compte » (mot de passe actuel exigé, 8 caractères au moins), `forgenet user set-password` sur le serveur pour un mot de passe perdu ; les autres sessions et les jetons API du compte sont fermés, le changement est inscrit au journal d'audit*
-- [ ] Envoi d'e-mails (SMTP) : lien à usage unique pour la première connexion de l'administrateur, mot de passe oublié `🔓 CE` — *v0.8.0, en partie (#73, ADR-0014) : relais SMTP réglé par `install.sh --smtp-*`, page Réglages avec e-mail d'essai ; lien de première connexion à l'installation sans terminal (page `/acces`, `forgenet user login-link`) ; mot de passe oublié à venir*
+- [x] Envoi d'e-mails (SMTP) : lien à usage unique pour la première connexion de l'administrateur, mot de passe oublié `🔓 CE` — *v0.8.0 à v0.10.0 (#73, ADR-0014) : relais SMTP réglé par `install.sh --smtp-*`, page Réglages avec e-mail d'essai ; lien de première connexion à l'installation sans terminal (page `/acces`, `forgenet user login-link`) ; « Mot de passe oublié ? » sur l'écran de connexion, envoi en tâche de fond avec trois essais*
 - [ ] Thème clair/sombre `🔓 CE`
 - [ ] Localisation FR/EN `🔓 CE`
 - [ ] Personnalisation de marque (logo, couleurs, domaine du dashboard) pour usage marque blanche `🏢 EE`
