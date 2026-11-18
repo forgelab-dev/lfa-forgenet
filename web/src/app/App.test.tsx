@@ -13,9 +13,9 @@ const PASSWORD = 'mot-de-passe-de-test';
 const mike = { id: 'u1', username: 'mike', email: 'mike@forgenet.test', role: UserRole.ADMIN };
 
 /** Faux serveur ForgeNet : un compte, des jetons révocables, trois conteneurs. */
-function fakeServer(options: { unavailable?: boolean } = {}) {
+function fakeServer(options: { unavailable?: boolean; passwordReset?: boolean } = {}) {
   const tokens = new Set<string>();
-  const calls = { logout: 0, redeemed: [] as string[] };
+  const calls = { logout: 0, redeemed: [] as string[], resets: [] as string[] };
   // Liens à usage unique encore valables (ADR-0014).
   const links = new Set(['lien-valable']);
   let issued = 0;
@@ -41,6 +41,19 @@ function fakeServer(options: { unavailable?: boolean } = {}) {
             const token = `jeton-${++issued}`;
             tokens.add(token);
             return { token, expiresAt: timestampFromMs(Date.now() + 3_600_000), user: mike };
+          },
+          getLoginOptions() {
+            return { passwordReset: options.passwordReset ?? false };
+          },
+          requestPasswordReset(req) {
+            if (calls.resets.length >= 2) {
+              throw new ConnectError(
+                'trop de demandes, réessayez dans une heure',
+                Code.ResourceExhausted
+              );
+            }
+            calls.resets.push(req.login);
+            return {};
           },
           inspectAccessLink(req) {
             if (!links.has(req.token)) {
@@ -324,6 +337,58 @@ describe('App', () => {
       expect(
         await screen.findByRole('heading', { level: 1, name: 'Ce lien ne vaut plus' })
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('mot de passe oublié', () => {
+    it('renvoie à la commande du serveur quand le relais manque', async () => {
+      renderApp(fakeServer());
+
+      expect(
+        await screen.findByText('forgenet user set-password --username NOM')
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Mot de passe oublié ?' })).toBeNull();
+    });
+
+    it('demande un lien sans dire si le compte existe', async () => {
+      const server = fakeServer({ passwordReset: true });
+      renderApp(server);
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Mot de passe oublié ?' }));
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Mot de passe oublié' })
+      ).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Recevoir un lien' }));
+      expect(screen.getByText('Saisissez votre identifiant.')).toBeInTheDocument();
+      expect(server.calls.resets).toEqual([]);
+
+      fireEvent.change(screen.getByLabelText('Identifiant'), { target: { value: ' mike ' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Recevoir un lien' }));
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Vérifiez vos e-mails' })
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Si un compte correspond/)).toBeInTheDocument();
+      expect(server.calls.resets).toEqual(['mike']);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Retour à la connexion' }));
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Connexion' })
+      ).toBeInTheDocument();
+    });
+
+    it('affiche le refus du serveur', async () => {
+      const server = fakeServer({ passwordReset: true });
+      server.calls.resets.push('a', 'b');
+      renderApp(server, '/mot-de-passe-oublie');
+
+      fireEvent.change(await screen.findByLabelText('Identifiant'), { target: { value: 'mike' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Recevoir un lien' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Trop de demandes, réessayez dans une heure.'
+      );
     });
   });
 });
