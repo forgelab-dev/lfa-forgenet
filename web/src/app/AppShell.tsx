@@ -235,27 +235,28 @@ function VersionLine() {
   }
   return (
     <div className="mt-2 px-2 text-xs text-iron-300">
-      <div className="flex min-h-11 items-center justify-between gap-2">
-        <span>
+      {/* La version et l'action sur deux lignes : côte à côte, le libellé du
+          bouton passait à la ligne dans les 16 rem de la barre (#74). */}
+      <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-2">
+        <span className="whitespace-nowrap">
           ForgeNet <span className="font-mono">{status.currentVersion}</span>
         </span>
-        {status.available ? (
-          <span className="font-medium text-gold-300">
+        {status.available && (
+          <span className="font-medium whitespace-nowrap text-gold-300">
             <span className="font-mono">{status.available.version}</span> disponible
           </span>
-        ) : (
-          status.checkEnabled && (
-            <button
-              type="button"
-              onClick={() => void updates.check()}
-              disabled={updates.checking}
-              className="-mr-2 min-h-11 rounded-md px-2 text-iron-300 underline-offset-2 hover:text-iron-100 hover:underline disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-gold-400"
-            >
-              {updates.checking ? 'Vérification…' : 'Vérifier les mises à jour'}
-            </button>
-          )
         )}
       </div>
+      {!status.available && status.checkEnabled && (
+        <button
+          type="button"
+          onClick={() => void updates.check()}
+          disabled={updates.checking}
+          className="-ml-2 flex min-h-11 items-center rounded-md px-2 whitespace-nowrap text-iron-300 underline-offset-2 hover:text-iron-100 hover:underline disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-gold-400"
+        >
+          {updates.checking ? 'Vérification…' : 'Vérifier les mises à jour'}
+        </button>
+      )}
       {updates.checkError && (
         <p role="alert" className="pb-1 text-danger-400">
           {updates.checkError}
