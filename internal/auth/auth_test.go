@@ -2,6 +2,7 @@ package auth_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -46,6 +47,11 @@ func register(t *testing.T, svc auth.Service, name string, role store.Role) *sto
 func TestPassword_HashingAndValidation(t *testing.T) {
 	_, err := auth.HashPassword("court")
 	require.ErrorIs(t, err, auth.ErrPasswordTooShort)
+	// Huit caractères accentués font seize octets mais comptent pour huit.
+	_, err = auth.HashPassword("éééééééé")
+	require.NoError(t, err)
+	_, err = auth.HashPassword(strings.Repeat("a", 73))
+	require.ErrorIs(t, err, auth.ErrPasswordTooLong)
 
 	hashed, err := auth.HashPassword(testPassword)
 	require.NoError(t, err)
@@ -249,4 +255,80 @@ func TestBearerToken(t *testing.T) {
 	assert.Equal(t, "abc", auth.BearerToken("  bearer   abc "))
 	assert.Equal(t, "Basic abc", auth.BearerToken("Basic abc"), "autre schéma : refusé ensuite comme jeton invalide")
 	assert.Empty(t, auth.BearerToken(""))
+}
+
+func TestChangePassword(t *testing.T) {
+	svc, st := setupAuthTest(t)
+	ctx := context.Background()
+	u := register(t, svc, "alice", store.RoleMember)
+
+	current, err := svc.Login(ctx, "alice", testPassword)
+	require.NoError(t, err)
+	other, err := svc.Login(ctx, "alice", testPassword)
+	require.NoError(t, err)
+	apiToken, _, err := svc.CreateAPIToken(ctx, u.ID, "cli", store.RoleMember, 0)
+	require.NoError(t, err)
+	claims, err := svc.ValidateToken(ctx, current.Token)
+	require.NoError(t, err)
+
+	_, err = svc.ChangePassword(ctx, u.ID, claims.SessionID, "mauvais-mot-de-passe", "nouveau-mot-de-passe")
+	require.ErrorIs(t, err, auth.ErrWrongCurrentPassword)
+	_, err = svc.ChangePassword(ctx, u.ID, claims.SessionID, testPassword, testPassword)
+	require.ErrorIs(t, err, auth.ErrSamePassword)
+	_, err = svc.ChangePassword(ctx, u.ID, claims.SessionID, testPassword, "court")
+	require.ErrorIs(t, err, auth.ErrPasswordTooShort)
+
+	revoked, err := svc.ChangePassword(ctx, u.ID, claims.SessionID, testPassword, "nouveau-mot-de-passe")
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), revoked, "l'autre session et le jeton API")
+
+	_, err = svc.ValidateToken(ctx, current.Token)
+	require.NoError(t, err, "la session qui a demandé le changement reste ouverte")
+	_, err = svc.ValidateToken(ctx, other.Token)
+	require.ErrorIs(t, err, auth.ErrInvalidToken)
+	_, err = svc.ValidateToken(ctx, apiToken)
+	require.ErrorIs(t, err, auth.ErrInvalidToken)
+
+	_, err = svc.Login(ctx, "alice", testPassword)
+	require.ErrorIs(t, err, auth.ErrInvalidCredentials)
+	_, err = svc.Login(ctx, "alice", "nouveau-mot-de-passe")
+	require.NoError(t, err)
+
+	actions := auditActions(t, st)
+	assert.Contains(t, actions, "user.password_change_failed")
+	assert.Contains(t, actions, "user.password_change")
+}
+
+func TestResetPassword(t *testing.T) {
+	svc, st := setupAuthTest(t)
+	ctx := context.Background()
+	register(t, svc, "admin", store.RoleAdmin)
+	session, err := svc.Login(ctx, "admin", testPassword)
+	require.NoError(t, err)
+
+	revoked, err := svc.ResetPassword(ctx, " admin ", "mot-de-passe-retrouve")
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), revoked)
+	_, err = svc.ValidateToken(ctx, session.Token)
+	require.ErrorIs(t, err, auth.ErrInvalidToken)
+	_, err = svc.Login(ctx, "admin", "mot-de-passe-retrouve")
+	require.NoError(t, err)
+
+	_, err = svc.ResetPassword(ctx, "inconnu", "mot-de-passe-retrouve")
+	require.ErrorIs(t, err, store.ErrNotFound)
+	_, err = svc.ResetPassword(ctx, "admin", "court")
+	require.ErrorIs(t, err, auth.ErrPasswordTooShort)
+
+	assert.Contains(t, auditActions(t, st), "user.password_reset")
+}
+
+func auditActions(t *testing.T, st store.Store) []string {
+	t.Helper()
+	events, err := st.Audit().List(context.Background(), 100, 0)
+	require.NoError(t, err)
+	actions := make([]string, 0, len(events))
+	for _, e := range events {
+		actions = append(actions, e.Action)
+	}
+	return actions
 }
