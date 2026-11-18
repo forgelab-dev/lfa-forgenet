@@ -249,3 +249,15 @@ func TestGet_MapsStateAndPorts(t *testing.T) {
 		{ContainerPort: 443, Protocol: "tcp"},
 	}, c.Ports, "ports triés par port du conteneur")
 }
+
+func TestGet_ReadsTheSystemLabel(t *testing.T) {
+	for label, want := range map[string]bool{"true": true, "false": false, "": false} {
+		f := &fakeClient{inspect: container.InspectResponse{
+			ID: "c1", Name: "/forgenet-caddy",
+			Config: &container.Config{Image: "caddy", Labels: map[string]string{orchestrator.SystemLabel: label}},
+		}}
+		c, err := newEngine(t, f).Get(context.Background(), "c1")
+		require.NoError(t, err)
+		assert.Equal(t, want, c.System, "étiquette %q", label)
+	}
+}

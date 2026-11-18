@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator"
 )
 
 // UpdaterName est le conteneur de mise à jour : un seul à la fois.
@@ -84,6 +86,9 @@ func Launch(ctx context.Context, d Docker, o LaunchOptions) (string, error) {
 	}
 	args := []string{
 		"run", "-d", "--name", UpdaterName,
+		// Le conteneur reste après sa fin, pour ses journaux (ADR-0011) :
+		// l'étiquette le range parmi ceux de ForgeNet, pas parmi les applications.
+		"--label", orchestrator.SystemLabel + "=true",
 		"--user", "0:0",
 		"-e", "FORGENET_INSTALL_DIR=" + o.InstallDir,
 		"-v", "/var/run/docker.sock:/var/run/docker.sock",

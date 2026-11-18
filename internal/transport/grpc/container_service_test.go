@@ -275,3 +275,19 @@ func TestContainerService_StreamLogs(t *testing.T) {
 	assert.Equal(t, forgenetv1.LogStream_LOG_STREAM_STDOUT, got[0].GetSource())
 	assert.Equal(t, forgenetv1.LogStream_LOG_STREAM_STDERR, got[1].GetSource())
 }
+
+func TestContainerService_ListMarksSystemContainers(t *testing.T) {
+	engine := &fakeEngine{containers: []orchestrator.Container{
+		{ID: "app", Name: "forgenet-boutique-web-1"},
+		{ID: "maj", Name: "forgenet-updater", State: orchestrator.StateExited, System: true},
+	}}
+	ts := startTestServer(t, engine)
+
+	resp, err := ts.containers.ListContainers(as(ts.memberToken), &forgenetv1.ListContainersRequest{IncludeStopped: true})
+	require.NoError(t, err)
+	system := map[string]bool{}
+	for _, c := range resp.GetContainers() {
+		system[c.GetId()] = c.GetSystem()
+	}
+	assert.Equal(t, map[string]bool{"app": false, "maj": true}, system)
+}
