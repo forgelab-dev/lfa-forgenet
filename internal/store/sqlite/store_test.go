@@ -254,3 +254,50 @@ func TestAuditStore_RecordAndList(t *testing.T) {
 	assert.Equal(t, "aud_2", events[0].ID)
 	assert.Equal(t, "aud_1", events[1].ID)
 }
+
+func TestUserStore_SetPassword(t *testing.T) {
+	st := newTestStore(t)
+	ctx := context.Background()
+
+	newUser := func(id string) {
+		require.NoError(t, st.Users().CreateUser(ctx, &store.User{
+			ID: id, Username: id, Email: id + "@forgenet.local", PasswordHash: "ancienne", Role: store.RoleMember,
+		}))
+	}
+	newSession := func(id, userID string) {
+		require.NoError(t, st.Sessions().CreateSession(ctx, &store.Session{
+			ID: id, UserID: userID, TokenHash: "h_" + id, Name: id, Role: store.RoleMember,
+			ExpiresAt: time.Now().Add(time.Hour),
+		}))
+	}
+	newUser("usr_a")
+	newUser("usr_b")
+	newSession("sess_courante", "usr_a")
+	newSession("sess_autre", "usr_a")
+	newSession("tok_cli", "usr_a")
+	newSession("sess_de_b", "usr_b")
+	require.NoError(t, st.Sessions().RevokeSession(ctx, "sess_autre"))
+
+	revoked, err := st.Users().SetPassword(ctx, "usr_a", "nouvelle", "sess_courante")
+	require.NoError(t, err)
+	// sess_autre était déjà révoquée : seul le jeton est compté.
+	assert.Equal(t, int64(1), revoked)
+
+	u, err := st.Users().GetUserByID(ctx, "usr_a")
+	require.NoError(t, err)
+	assert.Equal(t, "nouvelle", u.PasswordHash)
+
+	for id, wantRevoked := range map[string]bool{"sess_courante": false, "sess_autre": true, "tok_cli": true, "sess_de_b": false} {
+		s, err := st.Sessions().GetSessionByID(ctx, id)
+		require.NoError(t, err)
+		assert.Equal(t, wantRevoked, s.Revoked, id)
+	}
+
+	// Sans session à garder (commande sur le serveur) : tout est fermé.
+	revoked, err = st.Users().SetPassword(ctx, "usr_a", "encore", "")
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), revoked)
+
+	_, err = st.Users().SetPassword(ctx, "usr_absent", "x", "")
+	require.ErrorIs(t, err, store.ErrNotFound)
+}

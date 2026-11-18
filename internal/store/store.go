@@ -235,6 +235,11 @@ type UserStore interface {
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	ListUsers(ctx context.Context) ([]*User, error)
 	UpdateUser(ctx context.Context, user *User) error
+	// SetPassword remplace l'empreinte du mot de passe et révoque, dans la
+	// même transaction, toutes les sessions et tous les jetons du compte sauf
+	// keepSessionID (vide : tous). Renvoie le nombre de sessions révoquées, ou
+	// ErrNotFound si le compte n'existe pas.
+	SetPassword(ctx context.Context, userID, passwordHash, keepSessionID string) (int64, error)
 	DeleteUser(ctx context.Context, id string) error
 	CountUsers(ctx context.Context) (int64, error)
 }
