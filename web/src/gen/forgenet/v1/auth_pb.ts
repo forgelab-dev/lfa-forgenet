@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file forgenet/v1/auth.proto.
  */
 export const file_forgenet_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChZmb3JnZW5ldC92MS9hdXRoLnByb3RvEgtmb3JnZW5ldC52MSJYCgRVc2VyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZSIvCgxMb2dpblJlcXVlc3QSDQoFbG9naW4YASABKAkSEAoIcGFzc3dvcmQYAiABKAkibwoNTG9naW5SZXNwb25zZRINCgV0b2tlbhgBIAEoCRIuCgpleHBpcmVzX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIfCgR1c2VyGAMgASgLMhEuZm9yZ2VuZXQudjEuVXNlciIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIhcKFUdldEN1cnJlbnRVc2VyUmVxdWVzdCI5ChZHZXRDdXJyZW50VXNlclJlc3BvbnNlEh8KBHVzZXIYASABKAsyES5mb3JnZW5ldC52MS5Vc2VyIkcKFUNoYW5nZVBhc3N3b3JkUmVxdWVzdBIYChBjdXJyZW50X3Bhc3N3b3JkGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIyChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlEhgKEHJldm9rZWRfc2Vzc2lvbnMYASABKAUqUAoIVXNlclJvbGUSGQoVVVNFUl9ST0xFX1VOU1BFQ0lGSUVEEAASEwoPVVNFUl9ST0xFX0FETUlOEAESFAoQVVNFUl9ST0xFX01FTUJFUhACMsYCCgtBdXRoU2VydmljZRI+CgVMb2dpbhIZLmZvcmdlbmV0LnYxLkxvZ2luUmVxdWVzdBoaLmZvcmdlbmV0LnYxLkxvZ2luUmVzcG9uc2USQQoGTG9nb3V0EhouZm9yZ2VuZXQudjEuTG9nb3V0UmVxdWVzdBobLmZvcmdlbmV0LnYxLkxvZ291dFJlc3BvbnNlElkKDkdldEN1cnJlbnRVc2VyEiIuZm9yZ2VuZXQudjEuR2V0Q3VycmVudFVzZXJSZXF1ZXN0GiMuZm9yZ2VuZXQudjEuR2V0Q3VycmVudFVzZXJSZXNwb25zZRJZCg5DaGFuZ2VQYXNzd29yZBIiLmZvcmdlbmV0LnYxLkNoYW5nZVBhc3N3b3JkUmVxdWVzdBojLmZvcmdlbmV0LnYxLkNoYW5nZVBhc3N3b3JkUmVzcG9uc2VCRVpDZ2l0aHViLmNvbS9mb3JnZWxhYi1kZXYvbGZhLWZvcmdlbmV0L3BrZy9nZW4vZm9yZ2VuZXQvdjE7Zm9yZ2VuZXR2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChZmb3JnZW5ldC92MS9hdXRoLnByb3RvEgtmb3JnZW5ldC52MSJYCgRVc2VyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZSIvCgxMb2dpblJlcXVlc3QSDQoFbG9naW4YASABKAkSEAoIcGFzc3dvcmQYAiABKAkibwoNTG9naW5SZXNwb25zZRINCgV0b2tlbhgBIAEoCRIuCgpleHBpcmVzX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIfCgR1c2VyGAMgASgLMhEuZm9yZ2VuZXQudjEuVXNlciIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIhcKFUdldEN1cnJlbnRVc2VyUmVxdWVzdCI5ChZHZXRDdXJyZW50VXNlclJlc3BvbnNlEh8KBHVzZXIYASABKAsyES5mb3JnZW5ldC52MS5Vc2VyIkcKFUNoYW5nZVBhc3N3b3JkUmVxdWVzdBIYChBjdXJyZW50X3Bhc3N3b3JkGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIyChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlEhgKEHJldm9rZWRfc2Vzc2lvbnMYASABKAUiKQoYSW5zcGVjdEFjY2Vzc0xpbmtSZXF1ZXN0Eg0KBXRva2VuGAEgASgJIo4BChlJbnNwZWN0QWNjZXNzTGlua1Jlc3BvbnNlEhAKCHVzZXJuYW1lGAEgASgJEi8KB3B1cnBvc2UYAiABKA4yHi5mb3JnZW5ldC52MS5BY2Nlc3NMaW5rUHVycG9zZRIuCgpleHBpcmVzX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCI+ChdSZWRlZW1BY2Nlc3NMaW5rUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIUCgxuZXdfcGFzc3dvcmQYAiABKAkiegoYUmVkZWVtQWNjZXNzTGlua1Jlc3BvbnNlEg0KBXRva2VuGAEgASgJEi4KCmV4cGlyZXNfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh8KBHVzZXIYAyABKAsyES5mb3JnZW5ldC52MS5Vc2VyKlAKCFVzZXJSb2xlEhkKFVVTRVJfUk9MRV9VTlNQRUNJRklFRBAAEhMKD1VTRVJfUk9MRV9BRE1JThABEhQKEFVTRVJfUk9MRV9NRU1CRVIQAiqpAQoRQWNjZXNzTGlua1B1cnBvc2USIwofQUNDRVNTX0xJTktfUFVSUE9TRV9VTlNQRUNJRklFRBAAEiMKH0FDQ0VTU19MSU5LX1BVUlBPU0VfRklSU1RfTE9HSU4QARImCiJBQ0NFU1NfTElOS19QVVJQT1NFX1BBU1NXT1JEX1JFU0VUEAISIgoeQUNDRVNTX0xJTktfUFVSUE9TRV9JTlZJVEFUSU9OEAMyiwQKC0F1dGhTZXJ2aWNlEj4KBUxvZ2luEhkuZm9yZ2VuZXQudjEuTG9naW5SZXF1ZXN0GhouZm9yZ2VuZXQudjEuTG9naW5SZXNwb25zZRJBCgZMb2dvdXQSGi5mb3JnZW5ldC52MS5Mb2dvdXRSZXF1ZXN0GhsuZm9yZ2VuZXQudjEuTG9nb3V0UmVzcG9uc2USWQoOR2V0Q3VycmVudFVzZXISIi5mb3JnZW5ldC52MS5HZXRDdXJyZW50VXNlclJlcXVlc3QaIy5mb3JnZW5ldC52MS5HZXRDdXJyZW50VXNlclJlc3BvbnNlElkKDkNoYW5nZVBhc3N3b3JkEiIuZm9yZ2VuZXQudjEuQ2hhbmdlUGFzc3dvcmRSZXF1ZXN0GiMuZm9yZ2VuZXQudjEuQ2hhbmdlUGFzc3dvcmRSZXNwb25zZRJiChFJbnNwZWN0QWNjZXNzTGluaxIlLmZvcmdlbmV0LnYxLkluc3BlY3RBY2Nlc3NMaW5rUmVxdWVzdBomLmZvcmdlbmV0LnYxLkluc3BlY3RBY2Nlc3NMaW5rUmVzcG9uc2USXwoQUmVkZWVtQWNjZXNzTGluaxIkLmZvcmdlbmV0LnYxLlJlZGVlbUFjY2Vzc0xpbmtSZXF1ZXN0GiUuZm9yZ2VuZXQudjEuUmVkZWVtQWNjZXNzTGlua1Jlc3BvbnNlQkVaQ2dpdGh1Yi5jb20vZm9yZ2VsYWItZGV2L2xmYS1mb3JnZW5ldC9wa2cvZ2VuL2ZvcmdlbmV0L3YxO2ZvcmdlbmV0djFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * User décrit le compte connecté. Le mot de passe et ses empreintes ne
@@ -207,6 +207,107 @@ export const ChangePasswordResponseSchema: GenMessage<ChangePasswordResponse> = 
   messageDesc(file_forgenet_v1_auth, 8);
 
 /**
+ * @generated from message forgenet.v1.InspectAccessLinkRequest
+ */
+export type InspectAccessLinkRequest = Message<"forgenet.v1.InspectAccessLinkRequest"> & {
+  /**
+   * Jeton du lien, lu dans le fragment de l'adresse (/acces#<jeton>).
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+};
+
+/**
+ * Describes the message forgenet.v1.InspectAccessLinkRequest.
+ * Use `create(InspectAccessLinkRequestSchema)` to create a new message.
+ */
+export const InspectAccessLinkRequestSchema: GenMessage<InspectAccessLinkRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 9);
+
+/**
+ * @generated from message forgenet.v1.InspectAccessLinkResponse
+ */
+export type InspectAccessLinkResponse = Message<"forgenet.v1.InspectAccessLinkResponse"> & {
+  /**
+   * Compte dont le lien fait choisir le mot de passe.
+   *
+   * @generated from field: string username = 1;
+   */
+  username: string;
+
+  /**
+   * @generated from field: forgenet.v1.AccessLinkPurpose purpose = 2;
+   */
+  purpose: AccessLinkPurpose;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires_at = 3;
+   */
+  expiresAt?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message forgenet.v1.InspectAccessLinkResponse.
+ * Use `create(InspectAccessLinkResponseSchema)` to create a new message.
+ */
+export const InspectAccessLinkResponseSchema: GenMessage<InspectAccessLinkResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 10);
+
+/**
+ * @generated from message forgenet.v1.RedeemAccessLinkRequest
+ */
+export type RedeemAccessLinkRequest = Message<"forgenet.v1.RedeemAccessLinkRequest"> & {
+  /**
+   * @generated from field: string token = 1;
+   */
+  token: string;
+
+  /**
+   * Mot de passe choisi : 8 caractères au moins, 72 octets au plus.
+   *
+   * @generated from field: string new_password = 2;
+   */
+  newPassword: string;
+};
+
+/**
+ * Describes the message forgenet.v1.RedeemAccessLinkRequest.
+ * Use `create(RedeemAccessLinkRequestSchema)` to create a new message.
+ */
+export const RedeemAccessLinkRequestSchema: GenMessage<RedeemAccessLinkRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 11);
+
+/**
+ * @generated from message forgenet.v1.RedeemAccessLinkResponse
+ */
+export type RedeemAccessLinkResponse = Message<"forgenet.v1.RedeemAccessLinkResponse"> & {
+  /**
+   * Session ouverte sur le compte, comme après Login.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires_at = 2;
+   */
+  expiresAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: forgenet.v1.User user = 3;
+   */
+  user?: User | undefined;
+};
+
+/**
+ * Describes the message forgenet.v1.RedeemAccessLinkResponse.
+ * Use `create(RedeemAccessLinkResponseSchema)` to create a new message.
+ */
+export const RedeemAccessLinkResponseSchema: GenMessage<RedeemAccessLinkResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 12);
+
+/**
  * UserRole reprend les rôles du serveur. Un admin gère tout ; un membre
  * consulte et agit dans les limites de la politique d'accès.
  *
@@ -234,6 +335,46 @@ export enum UserRole {
  */
 export const UserRoleSchema: GenEnum<UserRole> = /*@__PURE__*/
   enumDesc(file_forgenet_v1_auth, 0);
+
+/**
+ * AccessLinkPurpose est l'usage d'un lien à usage unique (ADR-0014). Tous
+ * font choisir un mot de passe ; seuls le texte et la durée changent.
+ *
+ * @generated from enum forgenet.v1.AccessLinkPurpose
+ */
+export enum AccessLinkPurpose {
+  /**
+   * @generated from enum value: ACCESS_LINK_PURPOSE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Premier accès de l'administrateur créé à l'installation (24 heures).
+   *
+   * @generated from enum value: ACCESS_LINK_PURPOSE_FIRST_LOGIN = 1;
+   */
+  FIRST_LOGIN = 1,
+
+  /**
+   * Mot de passe oublié (1 heure).
+   *
+   * @generated from enum value: ACCESS_LINK_PURPOSE_PASSWORD_RESET = 2;
+   */
+  PASSWORD_RESET = 2,
+
+  /**
+   * Invitation d'un membre (7 jours).
+   *
+   * @generated from enum value: ACCESS_LINK_PURPOSE_INVITATION = 3;
+   */
+  INVITATION = 3,
+}
+
+/**
+ * Describes the enum forgenet.v1.AccessLinkPurpose.
+ */
+export const AccessLinkPurposeSchema: GenEnum<AccessLinkPurpose> = /*@__PURE__*/
+  enumDesc(file_forgenet_v1_auth, 1);
 
 /**
  * AuthService ouvre et ferme les sessions du dashboard et du CLI.
@@ -286,6 +427,33 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof ChangePasswordRequestSchema;
     output: typeof ChangePasswordResponseSchema;
+  },
+  /**
+   * InspectAccessLink décrit un lien à usage unique encore valable, sans
+   * l'utiliser : la page dit pour quel compte on choisit un mot de passe.
+   * Appelable sans jeton. Un lien inconnu, expiré, déjà utilisé ou remplacé
+   * répond NOT_FOUND, sans dire lequel.
+   *
+   * @generated from rpc forgenet.v1.AuthService.InspectAccessLink
+   */
+  inspectAccessLink: {
+    methodKind: "unary";
+    input: typeof InspectAccessLinkRequestSchema;
+    output: typeof InspectAccessLinkResponseSchema;
+  },
+  /**
+   * RedeemAccessLink utilise le lien : il fixe le mot de passe choisi, ferme
+   * les sessions et jetons du compte, puis ouvre une session. Appelable sans
+   * jeton. Un lien qui ne vaut plus répond NOT_FOUND ; un mot de passe refusé
+   * répond INVALID_ARGUMENT et laisse le lien valable. L'usage est inscrit au
+   * journal d'audit.
+   *
+   * @generated from rpc forgenet.v1.AuthService.RedeemAccessLink
+   */
+  redeemAccessLink: {
+    methodKind: "unary";
+    input: typeof RedeemAccessLinkRequestSchema;
+    output: typeof RedeemAccessLinkResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_forgenet_v1_auth, 0);

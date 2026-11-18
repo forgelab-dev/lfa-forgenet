@@ -597,6 +597,320 @@ class ChangePasswordResponse extends $pb.GeneratedMessage {
   void clearRevokedSessions() => $_clearField(1);
 }
 
+class InspectAccessLinkRequest extends $pb.GeneratedMessage {
+  factory InspectAccessLinkRequest({
+    $core.String? token,
+  }) {
+    final result = InspectAccessLinkRequest._();
+    if (token != null) result.token = token;
+    return result;
+  }
+
+  InspectAccessLinkRequest._();
+
+  factory InspectAccessLinkRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      InspectAccessLinkRequest()..mergeFromBuffer(data, registry);
+  factory InspectAccessLinkRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      InspectAccessLinkRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'InspectAccessLinkRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: InspectAccessLinkRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'token')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  InspectAccessLinkRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  InspectAccessLinkRequest copyWith(
+          void Function(InspectAccessLinkRequest) updates) =>
+      super.copyWith((message) => updates(message as InspectAccessLinkRequest))
+          as InspectAccessLinkRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use InspectAccessLinkRequest() / InspectAccessLinkRequest.new instead')
+  static InspectAccessLinkRequest create() => InspectAccessLinkRequest._();
+  static $pb.GeneratedMessage $_createMessage() => InspectAccessLinkRequest._();
+  @$core.override
+  InspectAccessLinkRequest createEmptyInstance() =>
+      InspectAccessLinkRequest._();
+  @$core.pragma('dart2js:noInline')
+  static InspectAccessLinkRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<InspectAccessLinkRequest>(
+          InspectAccessLinkRequest.$_createMessage);
+  static InspectAccessLinkRequest? _defaultInstance;
+
+  /// Jeton du lien, lu dans le fragment de l'adresse (/acces#<jeton>).
+  @$pb.TagNumber(1)
+  $core.String get token => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set token($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasToken() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearToken() => $_clearField(1);
+}
+
+class InspectAccessLinkResponse extends $pb.GeneratedMessage {
+  factory InspectAccessLinkResponse({
+    $core.String? username,
+    AccessLinkPurpose? purpose,
+    $1.Timestamp? expiresAt,
+  }) {
+    final result = InspectAccessLinkResponse._();
+    if (username != null) result.username = username;
+    if (purpose != null) result.purpose = purpose;
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    return result;
+  }
+
+  InspectAccessLinkResponse._();
+
+  factory InspectAccessLinkResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      InspectAccessLinkResponse()..mergeFromBuffer(data, registry);
+  factory InspectAccessLinkResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      InspectAccessLinkResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'InspectAccessLinkResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: InspectAccessLinkResponse.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'username')
+    ..aE<AccessLinkPurpose>(2, _omitFieldNames ? '' : 'purpose',
+        enumValues: AccessLinkPurpose.values)
+    ..aOM<$1.Timestamp>(3, _omitFieldNames ? '' : 'expiresAt',
+        subBuilder: $1.Timestamp.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  InspectAccessLinkResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  InspectAccessLinkResponse copyWith(
+          void Function(InspectAccessLinkResponse) updates) =>
+      super.copyWith((message) => updates(message as InspectAccessLinkResponse))
+          as InspectAccessLinkResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use InspectAccessLinkResponse() / InspectAccessLinkResponse.new instead')
+  static InspectAccessLinkResponse create() => InspectAccessLinkResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      InspectAccessLinkResponse._();
+  @$core.override
+  InspectAccessLinkResponse createEmptyInstance() =>
+      InspectAccessLinkResponse._();
+  @$core.pragma('dart2js:noInline')
+  static InspectAccessLinkResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<InspectAccessLinkResponse>(
+          InspectAccessLinkResponse.$_createMessage);
+  static InspectAccessLinkResponse? _defaultInstance;
+
+  /// Compte dont le lien fait choisir le mot de passe.
+  @$pb.TagNumber(1)
+  $core.String get username => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set username($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUsername() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUsername() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  AccessLinkPurpose get purpose => $_getN(1);
+  @$pb.TagNumber(2)
+  set purpose(AccessLinkPurpose value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPurpose() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPurpose() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $1.Timestamp get expiresAt => $_getN(2);
+  @$pb.TagNumber(3)
+  set expiresAt($1.Timestamp value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasExpiresAt() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearExpiresAt() => $_clearField(3);
+  @$pb.TagNumber(3)
+  $1.Timestamp ensureExpiresAt() => $_ensure(2);
+}
+
+class RedeemAccessLinkRequest extends $pb.GeneratedMessage {
+  factory RedeemAccessLinkRequest({
+    $core.String? token,
+    $core.String? newPassword,
+  }) {
+    final result = RedeemAccessLinkRequest._();
+    if (token != null) result.token = token;
+    if (newPassword != null) result.newPassword = newPassword;
+    return result;
+  }
+
+  RedeemAccessLinkRequest._();
+
+  factory RedeemAccessLinkRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RedeemAccessLinkRequest()..mergeFromBuffer(data, registry);
+  factory RedeemAccessLinkRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RedeemAccessLinkRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RedeemAccessLinkRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: RedeemAccessLinkRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'token')
+    ..aOS(2, _omitFieldNames ? '' : 'newPassword')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RedeemAccessLinkRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RedeemAccessLinkRequest copyWith(
+          void Function(RedeemAccessLinkRequest) updates) =>
+      super.copyWith((message) => updates(message as RedeemAccessLinkRequest))
+          as RedeemAccessLinkRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RedeemAccessLinkRequest() / RedeemAccessLinkRequest.new instead')
+  static RedeemAccessLinkRequest create() => RedeemAccessLinkRequest._();
+  static $pb.GeneratedMessage $_createMessage() => RedeemAccessLinkRequest._();
+  @$core.override
+  RedeemAccessLinkRequest createEmptyInstance() => RedeemAccessLinkRequest._();
+  @$core.pragma('dart2js:noInline')
+  static RedeemAccessLinkRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RedeemAccessLinkRequest>(
+          RedeemAccessLinkRequest.$_createMessage);
+  static RedeemAccessLinkRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get token => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set token($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasToken() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearToken() => $_clearField(1);
+
+  /// Mot de passe choisi : 8 caractères au moins, 72 octets au plus.
+  @$pb.TagNumber(2)
+  $core.String get newPassword => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set newPassword($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasNewPassword() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearNewPassword() => $_clearField(2);
+}
+
+class RedeemAccessLinkResponse extends $pb.GeneratedMessage {
+  factory RedeemAccessLinkResponse({
+    $core.String? token,
+    $1.Timestamp? expiresAt,
+    User? user,
+  }) {
+    final result = RedeemAccessLinkResponse._();
+    if (token != null) result.token = token;
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    if (user != null) result.user = user;
+    return result;
+  }
+
+  RedeemAccessLinkResponse._();
+
+  factory RedeemAccessLinkResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RedeemAccessLinkResponse()..mergeFromBuffer(data, registry);
+  factory RedeemAccessLinkResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RedeemAccessLinkResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RedeemAccessLinkResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: RedeemAccessLinkResponse.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'token')
+    ..aOM<$1.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt',
+        subBuilder: $1.Timestamp.$_createMessage)
+    ..aOM<User>(3, _omitFieldNames ? '' : 'user',
+        subBuilder: User.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RedeemAccessLinkResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RedeemAccessLinkResponse copyWith(
+          void Function(RedeemAccessLinkResponse) updates) =>
+      super.copyWith((message) => updates(message as RedeemAccessLinkResponse))
+          as RedeemAccessLinkResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RedeemAccessLinkResponse() / RedeemAccessLinkResponse.new instead')
+  static RedeemAccessLinkResponse create() => RedeemAccessLinkResponse._();
+  static $pb.GeneratedMessage $_createMessage() => RedeemAccessLinkResponse._();
+  @$core.override
+  RedeemAccessLinkResponse createEmptyInstance() =>
+      RedeemAccessLinkResponse._();
+  @$core.pragma('dart2js:noInline')
+  static RedeemAccessLinkResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RedeemAccessLinkResponse>(
+          RedeemAccessLinkResponse.$_createMessage);
+  static RedeemAccessLinkResponse? _defaultInstance;
+
+  /// Session ouverte sur le compte, comme après Login.
+  @$pb.TagNumber(1)
+  $core.String get token => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set token($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasToken() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearToken() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $1.Timestamp get expiresAt => $_getN(1);
+  @$pb.TagNumber(2)
+  set expiresAt($1.Timestamp value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasExpiresAt() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearExpiresAt() => $_clearField(2);
+  @$pb.TagNumber(2)
+  $1.Timestamp ensureExpiresAt() => $_ensure(1);
+
+  @$pb.TagNumber(3)
+  User get user => $_getN(2);
+  @$pb.TagNumber(3)
+  set user(User value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasUser() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearUser() => $_clearField(3);
+  @$pb.TagNumber(3)
+  User ensureUser() => $_ensure(2);
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

@@ -154,3 +154,67 @@ func TestAuthService_ChangePasswordIsThrottled(t *testing.T) {
 	_, err = client.ChangePassword(ctx, &forgenetv1.ChangePasswordRequest{CurrentPassword: testPassword, NewPassword: "nouveau-mot-de-passe"})
 	assert.Equal(t, codes.ResourceExhausted, status.Code(err), "même l'actuel exact est refusé pendant la fenêtre")
 }
+
+// pendingAccount crée un compte sans mot de passe et son lien de première
+// connexion, comme install.sh sans terminal.
+func pendingAccount(t *testing.T, ts *testServer, name string) string {
+	t.Helper()
+	ctx := context.Background()
+	svc := auth.NewService(ts.store, config.AuthConfig{JWTSecret: "secret-de-test-d-au-moins-32-caracteres"}, nil)
+	u, err := svc.RegisterWithoutPassword(ctx, name, name+"@forgenet.test", store.RoleAdmin)
+	require.NoError(t, err)
+	token, _, err := svc.CreateAccessLink(ctx, u.ID, store.PurposeFirstLogin, "system:cli")
+	require.NoError(t, err)
+	return token
+}
+
+func TestAuthService_AccessLinkWithoutSession(t *testing.T) {
+	ts, client := startAuthServer(t)
+	ctx := context.Background()
+	token := pendingAccount(t, ts, "premier")
+
+	// Les deux appels sont publics : aucun jeton de session présenté.
+	info, err := client.InspectAccessLink(ctx, &forgenetv1.InspectAccessLinkRequest{Token: token})
+	require.NoError(t, err)
+	assert.Equal(t, "premier", info.GetUsername())
+	assert.Equal(t, forgenetv1.AccessLinkPurpose_ACCESS_LINK_PURPOSE_FIRST_LOGIN, info.GetPurpose())
+	assert.WithinDuration(t, time.Now().Add(24*time.Hour), info.GetExpiresAt().AsTime(), time.Minute)
+
+	_, err = client.RedeemAccessLink(ctx, &forgenetv1.RedeemAccessLinkRequest{Token: token, NewPassword: "court"})
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+
+	res, err := client.RedeemAccessLink(ctx, &forgenetv1.RedeemAccessLinkRequest{Token: token, NewPassword: "mot-de-passe-choisi"})
+	require.NoError(t, err, "un mot de passe refusé laisse le lien valable")
+	assert.Equal(t, forgenetv1.UserRole_USER_ROLE_ADMIN, res.GetUser().GetRole())
+	me, err := client.GetCurrentUser(as(res.GetToken()), &forgenetv1.GetCurrentUserRequest{})
+	require.NoError(t, err, "la réponse ouvre une session")
+	assert.Equal(t, "premier", me.GetUser().GetUsername())
+
+	_, err = client.Login(ctx, &forgenetv1.LoginRequest{Login: "premier", Password: "mot-de-passe-choisi"})
+	require.NoError(t, err)
+}
+
+func TestAuthService_AccessLinkRefusalsAreAllTheSame(t *testing.T) {
+	ts, client := startAuthServer(t)
+	ctx := context.Background()
+	used := pendingAccount(t, ts, "premier")
+	_, err := client.RedeemAccessLink(ctx, &forgenetv1.RedeemAccessLinkRequest{Token: used, NewPassword: "mot-de-passe-choisi"})
+	require.NoError(t, err)
+
+	var messages []string
+	for _, token := range []string{used, "inconnu", ""} {
+		_, err := client.InspectAccessLink(ctx, &forgenetv1.InspectAccessLinkRequest{Token: token})
+		assert.Equal(t, codes.NotFound, status.Code(err), token)
+		_, err = client.RedeemAccessLink(ctx, &forgenetv1.RedeemAccessLinkRequest{Token: token, NewPassword: "encore-un-autre"})
+		assert.Equal(t, codes.NotFound, status.Code(err), token)
+		messages = append(messages, status.Convert(err).Message())
+	}
+	assert.Equal(t, messages[0], messages[1], "un lien utilisé ou inconnu reçoit la même réponse")
+}
+
+func TestAuthService_PendingAccountCannotLogIn(t *testing.T) {
+	ts, client := startAuthServer(t)
+	pendingAccount(t, ts, "premier")
+	_, err := client.Login(context.Background(), &forgenetv1.LoginRequest{Login: "premier", Password: "!"})
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}

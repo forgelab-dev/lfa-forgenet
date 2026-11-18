@@ -71,6 +71,29 @@ class AuthServiceClient extends $grpc.Client {
     return $createUnaryCall(_$changePassword, request, options: options);
   }
 
+  /// InspectAccessLink décrit un lien à usage unique encore valable, sans
+  /// l'utiliser : la page dit pour quel compte on choisit un mot de passe.
+  /// Appelable sans jeton. Un lien inconnu, expiré, déjà utilisé ou remplacé
+  /// répond NOT_FOUND, sans dire lequel.
+  $grpc.ResponseFuture<$0.InspectAccessLinkResponse> inspectAccessLink(
+    $0.InspectAccessLinkRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$inspectAccessLink, request, options: options);
+  }
+
+  /// RedeemAccessLink utilise le lien : il fixe le mot de passe choisi, ferme
+  /// les sessions et jetons du compte, puis ouvre une session. Appelable sans
+  /// jeton. Un lien qui ne vaut plus répond NOT_FOUND ; un mot de passe refusé
+  /// répond INVALID_ARGUMENT et laisse le lien valable. L'usage est inscrit au
+  /// journal d'audit.
+  $grpc.ResponseFuture<$0.RedeemAccessLinkResponse> redeemAccessLink(
+    $0.RedeemAccessLinkRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$redeemAccessLink, request, options: options);
+  }
+
   // method descriptors
 
   static final _$login = $grpc.ClientMethod<$0.LoginRequest, $0.LoginResponse>(
@@ -92,6 +115,16 @@ class AuthServiceClient extends $grpc.Client {
           '/forgenet.v1.AuthService/ChangePassword',
           ($0.ChangePasswordRequest value) => value.writeToBuffer(),
           $0.ChangePasswordResponse.fromBuffer);
+  static final _$inspectAccessLink = $grpc.ClientMethod<
+          $0.InspectAccessLinkRequest, $0.InspectAccessLinkResponse>(
+      '/forgenet.v1.AuthService/InspectAccessLink',
+      ($0.InspectAccessLinkRequest value) => value.writeToBuffer(),
+      $0.InspectAccessLinkResponse.fromBuffer);
+  static final _$redeemAccessLink = $grpc.ClientMethod<
+          $0.RedeemAccessLinkRequest, $0.RedeemAccessLinkResponse>(
+      '/forgenet.v1.AuthService/RedeemAccessLink',
+      ($0.RedeemAccessLinkRequest value) => value.writeToBuffer(),
+      $0.RedeemAccessLinkResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('forgenet.v1.AuthService')
@@ -131,6 +164,24 @@ abstract class AuthServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.ChangePasswordRequest.fromBuffer(value),
         ($0.ChangePasswordResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.InspectAccessLinkRequest,
+            $0.InspectAccessLinkResponse>(
+        'InspectAccessLink',
+        inspectAccessLink_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.InspectAccessLinkRequest.fromBuffer(value),
+        ($0.InspectAccessLinkResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.RedeemAccessLinkRequest,
+            $0.RedeemAccessLinkResponse>(
+        'RedeemAccessLink',
+        redeemAccessLink_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.RedeemAccessLinkRequest.fromBuffer(value),
+        ($0.RedeemAccessLinkResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.LoginResponse> login_Pre(
@@ -166,4 +217,22 @@ abstract class AuthServiceBase extends $grpc.Service {
 
   $async.Future<$0.ChangePasswordResponse> changePassword(
       $grpc.ServiceCall call, $0.ChangePasswordRequest request);
+
+  $async.Future<$0.InspectAccessLinkResponse> inspectAccessLink_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.InspectAccessLinkRequest> $request) async {
+    return inspectAccessLink($call, await $request);
+  }
+
+  $async.Future<$0.InspectAccessLinkResponse> inspectAccessLink(
+      $grpc.ServiceCall call, $0.InspectAccessLinkRequest request);
+
+  $async.Future<$0.RedeemAccessLinkResponse> redeemAccessLink_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.RedeemAccessLinkRequest> $request) async {
+    return redeemAccessLink($call, await $request);
+  }
+
+  $async.Future<$0.RedeemAccessLinkResponse> redeemAccessLink(
+      $grpc.ServiceCall call, $0.RedeemAccessLinkRequest request);
 }

@@ -30,6 +30,24 @@ final $typed_data.Uint8List userRoleDescriptor = $convert.base64Decode(
     'CghVc2VyUm9sZRIZChVVU0VSX1JPTEVfVU5TUEVDSUZJRUQQABITCg9VU0VSX1JPTEVfQURNSU'
     '4QARIUChBVU0VSX1JPTEVfTUVNQkVSEAI=');
 
+@$core.Deprecated('Use accessLinkPurposeDescriptor instead')
+const AccessLinkPurpose$json = {
+  '1': 'AccessLinkPurpose',
+  '2': [
+    {'1': 'ACCESS_LINK_PURPOSE_UNSPECIFIED', '2': 0},
+    {'1': 'ACCESS_LINK_PURPOSE_FIRST_LOGIN', '2': 1},
+    {'1': 'ACCESS_LINK_PURPOSE_PASSWORD_RESET', '2': 2},
+    {'1': 'ACCESS_LINK_PURPOSE_INVITATION', '2': 3},
+  ],
+};
+
+/// Descriptor for `AccessLinkPurpose`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List accessLinkPurposeDescriptor = $convert.base64Decode(
+    'ChFBY2Nlc3NMaW5rUHVycG9zZRIjCh9BQ0NFU1NfTElOS19QVVJQT1NFX1VOU1BFQ0lGSUVEEA'
+    'ASIwofQUNDRVNTX0xJTktfUFVSUE9TRV9GSVJTVF9MT0dJThABEiYKIkFDQ0VTU19MSU5LX1BV'
+    'UlBPU0VfUEFTU1dPUkRfUkVTRVQQAhIiCh5BQ0NFU1NfTElOS19QVVJQT1NFX0lOVklUQVRJT0'
+    '4QAw==');
+
 @$core.Deprecated('Use userDescriptor instead')
 const User$json = {
   '1': 'User',
@@ -173,3 +191,92 @@ final $typed_data.Uint8List changePasswordResponseDescriptor =
     $convert.base64Decode(
         'ChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlEikKEHJldm9rZWRfc2Vzc2lvbnMYASABKAVSD3Jldm'
         '9rZWRTZXNzaW9ucw==');
+
+@$core.Deprecated('Use inspectAccessLinkRequestDescriptor instead')
+const InspectAccessLinkRequest$json = {
+  '1': 'InspectAccessLinkRequest',
+  '2': [
+    {'1': 'token', '3': 1, '4': 1, '5': 9, '10': 'token'},
+  ],
+};
+
+/// Descriptor for `InspectAccessLinkRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List inspectAccessLinkRequestDescriptor =
+    $convert.base64Decode(
+        'ChhJbnNwZWN0QWNjZXNzTGlua1JlcXVlc3QSFAoFdG9rZW4YASABKAlSBXRva2Vu');
+
+@$core.Deprecated('Use inspectAccessLinkResponseDescriptor instead')
+const InspectAccessLinkResponse$json = {
+  '1': 'InspectAccessLinkResponse',
+  '2': [
+    {'1': 'username', '3': 1, '4': 1, '5': 9, '10': 'username'},
+    {
+      '1': 'purpose',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.forgenet.v1.AccessLinkPurpose',
+      '10': 'purpose'
+    },
+    {
+      '1': 'expires_at',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'expiresAt'
+    },
+  ],
+};
+
+/// Descriptor for `InspectAccessLinkResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List inspectAccessLinkResponseDescriptor = $convert.base64Decode(
+    'ChlJbnNwZWN0QWNjZXNzTGlua1Jlc3BvbnNlEhoKCHVzZXJuYW1lGAEgASgJUgh1c2VybmFtZR'
+    'I4CgdwdXJwb3NlGAIgASgOMh4uZm9yZ2VuZXQudjEuQWNjZXNzTGlua1B1cnBvc2VSB3B1cnBv'
+    'c2USOQoKZXhwaXJlc19hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWV4cG'
+    'lyZXNBdA==');
+
+@$core.Deprecated('Use redeemAccessLinkRequestDescriptor instead')
+const RedeemAccessLinkRequest$json = {
+  '1': 'RedeemAccessLinkRequest',
+  '2': [
+    {'1': 'token', '3': 1, '4': 1, '5': 9, '10': 'token'},
+    {'1': 'new_password', '3': 2, '4': 1, '5': 9, '10': 'newPassword'},
+  ],
+};
+
+/// Descriptor for `RedeemAccessLinkRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List redeemAccessLinkRequestDescriptor =
+    $convert.base64Decode(
+        'ChdSZWRlZW1BY2Nlc3NMaW5rUmVxdWVzdBIUCgV0b2tlbhgBIAEoCVIFdG9rZW4SIQoMbmV3X3'
+        'Bhc3N3b3JkGAIgASgJUgtuZXdQYXNzd29yZA==');
+
+@$core.Deprecated('Use redeemAccessLinkResponseDescriptor instead')
+const RedeemAccessLinkResponse$json = {
+  '1': 'RedeemAccessLinkResponse',
+  '2': [
+    {'1': 'token', '3': 1, '4': 1, '5': 9, '10': 'token'},
+    {
+      '1': 'expires_at',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'expiresAt'
+    },
+    {
+      '1': 'user',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.forgenet.v1.User',
+      '10': 'user'
+    },
+  ],
+};
+
+/// Descriptor for `RedeemAccessLinkResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List redeemAccessLinkResponseDescriptor = $convert.base64Decode(
+    'ChhSZWRlZW1BY2Nlc3NMaW5rUmVzcG9uc2USFAoFdG9rZW4YASABKAlSBXRva2VuEjkKCmV4cG'
+    'lyZXNfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUglleHBpcmVzQXQSJQoE'
+    'dXNlchgDIAEoCzIRLmZvcmdlbmV0LnYxLlVzZXJSBHVzZXI=');

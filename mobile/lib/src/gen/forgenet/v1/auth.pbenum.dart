@@ -38,5 +38,42 @@ class UserRole extends $pb.ProtobufEnum {
   const UserRole._(super.value, super.name);
 }
 
+/// AccessLinkPurpose est l'usage d'un lien à usage unique (ADR-0014). Tous
+/// font choisir un mot de passe ; seuls le texte et la durée changent.
+class AccessLinkPurpose extends $pb.ProtobufEnum {
+  static const AccessLinkPurpose ACCESS_LINK_PURPOSE_UNSPECIFIED =
+      AccessLinkPurpose._(
+          0, _omitEnumNames ? '' : 'ACCESS_LINK_PURPOSE_UNSPECIFIED');
+
+  /// Premier accès de l'administrateur créé à l'installation (24 heures).
+  static const AccessLinkPurpose ACCESS_LINK_PURPOSE_FIRST_LOGIN =
+      AccessLinkPurpose._(
+          1, _omitEnumNames ? '' : 'ACCESS_LINK_PURPOSE_FIRST_LOGIN');
+
+  /// Mot de passe oublié (1 heure).
+  static const AccessLinkPurpose ACCESS_LINK_PURPOSE_PASSWORD_RESET =
+      AccessLinkPurpose._(
+          2, _omitEnumNames ? '' : 'ACCESS_LINK_PURPOSE_PASSWORD_RESET');
+
+  /// Invitation d'un membre (7 jours).
+  static const AccessLinkPurpose ACCESS_LINK_PURPOSE_INVITATION =
+      AccessLinkPurpose._(
+          3, _omitEnumNames ? '' : 'ACCESS_LINK_PURPOSE_INVITATION');
+
+  static const $core.List<AccessLinkPurpose> values = <AccessLinkPurpose>[
+    ACCESS_LINK_PURPOSE_UNSPECIFIED,
+    ACCESS_LINK_PURPOSE_FIRST_LOGIN,
+    ACCESS_LINK_PURPOSE_PASSWORD_RESET,
+    ACCESS_LINK_PURPOSE_INVITATION,
+  ];
+
+  static final $core.List<AccessLinkPurpose?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static AccessLinkPurpose? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const AccessLinkPurpose._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

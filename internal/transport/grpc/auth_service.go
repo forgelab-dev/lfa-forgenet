@@ -32,8 +32,9 @@ type UserLookup interface {
 }
 
 // AuthServiceServer ouvre et ferme les sessions selon le contrat
-// forgenet.v1.AuthService. Login est public dans la politique d'accès ; les
-// autres méthodes exigent un jeton, vérifié en amont par auth.Guard.
+// forgenet.v1.AuthService. Login et les liens à usage unique sont publics dans
+// la politique d'accès ; les autres méthodes exigent un jeton, vérifié en
+// amont par auth.Guard.
 type AuthServiceServer struct {
 	forgenetv1.UnimplementedAuthServiceServer
 	auth    auth.Service
@@ -140,6 +141,57 @@ func (s *AuthServiceServer) ChangePassword(ctx context.Context, req *forgenetv1.
 	}
 	s.passwords.reset(key)
 	return &forgenetv1.ChangePasswordResponse{RevokedSessions: int32(min(revoked, 1<<31-1))}, nil //nolint:gosec // borné juste avant
+}
+
+// InspectAccessLink décrit un lien à usage unique encore valable. Pas de
+// frein : le jeton a 256 bits, le deviner est hors de portée, et un frein par
+// adresse bloquerait tout le monde derrière Caddy.
+func (s *AuthServiceServer) InspectAccessLink(ctx context.Context, req *forgenetv1.InspectAccessLinkRequest) (*forgenetv1.InspectAccessLinkResponse, error) {
+	link, user, err := s.auth.InspectAccessLink(ctx, req.GetToken())
+	switch {
+	case errors.Is(err, auth.ErrLinkInvalid):
+		return nil, status.Error(codes.NotFound, err.Error())
+	case err != nil:
+		return nil, s.unavailable(err, "lecture du lien impossible", "lien momentanément illisible")
+	}
+	return &forgenetv1.InspectAccessLinkResponse{
+		Username:  user.Username,
+		Purpose:   toLinkPurpose(link.Purpose),
+		ExpiresAt: timestamppb.New(link.ExpiresAt),
+	}, nil
+}
+
+// RedeemAccessLink fixe le mot de passe choisi par le lien et ouvre une
+// session. Le jeton n'est jamais journalisé.
+func (s *AuthServiceServer) RedeemAccessLink(ctx context.Context, req *forgenetv1.RedeemAccessLinkRequest) (*forgenetv1.RedeemAccessLinkResponse, error) {
+	res, link, err := s.auth.RedeemAccessLink(ctx, req.GetToken(), req.GetNewPassword())
+	switch {
+	case errors.Is(err, auth.ErrLinkInvalid):
+		return nil, status.Error(codes.NotFound, err.Error())
+	case errors.Is(err, auth.ErrPasswordTooShort), errors.Is(err, auth.ErrPasswordTooLong):
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	case err != nil:
+		return nil, s.unavailable(err, "utilisation du lien impossible", "choix du mot de passe momentanément indisponible")
+	}
+	s.logger.Info().Str("user_id", res.User.ID).Str("purpose", string(link.Purpose)).Msg("mot de passe choisi par un lien")
+	return &forgenetv1.RedeemAccessLinkResponse{
+		Token:     res.Token,
+		ExpiresAt: timestamppb.New(res.ExpiresAt),
+		User:      toUser(res.User, res.User.Role),
+	}, nil
+}
+
+func toLinkPurpose(p store.ActionPurpose) forgenetv1.AccessLinkPurpose {
+	switch p {
+	case store.PurposeFirstLogin:
+		return forgenetv1.AccessLinkPurpose_ACCESS_LINK_PURPOSE_FIRST_LOGIN
+	case store.PurposePasswordReset:
+		return forgenetv1.AccessLinkPurpose_ACCESS_LINK_PURPOSE_PASSWORD_RESET
+	case store.PurposeInvitation:
+		return forgenetv1.AccessLinkPurpose_ACCESS_LINK_PURPOSE_INVITATION
+	default:
+		return forgenetv1.AccessLinkPurpose_ACCESS_LINK_PURPOSE_UNSPECIFIED
+	}
 }
 
 // unavailable traduit une panne de la base en UNAVAILABLE, journalisée. Un
