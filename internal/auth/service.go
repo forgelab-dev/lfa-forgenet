@@ -82,6 +82,9 @@ type Service interface {
 	// RedeemAccessLink fixe le mot de passe choisi par le lien, ferme les
 	// sessions du compte, puis en ouvre une nouvelle.
 	RedeemAccessLink(ctx context.Context, token, newPassword string) (*Result, *store.ActionToken, error)
+	// LookupAccount trouve un compte par son nom ou son adresse, comme Login ;
+	// store.ErrNotFound s'il n'existe pas.
+	LookupAccount(ctx context.Context, usernameOrEmail string) (*store.User, error)
 }
 
 type authService struct {
@@ -459,6 +462,14 @@ func (s *authService) setPassword(ctx context.Context, user *store.User, next, k
 		return 0, err
 	}
 	return s.store.Users().SetPassword(ctx, user.ID, hash, keepSessionID)
+}
+
+func (s *authService) LookupAccount(ctx context.Context, usernameOrEmail string) (*store.User, error) {
+	usernameOrEmail = strings.TrimSpace(usernameOrEmail)
+	if usernameOrEmail == "" {
+		return nil, store.ErrNotFound
+	}
+	return s.findUser(ctx, usernameOrEmail)
 }
 
 func (s *authService) findUser(ctx context.Context, usernameOrEmail string) (*store.User, error) {

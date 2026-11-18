@@ -911,6 +911,222 @@ class RedeemAccessLinkResponse extends $pb.GeneratedMessage {
   User ensureUser() => $_ensure(2);
 }
 
+class GetLoginOptionsRequest extends $pb.GeneratedMessage {
+  factory GetLoginOptionsRequest() => GetLoginOptionsRequest._();
+
+  GetLoginOptionsRequest._();
+
+  factory GetLoginOptionsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetLoginOptionsRequest()..mergeFromBuffer(data, registry);
+  factory GetLoginOptionsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetLoginOptionsRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetLoginOptionsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: GetLoginOptionsRequest.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetLoginOptionsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetLoginOptionsRequest copyWith(
+          void Function(GetLoginOptionsRequest) updates) =>
+      super.copyWith((message) => updates(message as GetLoginOptionsRequest))
+          as GetLoginOptionsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetLoginOptionsRequest() / GetLoginOptionsRequest.new instead')
+  static GetLoginOptionsRequest create() => GetLoginOptionsRequest._();
+  static $pb.GeneratedMessage $_createMessage() => GetLoginOptionsRequest._();
+  @$core.override
+  GetLoginOptionsRequest createEmptyInstance() => GetLoginOptionsRequest._();
+  @$core.pragma('dart2js:noInline')
+  static GetLoginOptionsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetLoginOptionsRequest>(
+          GetLoginOptionsRequest.$_createMessage);
+  static GetLoginOptionsRequest? _defaultInstance;
+}
+
+class GetLoginOptionsResponse extends $pb.GeneratedMessage {
+  factory GetLoginOptionsResponse({
+    $core.bool? passwordReset,
+  }) {
+    final result = GetLoginOptionsResponse._();
+    if (passwordReset != null) result.passwordReset = passwordReset;
+    return result;
+  }
+
+  GetLoginOptionsResponse._();
+
+  factory GetLoginOptionsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetLoginOptionsResponse()..mergeFromBuffer(data, registry);
+  factory GetLoginOptionsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GetLoginOptionsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetLoginOptionsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: GetLoginOptionsResponse.$_createMessage)
+    ..aOB(1, _omitFieldNames ? '' : 'passwordReset')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetLoginOptionsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetLoginOptionsResponse copyWith(
+          void Function(GetLoginOptionsResponse) updates) =>
+      super.copyWith((message) => updates(message as GetLoginOptionsResponse))
+          as GetLoginOptionsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use GetLoginOptionsResponse() / GetLoginOptionsResponse.new instead')
+  static GetLoginOptionsResponse create() => GetLoginOptionsResponse._();
+  static $pb.GeneratedMessage $_createMessage() => GetLoginOptionsResponse._();
+  @$core.override
+  GetLoginOptionsResponse createEmptyInstance() => GetLoginOptionsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static GetLoginOptionsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetLoginOptionsResponse>(
+          GetLoginOptionsResponse.$_createMessage);
+  static GetLoginOptionsResponse? _defaultInstance;
+
+  /// Vrai quand le serveur peut envoyer un lien « mot de passe oublié » :
+  /// l'écran de connexion propose alors le lien, sinon il renvoie à la
+  /// commande « forgenet user set-password » sur le serveur.
+  @$pb.TagNumber(1)
+  $core.bool get passwordReset => $_getBF(0);
+  @$pb.TagNumber(1)
+  set passwordReset($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPasswordReset() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPasswordReset() => $_clearField(1);
+}
+
+class RequestPasswordResetRequest extends $pb.GeneratedMessage {
+  factory RequestPasswordResetRequest({
+    $core.String? login,
+  }) {
+    final result = RequestPasswordResetRequest._();
+    if (login != null) result.login = login;
+    return result;
+  }
+
+  RequestPasswordResetRequest._();
+
+  factory RequestPasswordResetRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RequestPasswordResetRequest()..mergeFromBuffer(data, registry);
+  factory RequestPasswordResetRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RequestPasswordResetRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RequestPasswordResetRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: RequestPasswordResetRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'login')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestPasswordResetRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestPasswordResetRequest copyWith(
+          void Function(RequestPasswordResetRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as RequestPasswordResetRequest))
+          as RequestPasswordResetRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RequestPasswordResetRequest() / RequestPasswordResetRequest.new instead')
+  static RequestPasswordResetRequest create() =>
+      RequestPasswordResetRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      RequestPasswordResetRequest._();
+  @$core.override
+  RequestPasswordResetRequest createEmptyInstance() =>
+      RequestPasswordResetRequest._();
+  @$core.pragma('dart2js:noInline')
+  static RequestPasswordResetRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RequestPasswordResetRequest>(
+          RequestPasswordResetRequest.$_createMessage);
+  static RequestPasswordResetRequest? _defaultInstance;
+
+  /// Nom d'utilisateur ou adresse e-mail, comme pour Login.
+  @$pb.TagNumber(1)
+  $core.String get login => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set login($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasLogin() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearLogin() => $_clearField(1);
+}
+
+class RequestPasswordResetResponse extends $pb.GeneratedMessage {
+  factory RequestPasswordResetResponse() => RequestPasswordResetResponse._();
+
+  RequestPasswordResetResponse._();
+
+  factory RequestPasswordResetResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RequestPasswordResetResponse()..mergeFromBuffer(data, registry);
+  factory RequestPasswordResetResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RequestPasswordResetResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RequestPasswordResetResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: RequestPasswordResetResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestPasswordResetResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RequestPasswordResetResponse copyWith(
+          void Function(RequestPasswordResetResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as RequestPasswordResetResponse))
+          as RequestPasswordResetResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RequestPasswordResetResponse() / RequestPasswordResetResponse.new instead')
+  static RequestPasswordResetResponse create() =>
+      RequestPasswordResetResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      RequestPasswordResetResponse._();
+  @$core.override
+  RequestPasswordResetResponse createEmptyInstance() =>
+      RequestPasswordResetResponse._();
+  @$core.pragma('dart2js:noInline')
+  static RequestPasswordResetResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RequestPasswordResetResponse>(
+          RequestPasswordResetResponse.$_createMessage);
+  static RequestPasswordResetResponse? _defaultInstance;
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

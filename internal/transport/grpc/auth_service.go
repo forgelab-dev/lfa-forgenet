@@ -43,7 +43,10 @@ type AuthServiceServer struct {
 	// passwords freine les essais du mot de passe actuel lors d'un
 	// changement : une session volée ne doit pas servir à le deviner.
 	passwords *loginLimiter
-	logger    zerolog.Logger
+	// reset est nil tant que « mot de passe oublié » n'est pas activé
+	// (aucun relais SMTP).
+	reset  *passwordReset
+	logger zerolog.Logger
 }
 
 var _ forgenetv1.AuthServiceServer = (*AuthServiceServer)(nil)
@@ -239,7 +242,9 @@ func clientHost(ctx context.Context) string {
 // ouverte au premier échec. En mémoire : un redémarrage remet les compteurs à
 // zéro, ce qui reste bien plus lent qu'une attaque par dictionnaire.
 type loginLimiter struct {
-	now func() time.Time
+	now    func() time.Time
+	max    int
+	window time.Duration
 
 	mu       sync.Mutex
 	failures map[string]*loginFailures
@@ -251,7 +256,12 @@ type loginFailures struct {
 }
 
 func newLoginLimiter(now func() time.Time) *loginLimiter {
-	return &loginLimiter{now: now, failures: make(map[string]*loginFailures)}
+	return newRateLimiter(now, maxLoginFailures, loginWindow)
+}
+
+// newRateLimiter compte au plus limit événements par clé sur window.
+func newRateLimiter(now func() time.Time, limit int, window time.Duration) *loginLimiter {
+	return &loginLimiter{now: now, max: limit, window: window, failures: make(map[string]*loginFailures)}
 }
 
 func (l *loginLimiter) blocked(key string) bool {
@@ -261,11 +271,11 @@ func (l *loginLimiter) blocked(key string) bool {
 	if !ok {
 		return false
 	}
-	if l.now().Sub(f.since) >= loginWindow {
+	if l.now().Sub(f.since) >= l.window {
 		delete(l.failures, key)
 		return false
 	}
-	return f.count >= maxLoginFailures
+	return f.count >= l.max
 }
 
 func (l *loginLimiter) fail(key string) {
@@ -273,9 +283,9 @@ func (l *loginLimiter) fail(key string) {
 	defer l.mu.Unlock()
 	now := l.now()
 	// Les fenêtres échues sont oubliées ici : la table ne grossit qu'avec
-	// les clés en échec depuis moins de loginWindow.
+	// les clés en échec depuis moins de la fenêtre.
 	for k, f := range l.failures {
-		if now.Sub(f.since) >= loginWindow {
+		if now.Sub(f.since) >= l.window {
 			delete(l.failures, k)
 		}
 	}

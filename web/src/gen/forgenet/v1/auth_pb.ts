@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file forgenet/v1/auth.proto.
  */
 export const file_forgenet_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChZmb3JnZW5ldC92MS9hdXRoLnByb3RvEgtmb3JnZW5ldC52MSJYCgRVc2VyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZSIvCgxMb2dpblJlcXVlc3QSDQoFbG9naW4YASABKAkSEAoIcGFzc3dvcmQYAiABKAkibwoNTG9naW5SZXNwb25zZRINCgV0b2tlbhgBIAEoCRIuCgpleHBpcmVzX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIfCgR1c2VyGAMgASgLMhEuZm9yZ2VuZXQudjEuVXNlciIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIhcKFUdldEN1cnJlbnRVc2VyUmVxdWVzdCI5ChZHZXRDdXJyZW50VXNlclJlc3BvbnNlEh8KBHVzZXIYASABKAsyES5mb3JnZW5ldC52MS5Vc2VyIkcKFUNoYW5nZVBhc3N3b3JkUmVxdWVzdBIYChBjdXJyZW50X3Bhc3N3b3JkGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIyChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlEhgKEHJldm9rZWRfc2Vzc2lvbnMYASABKAUiKQoYSW5zcGVjdEFjY2Vzc0xpbmtSZXF1ZXN0Eg0KBXRva2VuGAEgASgJIo4BChlJbnNwZWN0QWNjZXNzTGlua1Jlc3BvbnNlEhAKCHVzZXJuYW1lGAEgASgJEi8KB3B1cnBvc2UYAiABKA4yHi5mb3JnZW5ldC52MS5BY2Nlc3NMaW5rUHVycG9zZRIuCgpleHBpcmVzX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCI+ChdSZWRlZW1BY2Nlc3NMaW5rUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIUCgxuZXdfcGFzc3dvcmQYAiABKAkiegoYUmVkZWVtQWNjZXNzTGlua1Jlc3BvbnNlEg0KBXRva2VuGAEgASgJEi4KCmV4cGlyZXNfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh8KBHVzZXIYAyABKAsyES5mb3JnZW5ldC52MS5Vc2VyKlAKCFVzZXJSb2xlEhkKFVVTRVJfUk9MRV9VTlNQRUNJRklFRBAAEhMKD1VTRVJfUk9MRV9BRE1JThABEhQKEFVTRVJfUk9MRV9NRU1CRVIQAiqpAQoRQWNjZXNzTGlua1B1cnBvc2USIwofQUNDRVNTX0xJTktfUFVSUE9TRV9VTlNQRUNJRklFRBAAEiMKH0FDQ0VTU19MSU5LX1BVUlBPU0VfRklSU1RfTE9HSU4QARImCiJBQ0NFU1NfTElOS19QVVJQT1NFX1BBU1NXT1JEX1JFU0VUEAISIgoeQUNDRVNTX0xJTktfUFVSUE9TRV9JTlZJVEFUSU9OEAMyiwQKC0F1dGhTZXJ2aWNlEj4KBUxvZ2luEhkuZm9yZ2VuZXQudjEuTG9naW5SZXF1ZXN0GhouZm9yZ2VuZXQudjEuTG9naW5SZXNwb25zZRJBCgZMb2dvdXQSGi5mb3JnZW5ldC52MS5Mb2dvdXRSZXF1ZXN0GhsuZm9yZ2VuZXQudjEuTG9nb3V0UmVzcG9uc2USWQoOR2V0Q3VycmVudFVzZXISIi5mb3JnZW5ldC52MS5HZXRDdXJyZW50VXNlclJlcXVlc3QaIy5mb3JnZW5ldC52MS5HZXRDdXJyZW50VXNlclJlc3BvbnNlElkKDkNoYW5nZVBhc3N3b3JkEiIuZm9yZ2VuZXQudjEuQ2hhbmdlUGFzc3dvcmRSZXF1ZXN0GiMuZm9yZ2VuZXQudjEuQ2hhbmdlUGFzc3dvcmRSZXNwb25zZRJiChFJbnNwZWN0QWNjZXNzTGluaxIlLmZvcmdlbmV0LnYxLkluc3BlY3RBY2Nlc3NMaW5rUmVxdWVzdBomLmZvcmdlbmV0LnYxLkluc3BlY3RBY2Nlc3NMaW5rUmVzcG9uc2USXwoQUmVkZWVtQWNjZXNzTGluaxIkLmZvcmdlbmV0LnYxLlJlZGVlbUFjY2Vzc0xpbmtSZXF1ZXN0GiUuZm9yZ2VuZXQudjEuUmVkZWVtQWNjZXNzTGlua1Jlc3BvbnNlQkVaQ2dpdGh1Yi5jb20vZm9yZ2VsYWItZGV2L2xmYS1mb3JnZW5ldC9wa2cvZ2VuL2ZvcmdlbmV0L3YxO2ZvcmdlbmV0djFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+  fileDesc("ChZmb3JnZW5ldC92MS9hdXRoLnByb3RvEgtmb3JnZW5ldC52MSJYCgRVc2VyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZSIvCgxMb2dpblJlcXVlc3QSDQoFbG9naW4YASABKAkSEAoIcGFzc3dvcmQYAiABKAkibwoNTG9naW5SZXNwb25zZRINCgV0b2tlbhgBIAEoCRIuCgpleHBpcmVzX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIfCgR1c2VyGAMgASgLMhEuZm9yZ2VuZXQudjEuVXNlciIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIhcKFUdldEN1cnJlbnRVc2VyUmVxdWVzdCI5ChZHZXRDdXJyZW50VXNlclJlc3BvbnNlEh8KBHVzZXIYASABKAsyES5mb3JnZW5ldC52MS5Vc2VyIkcKFUNoYW5nZVBhc3N3b3JkUmVxdWVzdBIYChBjdXJyZW50X3Bhc3N3b3JkGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIyChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlEhgKEHJldm9rZWRfc2Vzc2lvbnMYASABKAUiKQoYSW5zcGVjdEFjY2Vzc0xpbmtSZXF1ZXN0Eg0KBXRva2VuGAEgASgJIo4BChlJbnNwZWN0QWNjZXNzTGlua1Jlc3BvbnNlEhAKCHVzZXJuYW1lGAEgASgJEi8KB3B1cnBvc2UYAiABKA4yHi5mb3JnZW5ldC52MS5BY2Nlc3NMaW5rUHVycG9zZRIuCgpleHBpcmVzX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCI+ChdSZWRlZW1BY2Nlc3NMaW5rUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIUCgxuZXdfcGFzc3dvcmQYAiABKAkiegoYUmVkZWVtQWNjZXNzTGlua1Jlc3BvbnNlEg0KBXRva2VuGAEgASgJEi4KCmV4cGlyZXNfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh8KBHVzZXIYAyABKAsyES5mb3JnZW5ldC52MS5Vc2VyIhgKFkdldExvZ2luT3B0aW9uc1JlcXVlc3QiMQoXR2V0TG9naW5PcHRpb25zUmVzcG9uc2USFgoOcGFzc3dvcmRfcmVzZXQYASABKAgiLAobUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXF1ZXN0Eg0KBWxvZ2luGAEgASgJIh4KHFJlcXVlc3RQYXNzd29yZFJlc2V0UmVzcG9uc2UqUAoIVXNlclJvbGUSGQoVVVNFUl9ST0xFX1VOU1BFQ0lGSUVEEAASEwoPVVNFUl9ST0xFX0FETUlOEAESFAoQVVNFUl9ST0xFX01FTUJFUhACKqkBChFBY2Nlc3NMaW5rUHVycG9zZRIjCh9BQ0NFU1NfTElOS19QVVJQT1NFX1VOU1BFQ0lGSUVEEAASIwofQUNDRVNTX0xJTktfUFVSUE9TRV9GSVJTVF9MT0dJThABEiYKIkFDQ0VTU19MSU5LX1BVUlBPU0VfUEFTU1dPUkRfUkVTRVQQAhIiCh5BQ0NFU1NfTElOS19QVVJQT1NFX0lOVklUQVRJT04QAzLWBQoLQXV0aFNlcnZpY2USPgoFTG9naW4SGS5mb3JnZW5ldC52MS5Mb2dpblJlcXVlc3QaGi5mb3JnZW5ldC52MS5Mb2dpblJlc3BvbnNlEkEKBkxvZ291dBIaLmZvcmdlbmV0LnYxLkxvZ291dFJlcXVlc3QaGy5mb3JnZW5ldC52MS5Mb2dvdXRSZXNwb25zZRJZCg5HZXRDdXJyZW50VXNlchIiLmZvcmdlbmV0LnYxLkdldEN1cnJlbnRVc2VyUmVxdWVzdBojLmZvcmdlbmV0LnYxLkdldEN1cnJlbnRVc2VyUmVzcG9uc2USWQoOQ2hhbmdlUGFzc3dvcmQSIi5mb3JnZW5ldC52MS5DaGFuZ2VQYXNzd29yZFJlcXVlc3QaIy5mb3JnZW5ldC52MS5DaGFuZ2VQYXNzd29yZFJlc3BvbnNlEmIKEUluc3BlY3RBY2Nlc3NMaW5rEiUuZm9yZ2VuZXQudjEuSW5zcGVjdEFjY2Vzc0xpbmtSZXF1ZXN0GiYuZm9yZ2VuZXQudjEuSW5zcGVjdEFjY2Vzc0xpbmtSZXNwb25zZRJfChBSZWRlZW1BY2Nlc3NMaW5rEiQuZm9yZ2VuZXQudjEuUmVkZWVtQWNjZXNzTGlua1JlcXVlc3QaJS5mb3JnZW5ldC52MS5SZWRlZW1BY2Nlc3NMaW5rUmVzcG9uc2USXAoPR2V0TG9naW5PcHRpb25zEiMuZm9yZ2VuZXQudjEuR2V0TG9naW5PcHRpb25zUmVxdWVzdBokLmZvcmdlbmV0LnYxLkdldExvZ2luT3B0aW9uc1Jlc3BvbnNlEmsKFFJlcXVlc3RQYXNzd29yZFJlc2V0EiguZm9yZ2VuZXQudjEuUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXF1ZXN0GikuZm9yZ2VuZXQudjEuUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXNwb25zZUJFWkNnaXRodWIuY29tL2ZvcmdlbGFiLWRldi9sZmEtZm9yZ2VuZXQvcGtnL2dlbi9mb3JnZW5ldC92MTtmb3JnZW5ldHYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * User décrit le compte connecté. Le mot de passe et ses empreintes ne
@@ -308,6 +308,72 @@ export const RedeemAccessLinkResponseSchema: GenMessage<RedeemAccessLinkResponse
   messageDesc(file_forgenet_v1_auth, 12);
 
 /**
+ * @generated from message forgenet.v1.GetLoginOptionsRequest
+ */
+export type GetLoginOptionsRequest = Message<"forgenet.v1.GetLoginOptionsRequest"> & {
+};
+
+/**
+ * Describes the message forgenet.v1.GetLoginOptionsRequest.
+ * Use `create(GetLoginOptionsRequestSchema)` to create a new message.
+ */
+export const GetLoginOptionsRequestSchema: GenMessage<GetLoginOptionsRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 13);
+
+/**
+ * @generated from message forgenet.v1.GetLoginOptionsResponse
+ */
+export type GetLoginOptionsResponse = Message<"forgenet.v1.GetLoginOptionsResponse"> & {
+  /**
+   * Vrai quand le serveur peut envoyer un lien « mot de passe oublié » :
+   * l'écran de connexion propose alors le lien, sinon il renvoie à la
+   * commande « forgenet user set-password » sur le serveur.
+   *
+   * @generated from field: bool password_reset = 1;
+   */
+  passwordReset: boolean;
+};
+
+/**
+ * Describes the message forgenet.v1.GetLoginOptionsResponse.
+ * Use `create(GetLoginOptionsResponseSchema)` to create a new message.
+ */
+export const GetLoginOptionsResponseSchema: GenMessage<GetLoginOptionsResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 14);
+
+/**
+ * @generated from message forgenet.v1.RequestPasswordResetRequest
+ */
+export type RequestPasswordResetRequest = Message<"forgenet.v1.RequestPasswordResetRequest"> & {
+  /**
+   * Nom d'utilisateur ou adresse e-mail, comme pour Login.
+   *
+   * @generated from field: string login = 1;
+   */
+  login: string;
+};
+
+/**
+ * Describes the message forgenet.v1.RequestPasswordResetRequest.
+ * Use `create(RequestPasswordResetRequestSchema)` to create a new message.
+ */
+export const RequestPasswordResetRequestSchema: GenMessage<RequestPasswordResetRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 15);
+
+/**
+ * @generated from message forgenet.v1.RequestPasswordResetResponse
+ */
+export type RequestPasswordResetResponse = Message<"forgenet.v1.RequestPasswordResetResponse"> & {
+};
+
+/**
+ * Describes the message forgenet.v1.RequestPasswordResetResponse.
+ * Use `create(RequestPasswordResetResponseSchema)` to create a new message.
+ */
+export const RequestPasswordResetResponseSchema: GenMessage<RequestPasswordResetResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 16);
+
+/**
  * UserRole reprend les rôles du serveur. Un admin gère tout ; un membre
  * consulte et agit dans les limites de la politique d'accès.
  *
@@ -454,6 +520,33 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof RedeemAccessLinkRequestSchema;
     output: typeof RedeemAccessLinkResponseSchema;
+  },
+  /**
+   * GetLoginOptions dit ce que l'écran de connexion peut proposer. Appelable
+   * sans jeton ; ne révèle rien du relais ni des comptes.
+   *
+   * @generated from rpc forgenet.v1.AuthService.GetLoginOptions
+   */
+  getLoginOptions: {
+    methodKind: "unary";
+    input: typeof GetLoginOptionsRequestSchema;
+    output: typeof GetLoginOptionsResponseSchema;
+  },
+  /**
+   * RequestPasswordReset envoie, si un compte correspond, un lien pour
+   * choisir un nouveau mot de passe (1 heure). Appelable sans jeton. La
+   * réponse est la même, et dans le même délai, qu'un compte corresponde ou
+   * non : la recherche et l'envoi se font en tâche de fond. Sans relais SMTP,
+   * répond FAILED_PRECONDITION ; trop de demandes depuis une même adresse
+   * publique répondent RESOURCE_EXHAUSTED. Au-delà de 5 demandes par heure
+   * pour un compte, les suivantes sont ignorées sans le dire.
+   *
+   * @generated from rpc forgenet.v1.AuthService.RequestPasswordReset
+   */
+  requestPasswordReset: {
+    methodKind: "unary";
+    input: typeof RequestPasswordResetRequestSchema;
+    output: typeof RequestPasswordResetResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_forgenet_v1_auth, 0);

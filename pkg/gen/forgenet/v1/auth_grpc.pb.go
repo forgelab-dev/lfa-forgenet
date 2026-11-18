@@ -19,12 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Login_FullMethodName             = "/forgenet.v1.AuthService/Login"
-	AuthService_Logout_FullMethodName            = "/forgenet.v1.AuthService/Logout"
-	AuthService_GetCurrentUser_FullMethodName    = "/forgenet.v1.AuthService/GetCurrentUser"
-	AuthService_ChangePassword_FullMethodName    = "/forgenet.v1.AuthService/ChangePassword"
-	AuthService_InspectAccessLink_FullMethodName = "/forgenet.v1.AuthService/InspectAccessLink"
-	AuthService_RedeemAccessLink_FullMethodName  = "/forgenet.v1.AuthService/RedeemAccessLink"
+	AuthService_Login_FullMethodName                = "/forgenet.v1.AuthService/Login"
+	AuthService_Logout_FullMethodName               = "/forgenet.v1.AuthService/Logout"
+	AuthService_GetCurrentUser_FullMethodName       = "/forgenet.v1.AuthService/GetCurrentUser"
+	AuthService_ChangePassword_FullMethodName       = "/forgenet.v1.AuthService/ChangePassword"
+	AuthService_InspectAccessLink_FullMethodName    = "/forgenet.v1.AuthService/InspectAccessLink"
+	AuthService_RedeemAccessLink_FullMethodName     = "/forgenet.v1.AuthService/RedeemAccessLink"
+	AuthService_GetLoginOptions_FullMethodName      = "/forgenet.v1.AuthService/GetLoginOptions"
+	AuthService_RequestPasswordReset_FullMethodName = "/forgenet.v1.AuthService/RequestPasswordReset"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -58,6 +60,17 @@ type AuthServiceClient interface {
 	// répond INVALID_ARGUMENT et laisse le lien valable. L'usage est inscrit au
 	// journal d'audit.
 	RedeemAccessLink(ctx context.Context, in *RedeemAccessLinkRequest, opts ...grpc.CallOption) (*RedeemAccessLinkResponse, error)
+	// GetLoginOptions dit ce que l'écran de connexion peut proposer. Appelable
+	// sans jeton ; ne révèle rien du relais ni des comptes.
+	GetLoginOptions(ctx context.Context, in *GetLoginOptionsRequest, opts ...grpc.CallOption) (*GetLoginOptionsResponse, error)
+	// RequestPasswordReset envoie, si un compte correspond, un lien pour
+	// choisir un nouveau mot de passe (1 heure). Appelable sans jeton. La
+	// réponse est la même, et dans le même délai, qu'un compte corresponde ou
+	// non : la recherche et l'envoi se font en tâche de fond. Sans relais SMTP,
+	// répond FAILED_PRECONDITION ; trop de demandes depuis une même adresse
+	// publique répondent RESOURCE_EXHAUSTED. Au-delà de 5 demandes par heure
+	// pour un compte, les suivantes sont ignorées sans le dire.
+	RequestPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*RequestPasswordResetResponse, error)
 }
 
 type authServiceClient struct {
@@ -128,6 +141,26 @@ func (c *authServiceClient) RedeemAccessLink(ctx context.Context, in *RedeemAcce
 	return out, nil
 }
 
+func (c *authServiceClient) GetLoginOptions(ctx context.Context, in *GetLoginOptionsRequest, opts ...grpc.CallOption) (*GetLoginOptionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLoginOptionsResponse)
+	err := c.cc.Invoke(ctx, AuthService_GetLoginOptions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) RequestPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*RequestPasswordResetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestPasswordResetResponse)
+	err := c.cc.Invoke(ctx, AuthService_RequestPasswordReset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -159,6 +192,17 @@ type AuthServiceServer interface {
 	// répond INVALID_ARGUMENT et laisse le lien valable. L'usage est inscrit au
 	// journal d'audit.
 	RedeemAccessLink(context.Context, *RedeemAccessLinkRequest) (*RedeemAccessLinkResponse, error)
+	// GetLoginOptions dit ce que l'écran de connexion peut proposer. Appelable
+	// sans jeton ; ne révèle rien du relais ni des comptes.
+	GetLoginOptions(context.Context, *GetLoginOptionsRequest) (*GetLoginOptionsResponse, error)
+	// RequestPasswordReset envoie, si un compte correspond, un lien pour
+	// choisir un nouveau mot de passe (1 heure). Appelable sans jeton. La
+	// réponse est la même, et dans le même délai, qu'un compte corresponde ou
+	// non : la recherche et l'envoi se font en tâche de fond. Sans relais SMTP,
+	// répond FAILED_PRECONDITION ; trop de demandes depuis une même adresse
+	// publique répondent RESOURCE_EXHAUSTED. Au-delà de 5 demandes par heure
+	// pour un compte, les suivantes sont ignorées sans le dire.
+	RequestPasswordReset(context.Context, *RequestPasswordResetRequest) (*RequestPasswordResetResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -186,6 +230,12 @@ func (UnimplementedAuthServiceServer) InspectAccessLink(context.Context, *Inspec
 }
 func (UnimplementedAuthServiceServer) RedeemAccessLink(context.Context, *RedeemAccessLinkRequest) (*RedeemAccessLinkResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RedeemAccessLink not implemented")
+}
+func (UnimplementedAuthServiceServer) GetLoginOptions(context.Context, *GetLoginOptionsRequest) (*GetLoginOptionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLoginOptions not implemented")
+}
+func (UnimplementedAuthServiceServer) RequestPasswordReset(context.Context, *RequestPasswordResetRequest) (*RequestPasswordResetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RequestPasswordReset not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -316,6 +366,42 @@ func _AuthService_RedeemAccessLink_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_GetLoginOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLoginOptionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetLoginOptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetLoginOptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetLoginOptions(ctx, req.(*GetLoginOptionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_RequestPasswordReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestPasswordResetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).RequestPasswordReset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_RequestPasswordReset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).RequestPasswordReset(ctx, req.(*RequestPasswordResetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -346,6 +432,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RedeemAccessLink",
 			Handler:    _AuthService_RedeemAccessLink_Handler,
+		},
+		{
+			MethodName: "GetLoginOptions",
+			Handler:    _AuthService_GetLoginOptions_Handler,
+		},
+		{
+			MethodName: "RequestPasswordReset",
+			Handler:    _AuthService_RequestPasswordReset_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

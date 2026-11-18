@@ -30,18 +30,20 @@ type Policy struct {
 }
 
 // DefaultPolicy est la politique du serveur : seules les sondes de santé,
-// l'ouverture de session et les liens à usage unique (leur jeton tient lieu
-// d'authentification, ADR-0014) sont publics. Les membres consultent ; agir sur
+// l'ouverture de session, les liens à usage unique (leur jeton tient lieu
+// d'authentification) et « mot de passe oublié » (ADR-0014) sont publics. Les membres consultent ; agir sur
 // un conteneur (démarrer, arrêter, redémarrer) reste réservé aux admins, par
 // défaut.
 func DefaultPolicy() Policy {
 	return Policy{
 		Public: map[string]bool{
-			grpcHealth.Health_Check_FullMethodName:                  true,
-			grpcHealth.Health_Watch_FullMethodName:                  true,
-			forgenetv1.AuthService_Login_FullMethodName:             true,
-			forgenetv1.AuthService_InspectAccessLink_FullMethodName: true,
-			forgenetv1.AuthService_RedeemAccessLink_FullMethodName:  true,
+			grpcHealth.Health_Check_FullMethodName:                     true,
+			grpcHealth.Health_Watch_FullMethodName:                     true,
+			forgenetv1.AuthService_Login_FullMethodName:                true,
+			forgenetv1.AuthService_InspectAccessLink_FullMethodName:    true,
+			forgenetv1.AuthService_RedeemAccessLink_FullMethodName:     true,
+			forgenetv1.AuthService_GetLoginOptions_FullMethodName:      true,
+			forgenetv1.AuthService_RequestPasswordReset_FullMethodName: true,
 		},
 		MinRole: map[string]store.Role{
 			forgenetv1.AuthService_Logout_FullMethodName:         store.RoleMember,

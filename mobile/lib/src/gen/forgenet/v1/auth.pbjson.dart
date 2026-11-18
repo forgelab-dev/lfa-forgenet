@@ -280,3 +280,48 @@ final $typed_data.Uint8List redeemAccessLinkResponseDescriptor = $convert.base64
     'ChhSZWRlZW1BY2Nlc3NMaW5rUmVzcG9uc2USFAoFdG9rZW4YASABKAlSBXRva2VuEjkKCmV4cG'
     'lyZXNfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUglleHBpcmVzQXQSJQoE'
     'dXNlchgDIAEoCzIRLmZvcmdlbmV0LnYxLlVzZXJSBHVzZXI=');
+
+@$core.Deprecated('Use getLoginOptionsRequestDescriptor instead')
+const GetLoginOptionsRequest$json = {
+  '1': 'GetLoginOptionsRequest',
+};
+
+/// Descriptor for `GetLoginOptionsRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getLoginOptionsRequestDescriptor =
+    $convert.base64Decode('ChZHZXRMb2dpbk9wdGlvbnNSZXF1ZXN0');
+
+@$core.Deprecated('Use getLoginOptionsResponseDescriptor instead')
+const GetLoginOptionsResponse$json = {
+  '1': 'GetLoginOptionsResponse',
+  '2': [
+    {'1': 'password_reset', '3': 1, '4': 1, '5': 8, '10': 'passwordReset'},
+  ],
+};
+
+/// Descriptor for `GetLoginOptionsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getLoginOptionsResponseDescriptor =
+    $convert.base64Decode(
+        'ChdHZXRMb2dpbk9wdGlvbnNSZXNwb25zZRIlCg5wYXNzd29yZF9yZXNldBgBIAEoCFINcGFzc3'
+        'dvcmRSZXNldA==');
+
+@$core.Deprecated('Use requestPasswordResetRequestDescriptor instead')
+const RequestPasswordResetRequest$json = {
+  '1': 'RequestPasswordResetRequest',
+  '2': [
+    {'1': 'login', '3': 1, '4': 1, '5': 9, '10': 'login'},
+  ],
+};
+
+/// Descriptor for `RequestPasswordResetRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List requestPasswordResetRequestDescriptor =
+    $convert.base64Decode(
+        'ChtSZXF1ZXN0UGFzc3dvcmRSZXNldFJlcXVlc3QSFAoFbG9naW4YASABKAlSBWxvZ2lu');
+
+@$core.Deprecated('Use requestPasswordResetResponseDescriptor instead')
+const RequestPasswordResetResponse$json = {
+  '1': 'RequestPasswordResetResponse',
+};
+
+/// Descriptor for `RequestPasswordResetResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List requestPasswordResetResponseDescriptor =
+    $convert.base64Decode('ChxSZXF1ZXN0UGFzc3dvcmRSZXNldFJlc3BvbnNl');
