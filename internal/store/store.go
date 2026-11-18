@@ -227,6 +227,40 @@ type Domain struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// ActionPurpose est l'usage d'un lien à usage unique (ADR-0014).
+type ActionPurpose string
+
+const (
+	// PurposeFirstLogin fait choisir son mot de passe au premier administrateur.
+	PurposeFirstLogin ActionPurpose = "first_login"
+	// PurposePasswordReset remplace un mot de passe oublié.
+	PurposePasswordReset ActionPurpose = "password_reset"
+	// PurposeInvitation fait choisir son mot de passe à un membre invité.
+	PurposeInvitation ActionPurpose = "invitation"
+)
+
+// IsValid vérifie que l'usage est connu.
+func (p ActionPurpose) IsValid() bool {
+	switch p {
+	case PurposeFirstLogin, PurposePasswordReset, PurposeInvitation:
+		return true
+	}
+	return false
+}
+
+// ActionToken est un lien à usage unique : il fait choisir un mot de passe.
+// Le jeton lui-même n'est jamais stocké, seulement son empreinte.
+type ActionToken struct {
+	ID        string
+	UserID    string
+	Purpose   ActionPurpose
+	TokenHash string
+	ExpiresAt time.Time
+	UsedAt    *time.Time
+	CreatedBy string // ex: "user:123", "system:cli"
+	CreatedAt time.Time
+}
+
 // UserStore définit les opérations de persistance sur les utilisateurs.
 type UserStore interface {
 	CreateUser(ctx context.Context, user *User) error
@@ -237,8 +271,9 @@ type UserStore interface {
 	UpdateUser(ctx context.Context, user *User) error
 	// SetPassword remplace l'empreinte du mot de passe et révoque, dans la
 	// même transaction, toutes les sessions et tous les jetons du compte sauf
-	// keepSessionID (vide : tous). Renvoie le nombre de sessions révoquées, ou
-	// ErrNotFound si le compte n'existe pas.
+	// keepSessionID (vide : tous), ainsi que ses liens à usage unique encore
+	// inutilisés. Renvoie le nombre de sessions révoquées, ou ErrNotFound si
+	// le compte n'existe pas.
 	SetPassword(ctx context.Context, userID, passwordHash, keepSessionID string) (int64, error)
 	DeleteUser(ctx context.Context, id string) error
 	CountUsers(ctx context.Context) (int64, error)
@@ -252,6 +287,23 @@ type SessionStore interface {
 	TouchSession(ctx context.Context, id string, lastUsed time.Time) error
 	RevokeSession(ctx context.Context, id string) error
 	DeleteExpiredSessions(ctx context.Context) error
+}
+
+// ActionTokenStore garde les liens à usage unique (ADR-0014).
+type ActionTokenStore interface {
+	// CreateActionToken enregistre le lien et supprime, dans la même
+	// transaction, les liens inutilisés du même usage pour le même compte : un
+	// nouveau lien annule les précédents.
+	CreateActionToken(ctx context.Context, t *ActionToken) error
+	// GetActiveActionToken renvoie le lien d'empreinte tokenHash s'il n'a ni
+	// servi ni expiré à now ; ErrNotFound sinon, sans distinguer les cas.
+	GetActiveActionToken(ctx context.Context, tokenHash string, now time.Time) (*ActionToken, error)
+	// RedeemActionToken utilise le lien en une transaction : il le marque
+	// utilisé s'il valait encore à now, fixe le mot de passe du compte, ferme
+	// toutes ses sessions et jetons et annule ses autres liens. Renvoie le
+	// lien et le nombre de sessions fermées, ou ErrNotFound si le lien ne
+	// valait plus : deux appels simultanés ne peuvent pas l'utiliser tous deux.
+	RedeemActionToken(ctx context.Context, tokenHash string, now time.Time, passwordHash string) (*ActionToken, int64, error)
 }
 
 // AuditStore définit les opérations de journalisation d'audit.
@@ -301,6 +353,7 @@ type Store interface {
 	Audit() AuditStore
 	Deployments() DeploymentStore
 	Domains() DomainStore
+	ActionTokens() ActionTokenStore
 	Ping(ctx context.Context) error
 	Close() error
 }
