@@ -43,6 +43,10 @@ message Container {
   ContainerState state = 4;
   repeated PortMapping ports = 5;
   google.protobuf.Timestamp created_at = 6;
+  // Conteneur de ForgeNet lui-même (serveur, Caddy, mise à jour), reconnu à
+  // son étiquette Docker « forgenet.system=true ». Le dashboard le range à
+  // part des applications, sans le cacher.
+  bool system = 7;
 }
 
 // --- REQUEST / RESPONSE MESSAGES ---

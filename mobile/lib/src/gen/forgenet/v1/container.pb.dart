@@ -114,6 +114,7 @@ class Container extends $pb.GeneratedMessage {
     ContainerState? state,
     $core.Iterable<PortMapping>? ports,
     $1.Timestamp? createdAt,
+    $core.bool? system,
   }) {
     final result = Container._();
     if (id != null) result.id = id;
@@ -122,6 +123,7 @@ class Container extends $pb.GeneratedMessage {
     if (state != null) result.state = state;
     if (ports != null) result.ports.addAll(ports);
     if (createdAt != null) result.createdAt = createdAt;
+    if (system != null) result.system = system;
     return result;
   }
 
@@ -147,6 +149,7 @@ class Container extends $pb.GeneratedMessage {
         subBuilder: PortMapping.$_createMessage)
     ..aOM<$1.Timestamp>(6, _omitFieldNames ? '' : 'createdAt',
         subBuilder: $1.Timestamp.$_createMessage)
+    ..aOB(7, _omitFieldNames ? '' : 'system')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -218,6 +221,18 @@ class Container extends $pb.GeneratedMessage {
   void clearCreatedAt() => $_clearField(6);
   @$pb.TagNumber(6)
   $1.Timestamp ensureCreatedAt() => $_ensure(5);
+
+  /// Conteneur de ForgeNet lui-même (serveur, Caddy, mise à jour), reconnu à
+  /// son étiquette Docker « forgenet.system=true ». Le dashboard le range à
+  /// part des applications, sans le cacher.
+  @$pb.TagNumber(7)
+  $core.bool get system => $_getBF(6);
+  @$pb.TagNumber(7)
+  set system($core.bool value) => $_setBool(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasSystem() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearSystem() => $_clearField(7);
 }
 
 class ListContainersRequest extends $pb.GeneratedMessage {
