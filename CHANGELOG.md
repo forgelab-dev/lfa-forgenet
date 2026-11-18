@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.5.0...v0.6.0) (2026-11-18)
+
+
+### Fonctionnalités
+
+* **api:** ChangePassword dans AuthService ([8279c7b](https://github.com/forgelab-dev/lfa-forgenet/commit/8279c7b737175e3eb040a148a0a86524923b664e)), closes [#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)
+* **auth:** changer ou réinitialiser un mot de passe ([9b261e9](https://github.com/forgelab-dev/lfa-forgenet/commit/9b261e9b2381a0ccc6912a693caec2737a8b654a)), closes [#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)
+* **cli:** forgenet-server user set-password ([8300a76](https://github.com/forgelab-dev/lfa-forgenet/commit/8300a764b951fca3274b4aa45891174aa75e1e86)), closes [#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)
+* **grpc:** servir ChangePassword aux membres connectés ([b53b4cc](https://github.com/forgelab-dev/lfa-forgenet/commit/b53b4cc7be07bec6801f4787c7602456a68958a8)), closes [#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)
+* **store:** SetPassword change l'empreinte et ferme les sessions ([5acb2eb](https://github.com/forgelab-dev/lfa-forgenet/commit/5acb2eb70c4e81bf07363058ea1247d7954d1665)), closes [#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)
+* **web:** page « Mon compte » et changement de mot de passe ([fe88c27](https://github.com/forgelab-dev/lfa-forgenet/commit/fe88c2791db7a594c713c7921933827607f05233)), closes [#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)
+
+
+### Corrections
+
+* **install:** ne plus faire supprimer le mot de passe avant de l'avoir changé ([1123c7c](https://github.com/forgelab-dev/lfa-forgenet/commit/1123c7c2bf56aabcb676132a61e1babf11fe4012)), closes [#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)
+* **web:** case et commande de secours lisibles sur la page du compte ([8d80a00](https://github.com/forgelab-dev/lfa-forgenet/commit/8d80a00baa62838504d4ee08d5bb4aa809fd2514)), closes [#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)
+
 ## [0.5.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.4.1...v0.5.0) (2026-11-16)
 
 
