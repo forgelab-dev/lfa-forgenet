@@ -186,6 +186,10 @@ func TestLogs_RecordFailureAndCancellation(t *testing.T) {
 	failed, err := svc.Create(ctx, request("p1"))
 	require.NoError(t, err)
 	waitState(t, st, failed.ID, store.DeploymentFailed)
+	// Le Deploy de p1 a laissé son signal dans le canal : sans le consommer,
+	// l'attente de p2 plus bas le prendrait et annulerait p2 encore en
+	// attente, sans aucune ligne de journal.
+	<-stacks.started
 	rec := newRecorder[*store.DeploymentLog]()
 	require.NoError(t, svc.Logs(ctx, failed.ID, deploy.LogOptions{}, rec.send))
 	last := rec.all()[len(rec.all())-1]
