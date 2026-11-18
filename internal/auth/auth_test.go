@@ -332,3 +332,89 @@ func auditActions(t *testing.T, st store.Store) []string {
 	}
 	return actions
 }
+
+func TestAccessLink_FirstLogin(t *testing.T) {
+	svc, st := setupAuthTest(t)
+	ctx := context.Background()
+	user, err := svc.RegisterWithoutPassword(ctx, "admin", "Admin@Forgenet.test", store.RoleAdmin)
+	require.NoError(t, err)
+	assert.Equal(t, "admin@forgenet.test", user.Email)
+
+	// Sans mot de passe choisi, aucune saisie n'ouvre le compte.
+	for _, pw := range []string{"!", "", testPassword} {
+		_, err = svc.Login(ctx, "admin", pw)
+		require.ErrorIs(t, err, auth.ErrInvalidCredentials, pw)
+	}
+
+	token, link, err := svc.CreateAccessLink(ctx, user.ID, store.PurposeFirstLogin, "system:cli")
+	require.NoError(t, err)
+	assert.Len(t, token, 43, "32 octets en base64url")
+	assert.NotContains(t, token, "=")
+	assert.NotEqual(t, token, link.TokenHash, "seule l'empreinte est gardée")
+	assert.WithinDuration(t, time.Now().Add(24*time.Hour), link.ExpiresAt, time.Minute)
+
+	got, owner, err := svc.InspectAccessLink(ctx, token)
+	require.NoError(t, err)
+	assert.Equal(t, store.PurposeFirstLogin, got.Purpose)
+	assert.Equal(t, "admin", owner.Username)
+
+	// Un mot de passe refusé laisse le lien valable.
+	_, _, err = svc.RedeemAccessLink(ctx, token, "court")
+	require.ErrorIs(t, err, auth.ErrPasswordTooShort)
+
+	res, used, err := svc.RedeemAccessLink(ctx, token, "mot-de-passe-choisi")
+	require.NoError(t, err)
+	assert.Equal(t, store.PurposeFirstLogin, used.Purpose)
+	assert.Equal(t, "admin", res.User.Username)
+	_, err = svc.ValidateToken(ctx, res.Token)
+	require.NoError(t, err, "la session ouverte par le lien est valable")
+	_, err = svc.Login(ctx, "admin", "mot-de-passe-choisi")
+	require.NoError(t, err)
+
+	_, _, err = svc.RedeemAccessLink(ctx, token, "autre-mot-de-passe")
+	require.ErrorIs(t, err, auth.ErrLinkInvalid, "usage unique")
+	_, _, err = svc.InspectAccessLink(ctx, token)
+	require.ErrorIs(t, err, auth.ErrLinkInvalid)
+
+	actions := auditActions(t, st)
+	assert.Contains(t, actions, "user.access_link_create")
+	assert.Contains(t, actions, "user.access_link_used")
+	events, err := st.Audit().List(ctx, 100, 0)
+	require.NoError(t, err)
+	for _, e := range events {
+		assert.NotContains(t, e.Metadata, token, "le jeton n'entre jamais au journal")
+	}
+}
+
+func TestAccessLink_InvalidTokens(t *testing.T) {
+	svc, _ := setupAuthTest(t)
+	ctx := context.Background()
+	for _, token := range []string{"", "inconnu", strings.Repeat("a", 500)} {
+		_, _, err := svc.InspectAccessLink(ctx, token)
+		require.ErrorIs(t, err, auth.ErrLinkInvalid)
+		_, _, err = svc.RedeemAccessLink(ctx, token, "mot-de-passe-choisi")
+		require.ErrorIs(t, err, auth.ErrLinkInvalid)
+	}
+}
+
+func TestAccessLink_NewLinkCancelsThePreviousOne(t *testing.T) {
+	svc, _ := setupAuthTest(t)
+	ctx := context.Background()
+	user, err := svc.RegisterWithoutPassword(ctx, "admin", "admin@forgenet.test", store.RoleAdmin)
+	require.NoError(t, err)
+	first, _, err := svc.CreateAccessLink(ctx, user.ID, store.PurposeFirstLogin, "system:cli")
+	require.NoError(t, err)
+	second, _, err := svc.CreateAccessLink(ctx, user.ID, store.PurposeFirstLogin, "system:cli")
+	require.NoError(t, err)
+
+	_, _, err = svc.InspectAccessLink(ctx, first)
+	require.ErrorIs(t, err, auth.ErrLinkInvalid)
+	_, _, err = svc.InspectAccessLink(ctx, second)
+	require.NoError(t, err)
+}
+
+func TestLinkTTL(t *testing.T) {
+	assert.Equal(t, 24*time.Hour, auth.LinkTTL(store.PurposeFirstLogin))
+	assert.Equal(t, time.Hour, auth.LinkTTL(store.PurposePasswordReset))
+	assert.Equal(t, 7*24*time.Hour, auth.LinkTTL(store.PurposeInvitation))
+}
