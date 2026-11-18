@@ -1,5 +1,7 @@
 import { createContext, useContext } from 'react';
 
+import type { Timestamp } from '@bufbuild/protobuf/wkt';
+
 import type { User } from '../../gen/forgenet/v1/auth_pb';
 import type { ApiClients } from '../../lib/api/client';
 
@@ -22,6 +24,11 @@ export interface Session {
   api: ApiClients;
   /** Ouvre une session ; rejette avec l'erreur du serveur en cas de refus. */
   login(login: string, password: string): Promise<void>;
+  /**
+   * Adopte une session ouverte par le serveur hors de login, par exemple par
+   * un lien à usage unique (ADR-0014).
+   */
+  adopt(opened: OpenedSession): void;
   /** Ferme la session, même si le serveur ne répond pas. */
   logout(): Promise<void>;
   /** Relance la vérification du jeton conservé. */
@@ -33,6 +40,13 @@ export interface Session {
   token(): string | undefined;
   /** Ferme la session quand un flux WebSocket signale un jeton refusé (4401). */
   expire(): void;
+}
+
+/** Réponse du serveur qui ouvre une session (Login, RedeemAccessLink). */
+export interface OpenedSession {
+  token: string;
+  expiresAt?: Timestamp;
+  user?: User;
 }
 
 export const SessionContext = createContext<Session | null>(null);
