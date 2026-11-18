@@ -328,3 +328,64 @@ func TestLoad_Updates(t *testing.T) {
 	_, err = config.Load("")
 	require.ErrorContains(t, err, "updates.check_interval")
 }
+
+func TestLoad_SMTPOffByDefault(t *testing.T) {
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.False(t, cfg.SMTP.Enabled())
+	assert.Equal(t, config.DefaultSMTPPort, cfg.SMTP.Port)
+	assert.Equal(t, config.SMTPStartTLS, cfg.SMTP.TLS)
+}
+
+func TestLoad_SMTPFromEnvironment(t *testing.T) {
+	t.Setenv("FORGENET_SMTP_HOST", "smtp.exemple.org")
+	t.Setenv("FORGENET_SMTP_PORT", "465")
+	t.Setenv("FORGENET_SMTP_USERNAME", "forgenet")
+	t.Setenv("FORGENET_SMTP_PASSWORD", "secret-du-relais")
+	t.Setenv("FORGENET_SMTP_FROM", "ForgeNet <forgenet@exemple.org>")
+	t.Setenv("FORGENET_SMTP_TLS", "implicit")
+
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.True(t, cfg.SMTP.Enabled())
+	assert.Equal(t, config.SMTPConfig{
+		Host: "smtp.exemple.org", Port: 465, Username: "forgenet", Password: "secret-du-relais",
+		From: "ForgeNet <forgenet@exemple.org>", TLS: "implicit",
+	}, cfg.SMTP)
+}
+
+func TestLoad_SMTPValidation(t *testing.T) {
+	base := map[string]string{"FORGENET_SMTP_HOST": "smtp.exemple.org", "FORGENET_SMTP_FROM": "forgenet@exemple.org"}
+	for name, tc := range map[string]struct {
+		env  map[string]string
+		want string
+	}{
+		"sans expéditeur":         {map[string]string{"FORGENET_SMTP_FROM": ""}, "smtp.from"},
+		"expéditeur invalide":     {map[string]string{"FORGENET_SMTP_FROM": "pas une adresse"}, "smtp.from"},
+		"utilisateur sans secret": {map[string]string{"FORGENET_SMTP_USERNAME": "forgenet"}, "vont ensemble"},
+		"sans TLS vers un relais": {map[string]string{"FORGENET_SMTP_TLS": "none"}, "relais local"},
+		"TLS inconnu":             {map[string]string{"FORGENET_SMTP_TLS": "ssl"}, "smtp.tls inconnu"},
+		"port hors bornes":        {map[string]string{"FORGENET_SMTP_PORT": "70000"}, "smtp.port"},
+		"hôte avec une adresse":   {map[string]string{"FORGENET_SMTP_HOST": "user@smtp.exemple.org"}, "smtp.host"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			for k, v := range base {
+				t.Setenv(k, v)
+			}
+			for k, v := range tc.env {
+				t.Setenv(k, v)
+			}
+			_, err := config.Load("")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+		})
+	}
+
+	t.Run("sans TLS vers localhost", func(t *testing.T) {
+		t.Setenv("FORGENET_SMTP_HOST", "localhost")
+		t.Setenv("FORGENET_SMTP_FROM", "forgenet@exemple.org")
+		t.Setenv("FORGENET_SMTP_TLS", "none")
+		_, err := config.Load("")
+		require.NoError(t, err)
+	})
+}

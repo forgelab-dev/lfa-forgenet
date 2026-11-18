@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/mail"
 	"net/netip"
 	"path/filepath"
 	"regexp"
@@ -187,6 +188,63 @@ type WebConfig struct {
 	Root string `mapstructure:"root"`
 }
 
+// Valeurs de SMTPConfig.TLS (ADR-0014).
+const (
+	SMTPStartTLS = "starttls" // port 587 : connexion en clair, puis STARTTLS exigé
+	SMTPImplicit = "implicit" // port 465 : TLS dès la connexion
+	SMTPNoTLS    = "none"     // relais local seulement (localhost)
+)
+
+// DefaultSMTPPort est le port de soumission avec STARTTLS.
+const DefaultSMTPPort = 587
+
+// SMTPConfig règle l'envoi d'e-mails par un relais (ADR-0014). Sans Host,
+// l'envoi est éteint et le reste de ForgeNet marche.
+type SMTPConfig struct {
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
+	// Username et Password s'authentifient auprès du relais (PLAIN, seulement
+	// sous TLS). Les deux, ou aucun.
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	// From est l'expéditeur, « ForgeNet <forgenet@exemple.org> » ou une adresse.
+	From string `mapstructure:"from"`
+	// TLS vaut starttls (défaut), implicit, ou none vers localhost seulement.
+	TLS string `mapstructure:"tls"`
+}
+
+// Enabled dit si un relais est configuré.
+func (c SMTPConfig) Enabled() bool { return c.Host != "" }
+
+func (c SMTPConfig) validate() error {
+	if !c.Enabled() {
+		return nil
+	}
+	if strings.ContainsAny(c.Host, " \t\r\n/@") {
+		return fmt.Errorf("smtp.host doit être un nom d'hôte ou une adresse : %q", c.Host)
+	}
+	if c.Port <= 0 || c.Port > 65535 {
+		return fmt.Errorf("smtp.port invalide : %d", c.Port)
+	}
+	if (c.Username == "") != (c.Password == "") {
+		return errors.New("smtp.username et smtp.password vont ensemble : les deux, ou aucun")
+	}
+	if _, err := mail.ParseAddress(c.From); err != nil || strings.ContainsAny(c.From, "\r\n") {
+		return fmt.Errorf("smtp.from doit être une adresse e-mail : %q", c.From)
+	}
+	switch c.TLS {
+	case SMTPStartTLS, SMTPImplicit:
+	case SMTPNoTLS:
+		// Sans TLS, identifiants et messages passeraient en clair sur le réseau.
+		if c.Host != "localhost" && c.Host != "127.0.0.1" && c.Host != "::1" {
+			return fmt.Errorf("smtp.tls=none n'est accepté que vers un relais local (localhost), pas %q", c.Host)
+		}
+	default:
+		return fmt.Errorf("smtp.tls inconnu : %q (valeurs acceptées : starttls, implicit, none)", c.TLS)
+	}
+	return nil
+}
+
 // Config est la structure racine de la configuration ForgeNet.
 type Config struct {
 	Environment string         `mapstructure:"environment"` // "development", "staging", "production"
@@ -200,6 +258,7 @@ type Config struct {
 	Proxy       ProxyConfig    `mapstructure:"proxy"`
 	Web         WebConfig      `mapstructure:"web"`
 	Updates     UpdatesConfig  `mapstructure:"updates"`
+	SMTP        SMTPConfig     `mapstructure:"smtp"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -296,6 +355,9 @@ func (c *Config) Validate() error {
 	if err := c.Proxy.validate(c.Environment); err != nil {
 		return err
 	}
+	if err := c.SMTP.validate(); err != nil {
+		return err
+	}
 	if c.Web.Root != "" && !filepath.IsAbs(c.Web.Root) {
 		return fmt.Errorf("web.root doit être un chemin absolu : %q", c.Web.Root)
 	}
@@ -343,6 +405,15 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("health.expose_details", ExposeDetailsLocal)
 
 	v.SetDefault("metrics.storage_path", "/")
+
+	// Chaque clé a sa valeur par défaut : sans elle, viper ignore la variable
+	// d'environnement correspondante au moment de Unmarshal.
+	v.SetDefault("smtp.host", "")
+	v.SetDefault("smtp.port", DefaultSMTPPort)
+	v.SetDefault("smtp.username", "")
+	v.SetDefault("smtp.password", "")
+	v.SetDefault("smtp.from", "")
+	v.SetDefault("smtp.tls", SMTPStartTLS)
 
 	v.SetDefault("proxy.enabled", false)
 	v.SetDefault("proxy.admin_address", DefaultProxyAdminAddress)
