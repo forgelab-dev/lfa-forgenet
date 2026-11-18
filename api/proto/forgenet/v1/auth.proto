@@ -104,6 +104,22 @@ message RedeemAccessLinkResponse {
   User user = 3;
 }
 
+message GetLoginOptionsRequest {}
+
+message GetLoginOptionsResponse {
+  // Vrai quand le serveur peut envoyer un lien « mot de passe oublié » :
+  // l'écran de connexion propose alors le lien, sinon il renvoie à la
+  // commande « forgenet user set-password » sur le serveur.
+  bool password_reset = 1;
+}
+
+message RequestPasswordResetRequest {
+  // Nom d'utilisateur ou adresse e-mail, comme pour Login.
+  string login = 1;
+}
+
+message RequestPasswordResetResponse {}
+
 // --- SERVICE ---
 
 // AuthService ouvre et ferme les sessions du dashboard et du CLI.
@@ -138,4 +154,17 @@ service AuthService {
   // répond INVALID_ARGUMENT et laisse le lien valable. L'usage est inscrit au
   // journal d'audit.
   rpc RedeemAccessLink(RedeemAccessLinkRequest) returns (RedeemAccessLinkResponse);
+
+  // GetLoginOptions dit ce que l'écran de connexion peut proposer. Appelable
+  // sans jeton ; ne révèle rien du relais ni des comptes.
+  rpc GetLoginOptions(GetLoginOptionsRequest) returns (GetLoginOptionsResponse);
+
+  // RequestPasswordReset envoie, si un compte correspond, un lien pour
+  // choisir un nouveau mot de passe (1 heure). Appelable sans jeton. La
+  // réponse est la même, et dans le même délai, qu'un compte corresponde ou
+  // non : la recherche et l'envoi se font en tâche de fond. Sans relais SMTP,
+  // répond FAILED_PRECONDITION ; trop de demandes depuis une même adresse
+  // publique répondent RESOURCE_EXHAUSTED. Au-delà de 5 demandes par heure
+  // pour un compte, les suivantes sont ignorées sans le dire.
+  rpc RequestPasswordReset(RequestPasswordResetRequest) returns (RequestPasswordResetResponse);
 }

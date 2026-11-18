@@ -174,9 +174,14 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	domainAPI := transportGRPC.NewDomainServiceServer(domainService, logger)
 	metricsAPI := transportGRPC.NewMetricsServiceServer(recorder, engine, logger)
 	// Envoi d'e-mails par un relais SMTP, facultatif (ADR-0014).
-	mailAPI := transportGRPC.NewMailServiceServer(cfg.SMTP, mail.NewSMTP(cfg.SMTP), db.Users(), auditor, logger)
+	smtpSender := mail.NewSMTP(cfg.SMTP)
+	mailAPI := transportGRPC.NewMailServiceServer(cfg.SMTP, smtpSender, db.Users(), auditor, logger)
+	// Les e-mails des comptes (mot de passe oublié, invitations) partent en
+	// tâche de fond, avec trois essais espacés.
+	outbox := mail.NewOutbox(smtpSender, nil, logger)
 	if cfg.SMTP.Enabled() {
 		logger.Info().Str("relais", cfg.SMTP.Host).Msg("envoi d'e-mails activé")
+		authAPI.EnablePasswordReset(outbox, cfg.Proxy.DashboardHost)
 	} else {
 		logger.Info().Msg("envoi d'e-mails désactivé : aucun relais SMTP configuré")
 	}
@@ -236,6 +241,7 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 		{name: "gRPC", transport: grpcServer},
 		{name: "déploiements", transport: deployments},
 		{name: "relevé des mesures", transport: recorder},
+		{name: "envoi d'e-mails", transport: outbox},
 	}
 	if cfg.Updates.Check {
 		servers = append(servers, server{name: "vérification des mises à jour", transport: checker})

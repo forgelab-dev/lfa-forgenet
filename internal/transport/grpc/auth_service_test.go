@@ -2,6 +2,7 @@ package grpc_test
 
 import (
 	"context"
+	"regexp"
 	"testing"
 	"time"
 
@@ -217,4 +218,80 @@ func TestAuthService_PendingAccountCannotLogIn(t *testing.T) {
 	pendingAccount(t, ts, "premier")
 	_, err := client.Login(context.Background(), &forgenetv1.LoginRequest{Login: "premier", Password: "!"})
 	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// startResetServer sert AuthService avec « mot de passe oublié » activé et
+// une file d'envoi synchrone.
+func startResetServer(t *testing.T, dashboardHost string) (*testServer, forgenetv1.AuthServiceClient, *transportGRPC.SyncOutboxForTests) {
+	t.Helper()
+	outbox := &transportGRPC.SyncOutboxForTests{}
+	ts := startTestServer(t, &fakeEngine{}, func(srv *grpc.Server, st store.Store, auditor audit.Auditor) {
+		authSvc := auth.NewService(st, config.AuthConfig{JWTSecret: "secret-de-test-d-au-moins-32-caracteres"}, auditor)
+		api := transportGRPC.NewAuthServiceServer(authSvc, st.Users(), zerolog.Nop()).EnablePasswordReset(outbox, dashboardHost)
+		forgenetv1.RegisterAuthServiceServer(srv, api)
+	})
+	return ts, forgenetv1.NewAuthServiceClient(ts.conn), outbox
+}
+
+func TestAuthService_LoginOptions(t *testing.T) {
+	_, plain := startAuthServer(t)
+	opts, err := plain.GetLoginOptions(context.Background(), &forgenetv1.GetLoginOptionsRequest{})
+	require.NoError(t, err, "public")
+	assert.False(t, opts.GetPasswordReset())
+	_, err = plain.RequestPasswordReset(context.Background(), &forgenetv1.RequestPasswordResetRequest{Login: "admin"})
+	assert.Equal(t, codes.FailedPrecondition, status.Code(err), "sans relais")
+	assert.Contains(t, status.Convert(err).Message(), "forgenet user set-password")
+
+	_, client, _ := startResetServer(t, "")
+	opts, err = client.GetLoginOptions(context.Background(), &forgenetv1.GetLoginOptionsRequest{})
+	require.NoError(t, err)
+	assert.True(t, opts.GetPasswordReset())
+}
+
+func TestAuthService_PasswordResetByMail(t *testing.T) {
+	_, client, outbox := startResetServer(t, "forgenet.exemple.org")
+	ctx := context.Background()
+
+	// Même réponse, compte ou non.
+	for _, login := range []string{"personne", "MEMBRE@forgenet.test "} {
+		_, err := client.RequestPasswordReset(ctx, &forgenetv1.RequestPasswordResetRequest{Login: login})
+		require.NoError(t, err, login)
+	}
+	msgs := outbox.Messages()
+	require.Len(t, msgs, 1, "seul le compte existant reçoit un e-mail")
+	assert.Equal(t, "membre@forgenet.test", msgs[0].To)
+	link := regexp.MustCompile(`https://forgenet\.exemple\.org/acces#([A-Za-z0-9_-]{43})`).FindStringSubmatch(msgs[0].Body)
+	require.Len(t, link, 2, msgs[0].Body)
+
+	info, err := client.InspectAccessLink(ctx, &forgenetv1.InspectAccessLinkRequest{Token: link[1]})
+	require.NoError(t, err)
+	assert.Equal(t, forgenetv1.AccessLinkPurpose_ACCESS_LINK_PURPOSE_PASSWORD_RESET, info.GetPurpose())
+	assert.WithinDuration(t, time.Now().Add(time.Hour), info.GetExpiresAt().AsTime(), time.Minute)
+
+	_, err = client.RedeemAccessLink(ctx, &forgenetv1.RedeemAccessLinkRequest{Token: link[1], NewPassword: "mot-de-passe-retrouve"})
+	require.NoError(t, err)
+	_, err = client.Login(ctx, &forgenetv1.LoginRequest{Login: "membre", Password: testPassword})
+	assert.Equal(t, codes.Unauthenticated, status.Code(err), "l'ancien mot de passe ne vaut plus")
+	_, err = client.Login(ctx, &forgenetv1.LoginRequest{Login: "membre", Password: "mot-de-passe-retrouve"})
+	require.NoError(t, err)
+}
+
+func TestAuthService_PasswordResetIsThrottledSilently(t *testing.T) {
+	_, client, outbox := startResetServer(t, "")
+	ctx := context.Background()
+	for range 7 {
+		_, err := client.RequestPasswordReset(ctx, &forgenetv1.RequestPasswordResetRequest{Login: "membre"})
+		require.NoError(t, err, "la réponse ne change pas au-delà du frein")
+	}
+	msgs := outbox.Messages()
+	assert.Len(t, msgs, 5, "5 e-mails par heure au plus pour un compte")
+	assert.Contains(t, msgs[0].Body, "http://127.0.0.1:8080/acces#")
+	assert.Contains(t, msgs[0].Body, "ssh -N", "sans domaine, le tunnel est expliqué")
+}
+
+func TestAuthService_PasswordResetRejectsAnEmptyLogin(t *testing.T) {
+	_, client, outbox := startResetServer(t, "")
+	_, err := client.RequestPasswordReset(context.Background(), &forgenetv1.RequestPasswordResetRequest{Login: "  "})
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Empty(t, outbox.Messages())
 }

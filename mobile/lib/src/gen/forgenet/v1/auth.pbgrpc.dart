@@ -94,6 +94,29 @@ class AuthServiceClient extends $grpc.Client {
     return $createUnaryCall(_$redeemAccessLink, request, options: options);
   }
 
+  /// GetLoginOptions dit ce que l'écran de connexion peut proposer. Appelable
+  /// sans jeton ; ne révèle rien du relais ni des comptes.
+  $grpc.ResponseFuture<$0.GetLoginOptionsResponse> getLoginOptions(
+    $0.GetLoginOptionsRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$getLoginOptions, request, options: options);
+  }
+
+  /// RequestPasswordReset envoie, si un compte correspond, un lien pour
+  /// choisir un nouveau mot de passe (1 heure). Appelable sans jeton. La
+  /// réponse est la même, et dans le même délai, qu'un compte corresponde ou
+  /// non : la recherche et l'envoi se font en tâche de fond. Sans relais SMTP,
+  /// répond FAILED_PRECONDITION ; trop de demandes depuis une même adresse
+  /// publique répondent RESOURCE_EXHAUSTED. Au-delà de 5 demandes par heure
+  /// pour un compte, les suivantes sont ignorées sans le dire.
+  $grpc.ResponseFuture<$0.RequestPasswordResetResponse> requestPasswordReset(
+    $0.RequestPasswordResetRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$requestPasswordReset, request, options: options);
+  }
+
   // method descriptors
 
   static final _$login = $grpc.ClientMethod<$0.LoginRequest, $0.LoginResponse>(
@@ -125,6 +148,16 @@ class AuthServiceClient extends $grpc.Client {
       '/forgenet.v1.AuthService/RedeemAccessLink',
       ($0.RedeemAccessLinkRequest value) => value.writeToBuffer(),
       $0.RedeemAccessLinkResponse.fromBuffer);
+  static final _$getLoginOptions =
+      $grpc.ClientMethod<$0.GetLoginOptionsRequest, $0.GetLoginOptionsResponse>(
+          '/forgenet.v1.AuthService/GetLoginOptions',
+          ($0.GetLoginOptionsRequest value) => value.writeToBuffer(),
+          $0.GetLoginOptionsResponse.fromBuffer);
+  static final _$requestPasswordReset = $grpc.ClientMethod<
+          $0.RequestPasswordResetRequest, $0.RequestPasswordResetResponse>(
+      '/forgenet.v1.AuthService/RequestPasswordReset',
+      ($0.RequestPasswordResetRequest value) => value.writeToBuffer(),
+      $0.RequestPasswordResetResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('forgenet.v1.AuthService')
@@ -182,6 +215,24 @@ abstract class AuthServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.RedeemAccessLinkRequest.fromBuffer(value),
         ($0.RedeemAccessLinkResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.GetLoginOptionsRequest,
+            $0.GetLoginOptionsResponse>(
+        'GetLoginOptions',
+        getLoginOptions_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.GetLoginOptionsRequest.fromBuffer(value),
+        ($0.GetLoginOptionsResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.RequestPasswordResetRequest,
+            $0.RequestPasswordResetResponse>(
+        'RequestPasswordReset',
+        requestPasswordReset_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.RequestPasswordResetRequest.fromBuffer(value),
+        ($0.RequestPasswordResetResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.LoginResponse> login_Pre(
@@ -235,4 +286,22 @@ abstract class AuthServiceBase extends $grpc.Service {
 
   $async.Future<$0.RedeemAccessLinkResponse> redeemAccessLink(
       $grpc.ServiceCall call, $0.RedeemAccessLinkRequest request);
+
+  $async.Future<$0.GetLoginOptionsResponse> getLoginOptions_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.GetLoginOptionsRequest> $request) async {
+    return getLoginOptions($call, await $request);
+  }
+
+  $async.Future<$0.GetLoginOptionsResponse> getLoginOptions(
+      $grpc.ServiceCall call, $0.GetLoginOptionsRequest request);
+
+  $async.Future<$0.RequestPasswordResetResponse> requestPasswordReset_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.RequestPasswordResetRequest> $request) async {
+    return requestPasswordReset($call, await $request);
+  }
+
+  $async.Future<$0.RequestPasswordResetResponse> requestPasswordReset(
+      $grpc.ServiceCall call, $0.RequestPasswordResetRequest request);
 }
