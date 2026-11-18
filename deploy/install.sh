@@ -84,6 +84,10 @@ Usage : sudo bash install.sh [options]
                       une adresse).
   --admin-user NOM    Nom du premier administrateur (sinon demandé).
   --admin-email ADR   Adresse du premier administrateur (sinon demandée).
+                      Sans terminal, il choisit son mot de passe par un lien
+                      de première connexion : envoyé à cette adresse si un
+                      relais SMTP est réglé, sinon écrit dans
+                      /opt/forgenet/premier-acces (root seul).
   --dir CHEMIN        Dossier d'installation (défaut : /opt/forgenet).
   --source DOSSIER    Prendre docker-compose.yml et Caddyfile.base dans ce
                       dossier au lieu de les télécharger (tests, hors ligne).
@@ -475,8 +479,8 @@ create_admin() {
 	[[ "$ADMIN_USER" =~ ^[A-Za-z0-9._-]{3,32}$ ]] || die "nom d'utilisateur invalide : 3 à 32 caractères parmi lettres, chiffres, . _ -"
 	[[ "$ADMIN_EMAIL" =~ $email_re ]] || die "adresse email invalide : « $ADMIN_EMAIL »"
 
-	local password confirm password_file=""
 	if [ "$interactive" -eq 1 ]; then
+		local password confirm
 		while :; do
 			printf 'Mot de passe (8 caractères au moins) : ' >/dev/tty
 			IFS= read -rs password </dev/tty
@@ -491,27 +495,44 @@ create_admin() {
 				break
 			fi
 		done
+		if ! printf '%s\n' "$password" | compose exec -T server forgenet-server user create \
+			--username "$ADMIN_USER" --email "$ADMIN_EMAIL" --role admin; then
+			die "création de l'administrateur impossible (message ci-dessus)"
+		fi
+		unset password confirm
 	else
-		# Sans terminal, le mot de passe va dans un fichier root, jamais à l'écran
-		# ni dans un journal.
-		password="$(head -c 18 /dev/urandom | base64 | tr -d '/+=\n')"
-		password_file="$INSTALL_DIR/admin-password"
-		printf '%s\n' "$password" >"$password_file"
-		chmod 0600 "$password_file"
+		# Sans terminal, aucun mot de passe n'est tiré : l'administrateur
+		# choisira le sien par un lien à usage unique (ADR-0014).
+		if ! compose exec -T server forgenet-server user create --no-password \
+			--username "$ADMIN_USER" --email "$ADMIN_EMAIL" --role admin >/dev/null; then
+			die "création de l'administrateur impossible (message ci-dessus)"
+		fi
 	fi
-
-	if ! printf '%s\n' "$password" | compose exec -T server forgenet-server user create \
-		--username "$ADMIN_USER" --email "$ADMIN_EMAIL" --role admin; then
-		die "création de l'administrateur impossible (message ci-dessus)"
-	fi
-	unset password confirm
 	printf '%s\n' "$ADMIN_USER" >"$marker"
 	chmod 0600 "$marker"
-	if [ -n "$password_file" ]; then
-		# Le fichier ne se supprime qu'une fois le mot de passe changé : sinon,
-		# plus personne ne le connaîtrait.
-		warn "mot de passe généré dans $password_file : connectez-vous avec, changez-le dans le dashboard (Mon compte), puis supprimez ce fichier"
+	[ "$interactive" -eq 1 ] || first_login_link
+}
+
+# first_login_link fait le lien de première connexion de l'administrateur :
+# envoyé par e-mail si un relais est réglé, sinon écrit dans un fichier root.
+# Le lien ne s'affiche jamais : sans terminal, la sortie part dans le journal
+# de cloud-init.
+first_login_link() {
+	local file="$INSTALL_DIR/premier-acces"
+	if [ -n "$(get_env FORGENET_SMTP_HOST)" ]; then
+		if compose exec -T server forgenet-server user login-link --username "$ADMIN_USER" --send >/dev/null; then
+			ok "lien de première connexion envoyé à l'adresse de l'administrateur (valable 24 heures)"
+			return
+		fi
+		warn "l'e-mail n'est pas parti (raison ci-dessus) : le lien est écrit dans $file à la place"
 	fi
+	if ! (umask 077 && compose exec -T server forgenet-server user login-link --username "$ADMIN_USER" >"$file.tmp"); then
+		rm -f "$file.tmp"
+		die "lien de première connexion impossible (message ci-dessus) ; refaites-le avec : sudo forgenet user login-link --username $ADMIN_USER"
+	fi
+	chmod 0600 "$file.tmp"
+	mv -f "$file.tmp" "$file"
+	warn "lien de première connexion dans $file, lisible par root seul et valable 24 heures : sudo cat $file"
 }
 
 check_dns() {
