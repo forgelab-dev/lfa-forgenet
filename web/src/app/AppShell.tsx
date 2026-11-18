@@ -119,7 +119,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
-      <UserCard />
+      <UserCard onNavigate={onNavigate} />
     </div>
   );
 }
@@ -173,14 +173,28 @@ function NavLink({ section, onNavigate }: { section: Section; onNavigate?: () =>
   );
 }
 
-function UserCard() {
+function UserCard({ onNavigate }: { onNavigate?: () => void }) {
   const user = useCurrentUser();
   const { logout } = useSession();
   const [leaving, setLeaving] = useState(false);
+  const [location] = useLocation();
+  const active = location.startsWith('/compte');
 
   return (
     <div className="border-t border-iron-800 px-3 py-3">
-      <div className="flex items-center gap-3 px-2 py-1">
+      {/* Le compte s'ouvre depuis son nom, comme dans la plupart des outils :
+          il n'a pas sa place parmi les sections du serveur. */}
+      <Link
+        href="/compte"
+        onClick={onNavigate}
+        aria-current={active ? 'page' : undefined}
+        aria-label={`Mon compte : ${user.username}, ${roleLabel[user.role]}`}
+        className={
+          'flex min-h-11 items-center gap-3 rounded-md px-2 py-1 transition-colors duration-150 ' +
+          'focus-visible:outline-2 focus-visible:outline-gold-400 ' +
+          (active ? 'bg-gold-950' : 'hover:bg-iron-850')
+        }
+      >
         <span
           aria-hidden="true"
           className="flex size-9 shrink-0 items-center justify-center rounded-md border border-gold-400/50 bg-gold-950 font-semibold text-gold-300 uppercase"
@@ -191,7 +205,7 @@ function UserCard() {
           <p className="truncate text-sm font-semibold">{user.username}</p>
           <p className="text-xs text-iron-300">{roleLabel[user.role]}</p>
         </div>
-      </div>
+      </Link>
       <VersionLine />
       <button
         type="button"

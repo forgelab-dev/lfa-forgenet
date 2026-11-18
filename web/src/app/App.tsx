@@ -4,6 +4,7 @@ import { Route, Router, Switch, type BaseLocationHook } from 'wouter';
 
 import { Button } from '../components/ui/Button';
 import { Wordmark } from '../components/ui/Wordmark';
+import { AccountPage } from '../features/account/AccountPage';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { useSession } from '../features/auth/session';
 import { SessionProvider } from '../features/auth/SessionProvider';
@@ -80,6 +81,7 @@ function SessionGate() {
             <Route path="/deploiements" component={DeploymentsPage} />
             <Route path="/surveillance" component={MonitoringPage} />
             <Route path="/domaines" component={DomainsPage} />
+            <Route path="/compte" component={AccountPage} />
             {sections
               .filter((section) => section.upcoming)
               .map((section) => (
