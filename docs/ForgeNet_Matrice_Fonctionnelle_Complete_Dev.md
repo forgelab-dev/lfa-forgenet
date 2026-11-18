@@ -99,7 +99,7 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 - [x] Installation en une commande sur Debian et Ubuntu (x86_64, ARM64), serveur et Caddy en conteneurs durcis, image signée par cosign `🔓 CE` — *v0.1.0 : `deploy/install.sh` (#15)*
 - [x] Annonce des nouvelles versions aux administrateurs et mise à jour en un clic depuis le dashboard `🔓 CE` — *v0.2.0 : vérification quotidienne désactivable, image épinglée par son empreinte, sauvegarde, contrôle de santé et retour arrière automatique (ADR-0011, #62) ; la même chose par `install.sh --update`*
 - [x] Sauvegarde de la base et de la configuration de ForgeNet avant mise à jour, et retour à une sauvegarde `🔓 CE` — *v0.2.0 : sauvegarde avant chaque mise à jour, cinq dernières gardées dans `/opt/forgenet/sauvegardes/` ; v0.3.0 : `install.sh --restore`, et sauvegarde des 0.1.x avant leur réinstallation*
-- [x] Commande `forgenet` d'administration sur le serveur (version, état, journaux, mise à jour, sauvegardes, comptes), sans `docker exec` `🔓 CE` — *v0.5.0 (#71) : `forgenet version`, `status`, `logs`, `update`, `backups`, `restore`, `user`, installée par `install.sh` et remise à niveau par `forgenet update` (ADR-0013) ; le changement de mot de passe viendra avec #72 ; à distinguer de `forgenet-cli` (§1.3), client d'API à distance*
+- [x] Commande `forgenet` d'administration sur le serveur (version, état, journaux, mise à jour, sauvegardes, comptes), sans `docker exec` `🔓 CE` — *v0.5.0 (#71) : `forgenet version`, `status`, `logs`, `update`, `backups`, `restore`, `user`, installée par `install.sh` et remise à niveau par `forgenet update` (ADR-0013) , et `user set-password` depuis la v0.6.0 (#72) ; à distinguer de `forgenet-cli` (§1.3), client d'API à distance*
 
 ---
 
@@ -166,8 +166,8 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 - [ ] Page "Soutenir ForgeNet" sur `don.lucidforgeafrica.com/forgenet`, page de don commune de LucidForge Africa (GitHub Sponsors à côté ; FedaPay, Kkiapay, PayPal) — page et profil Sponsors référencés depuis `.github/FUNDING.yml` `🔓 CE`
 
 ### 2.9 Paramètres & Compte
-- [ ] Profil, tokens API, préférences de notification `🔓 CE`
-- [ ] Changer son mot de passe, dans le dashboard et en terminal (`user set-password`) `🔓 CE` — *prévu : #72 ; aujourd'hui seule la création d'un compte existe*
+- [ ] Profil, tokens API, préférences de notification `🔓 CE` — *v0.6.0, en partie : la page « Mon compte » montre le nom, l'adresse et le rôle du compte ; ils ne se modifient pas encore, et les jetons API comme les notifications restent à faire*
+- [x] Changer son mot de passe, dans le dashboard et en terminal (`user set-password`) `🔓 CE` — *v0.6.0 (#72) : page « Mon compte » (mot de passe actuel exigé, 8 caractères au moins), `forgenet user set-password` sur le serveur pour un mot de passe perdu ; les autres sessions et les jetons API du compte sont fermés, le changement est inscrit au journal d'audit*
 - [ ] Envoi d'e-mails (SMTP) : lien à usage unique pour la première connexion de l'administrateur, mot de passe oublié `🔓 CE` — *prévu : #73, ADR d'abord ; aujourd'hui ForgeNet n'envoie aucun e-mail*
 - [ ] Thème clair/sombre `🔓 CE`
 - [ ] Localisation FR/EN `🔓 CE`
