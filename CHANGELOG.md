@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.7.0...v0.8.0) (2026-11-18)
+
+
+### Fonctionnalités
+
+* **api:** MailService, état de l'envoi et e-mail d'essai ([25365d8](https://github.com/forgelab-dev/lfa-forgenet/commit/25365d8ec72dfb0f408d75936b2784d46d5dadf7)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **config:** section smtp pour l'envoi d'e-mails ([eb6d3fe](https://github.com/forgelab-dev/lfa-forgenet/commit/eb6d3feef0069ed1bbaea5c55f32a0b0b2f52fd4)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **grpc:** servir MailService aux administrateurs ([f6fe26e](https://github.com/forgelab-dev/lfa-forgenet/commit/f6fe26e0105059bc6fdcf324e4bf7247af6b1738)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **install:** options --smtp-* pour le relais d'e-mails ([7fa6990](https://github.com/forgelab-dev/lfa-forgenet/commit/7fa6990d051cdb9bc154f8fe4866ce31c881bede)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **mail:** envoi par relais SMTP, bibliothèque standard seule ([9dcbe59](https://github.com/forgelab-dev/lfa-forgenet/commit/9dcbe592352df43d6a184b43a0bdcfe05e317628)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **web:** page Réglages, état de l'envoi et e-mail d'essai ([9010148](https://github.com/forgelab-dev/lfa-forgenet/commit/901014812ec4f62e19bcd6c5ca4599ee6ba975fc)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+
 ## [0.7.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.6.0...v0.7.0) (2026-11-18)
 
 
