@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.8.0...v0.9.0) (2026-11-18)
+
+
+### Fonctionnalités
+
+* **auth:** comptes sans mot de passe et liens d'accès ([3452413](https://github.com/forgelab-dev/lfa-forgenet/commit/3452413956b5e30ec15de5e6133ae68c70b4bb16)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **cli:** user create --no-password et user login-link ([b214ab0](https://github.com/forgelab-dev/lfa-forgenet/commit/b214ab03c91d4e6396f3b9f964790b4878a9fb09)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **grpc:** InspectAccessLink et RedeemAccessLink, publics ([7ae2e6e](https://github.com/forgelab-dev/lfa-forgenet/commit/7ae2e6ec922202d62f40ed7aa0a841050f194e67)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **install:** lien de première connexion au lieu d'admin-password ([06f9a6f](https://github.com/forgelab-dev/lfa-forgenet/commit/06f9a6f0acdf6c5e35550f83f71d761dfbabb89d)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **store:** table action_tokens des liens à usage unique ([44feb80](https://github.com/forgelab-dev/lfa-forgenet/commit/44feb80b113abfb1eb3e8fc73317352311d2298e)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **web:** page /acces pour choisir son mot de passe par un lien ([d4e5ce9](https://github.com/forgelab-dev/lfa-forgenet/commit/d4e5ce9f052e370f5f406d6eb562c41a0334d372)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+
 ## [0.8.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.7.0...v0.8.0) (2026-11-18)
 
 
