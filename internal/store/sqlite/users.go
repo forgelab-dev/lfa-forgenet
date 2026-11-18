@@ -70,6 +70,41 @@ func (s *usersStore) UpdateUser(ctx context.Context, u *store.User) error {
 	)
 }
 
+func (s *usersStore) SetPassword(ctx context.Context, userID, passwordHash, keepSessionID string) (int64, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("changement du mot de passe : %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.ExecContext(ctx, `UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`,
+		passwordHash, formatTime(time.Now()), userID)
+	if err != nil {
+		return 0, fmt.Errorf("changement du mot de passe : %w", err)
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return 0, fmt.Errorf("changement du mot de passe : %w", err)
+	} else if n == 0 {
+		return 0, store.ErrNotFound
+	}
+
+	// L'ancien mot de passe a pu fuiter : toute session ouverte avec lui, et
+	// tout jeton créé par qui le détenait, est fermé avec lui.
+	res, err = tx.ExecContext(ctx, `UPDATE sessions SET revoked = 1 WHERE user_id = ? AND id <> ? AND revoked = 0`,
+		userID, keepSessionID)
+	if err != nil {
+		return 0, fmt.Errorf("révocation des sessions : %w", err)
+	}
+	revoked, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("révocation des sessions : %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("changement du mot de passe : %w", err)
+	}
+	return revoked, nil
+}
+
 func (s *usersStore) DeleteUser(ctx context.Context, id string) error {
 	return execOne(ctx, s.db, "suppression de l'utilisateur", `DELETE FROM users WHERE id = ?`, id)
 }
