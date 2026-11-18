@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Wordmark } from '../components/ui/Wordmark';
 import { AccountPage } from '../features/account/AccountPage';
 import { AccessLinkScreen } from '../features/auth/AccessLinkScreen';
+import { ForgotPasswordScreen } from '../features/auth/ForgotPasswordScreen';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { useSession } from '../features/auth/session';
 import { SessionProvider } from '../features/auth/SessionProvider';
@@ -48,6 +49,9 @@ function SessionGate() {
   // lui-même une fois le mot de passe choisi (ADR-0014).
   if (location === '/acces') {
     return <AccessLinkScreen />;
+  }
+  if (location === '/mot-de-passe-oublie' && state.status === 'anonymous') {
+    return <ForgotPasswordScreen />;
   }
 
   switch (state.status) {

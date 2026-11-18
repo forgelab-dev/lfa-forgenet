@@ -1,5 +1,6 @@
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useLocation } from 'wouter';
 
 import { Button } from '../../components/ui/Button';
 import { fieldClass as field } from '../../components/ui/field';
@@ -137,7 +138,51 @@ export function LoginScreen() {
           {pending && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
           {pending ? 'Connexion…' : 'Se connecter'}
         </Button>
+        <LostPassword />
       </form>
     </AuthFrame>
+  );
+}
+
+/**
+ * « Mot de passe oublié ? » quand le serveur sait envoyer le lien ; sinon,
+ * la commande à lancer sur le serveur. Rien tant que la réponse n'est pas
+ * arrivée, ni si elle échoue : l'écran de connexion reste utilisable.
+ */
+function LostPassword() {
+  const { api } = useSession();
+  const [, navigate] = useLocation();
+  const [reset, setReset] = useState<boolean>();
+
+  useEffect(() => {
+    const abort = new AbortController();
+    api.auth
+      .getLoginOptions({}, { signal: abort.signal })
+      .then((opts) => setReset(opts.passwordReset))
+      .catch(() => undefined);
+    return () => abort.abort();
+  }, [api]);
+
+  if (reset === undefined) {
+    return null;
+  }
+  if (reset) {
+    return (
+      <button
+        type="button"
+        onClick={() => navigate('/mot-de-passe-oublie')}
+        className="mx-auto mt-4 flex min-h-11 items-center px-2 text-sm text-iron-300 underline-offset-4 hover:text-iron-100 hover:underline"
+      >
+        Mot de passe oublié ?
+      </button>
+    );
+  }
+  return (
+    <p className="mt-6 text-center text-sm text-iron-300">
+      Mot de passe perdu ? Sur le serveur :{' '}
+      <code className="font-mono text-xs text-iron-100">
+        forgenet user set-password --username NOM
+      </code>
+    </p>
   );
 }

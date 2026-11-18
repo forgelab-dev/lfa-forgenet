@@ -151,6 +151,9 @@ function InvalidLink() {
       <pre className="mt-2 overflow-x-auto rounded-md bg-iron-950 px-3 py-2.5 font-mono text-xs text-iron-100">
         sudo forgenet user login-link --username NOM
       </pre>
+      <p className="mt-4 text-sm text-iron-300">
+        Pour un mot de passe oublié, redemandez un lien depuis l’écran de connexion.
+      </p>
       <Button variant="quiet" className="mt-6 w-full" onClick={() => navigate('/')}>
         Aller à la connexion
       </Button>
