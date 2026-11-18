@@ -44,6 +44,13 @@ services:
       FORGENET_PROXY_DASHBOARD_HOST: ${FORGENET_DOMAIN:-}
       # Fixée seulement avec un domaine : les deux options vont ensemble.
       FORGENET_PROXY_DASHBOARD_UPSTREAM: ${FORGENET_DOMAIN:+forgenet-server:8080}
+      # Envoi d'e-mails par un relais, facultatif (ADR-0014) : sans hôte, éteint.
+      FORGENET_SMTP_HOST: ${FORGENET_SMTP_HOST:-}
+      FORGENET_SMTP_PORT: ${FORGENET_SMTP_PORT:-587}
+      FORGENET_SMTP_TLS: ${FORGENET_SMTP_TLS:-starttls}
+      FORGENET_SMTP_USERNAME: ${FORGENET_SMTP_USER:-}
+      FORGENET_SMTP_PASSWORD: ${FORGENET_SMTP_PASSWORD:-}
+      FORGENET_SMTP_FROM: ${FORGENET_SMTP_FROM:-}
       # Métriques de l'hôte, pas du seul conteneur.
       HOST_PROC: /host/proc
       # Dossier d'installation sur l'hôte : le conteneur de mise à jour y
