@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -26,7 +27,27 @@ var (
 	ErrWrongCurrentPassword = errors.New("le mot de passe actuel est incorrect")
 	// ErrSamePassword est retourné quand le nouveau mot de passe est l'actuel.
 	ErrSamePassword = errors.New("le nouveau mot de passe doit être différent de l'actuel")
+	// ErrLinkInvalid est retourné pour un lien inconnu, expiré, déjà utilisé
+	// ou remplacé par un plus récent : la réponse ne dit pas lequel.
+	ErrLinkInvalid = errors.New("ce lien n'est plus valable : il a déjà servi, a expiré ou a été remplacé par un plus récent")
 )
+
+// UnusablePassword est l'empreinte d'un compte qui n'a pas encore choisi son
+// mot de passe : aucune saisie ne lui correspond (ce n'est pas une empreinte
+// bcrypt). Le compte s'ouvre par un lien à usage unique (ADR-0014).
+const UnusablePassword = "!"
+
+// LinkTTL donne la durée de validité d'un lien selon son usage (ADR-0014).
+func LinkTTL(purpose store.ActionPurpose) time.Duration {
+	switch purpose {
+	case store.PurposePasswordReset:
+		return time.Hour
+	case store.PurposeInvitation:
+		return 7 * 24 * time.Hour
+	default:
+		return 24 * time.Hour
+	}
+}
 
 // Result regroupe les données retournées lors d'une connexion réussie.
 type Result struct {
@@ -49,6 +70,18 @@ type Service interface {
 	// ResetPassword fixe le mot de passe d'un compte sans l'actuel, pour la
 	// commande lancée sur le serveur, et ferme toutes ses sessions.
 	ResetPassword(ctx context.Context, username, next string) (int64, error)
+	// RegisterWithoutPassword crée un compte qui ne s'ouvre qu'une fois son
+	// mot de passe choisi par un lien à usage unique.
+	RegisterWithoutPassword(ctx context.Context, username, email string, role store.Role) (*store.User, error)
+	// CreateAccessLink fait un lien à usage unique pour le compte et renvoie
+	// le jeton en clair, qui n'est jamais stocké. createdBy désigne l'auteur
+	// (« user:<id> » ou « system:cli »).
+	CreateAccessLink(ctx context.Context, userID string, purpose store.ActionPurpose, createdBy string) (string, *store.ActionToken, error)
+	// InspectAccessLink décrit un lien encore valable, sans l'utiliser.
+	InspectAccessLink(ctx context.Context, token string) (*store.ActionToken, *store.User, error)
+	// RedeemAccessLink fixe le mot de passe choisi par le lien, ferme les
+	// sessions du compte, puis en ouvre une nouvelle.
+	RedeemAccessLink(ctx context.Context, token, newPassword string) (*Result, *store.ActionToken, error)
 }
 
 type authService struct {
@@ -81,22 +114,41 @@ func NewService(st store.Store, cfg config.AuthConfig, auditor audit.Auditor) Se
 // « forgenet-server user create » sur la machine, pas par la première
 // personne qui atteint l'API.
 func (s *authService) Register(ctx context.Context, username, email, password string, role store.Role) (*store.User, error) {
-	username = strings.TrimSpace(username)
-	email = strings.TrimSpace(strings.ToLower(email))
-	switch {
-	case username == "":
-		return nil, errors.New("le nom d'utilisateur est obligatoire")
-	case email == "":
-		return nil, errors.New("l'adresse email est obligatoire")
-	case !role.IsValid():
-		return nil, ErrInvalidRole
+	username, email, err := checkAccount(username, email, role)
+	if err != nil {
+		return nil, err
 	}
-
 	hashedPassword, err := HashPassword(password)
 	if err != nil {
 		return nil, err
 	}
+	return s.createUser(ctx, username, email, hashedPassword, role)
+}
 
+func (s *authService) RegisterWithoutPassword(ctx context.Context, username, email string, role store.Role) (*store.User, error) {
+	username, email, err := checkAccount(username, email, role)
+	if err != nil {
+		return nil, err
+	}
+	return s.createUser(ctx, username, email, UnusablePassword, role)
+}
+
+// checkAccount normalise et vérifie les champs d'un nouveau compte.
+func checkAccount(username, email string, role store.Role) (string, string, error) {
+	username = strings.TrimSpace(username)
+	email = strings.TrimSpace(strings.ToLower(email))
+	switch {
+	case username == "":
+		return "", "", errors.New("le nom d'utilisateur est obligatoire")
+	case email == "":
+		return "", "", errors.New("l'adresse email est obligatoire")
+	case !role.IsValid():
+		return "", "", ErrInvalidRole
+	}
+	return username, email, nil
+}
+
+func (s *authService) createUser(ctx context.Context, username, email, hashedPassword string, role store.Role) (*store.User, error) {
 	now := time.Now().UTC()
 	user := &store.User{
 		ID:           ids.New("usr"),
@@ -137,11 +189,21 @@ func (s *authService) Login(ctx context.Context, usernameOrEmail, password strin
 	if err != nil {
 		return nil, err
 	}
+	if user.PasswordHash == UnusablePassword {
+		// Même durée qu'un mauvais mot de passe : la réponse ne trahit pas un
+		// compte qui attend encore son lien.
+		_ = CheckPassword(dummyHash(), password)
+		return nil, ErrInvalidCredentials
+	}
 	if err := CheckPassword(user.PasswordHash, password); err != nil {
 		s.audit(ctx, user.ID, "auth.login_failed", "user:"+user.ID, map[string]any{"reason": "mot de passe incorrect"})
 		return nil, ErrInvalidCredentials
 	}
+	return s.openSession(ctx, user)
+}
 
+// openSession ouvre une session web/CLI pour un compte authentifié.
+func (s *authService) openSession(ctx context.Context, user *store.User) (*Result, error) {
 	// L'identifiant de session est connu avant la signature : il est porté
 	// par le JWT et sert à vérifier sa révocation.
 	now := time.Now().UTC()
@@ -305,6 +367,90 @@ func (s *authService) ResetPassword(ctx context.Context, username, next string) 
 	// « user create ».
 	s.audit(ctx, "", "user.password_reset", "user:"+user.ID, map[string]any{"username": user.Username, "revoked_sessions": revoked})
 	return revoked, nil
+}
+
+// maxLinkTokenLength borne un jeton reçu avant tout calcul : un vrai jeton
+// fait 43 caractères (32 octets en base64url).
+const maxLinkTokenLength = 128
+
+func (s *authService) CreateAccessLink(ctx context.Context, userID string, purpose store.ActionPurpose, createdBy string) (string, *store.ActionToken, error) {
+	if !purpose.IsValid() {
+		return "", nil, fmt.Errorf("usage de lien inconnu : %q", purpose)
+	}
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", nil, fmt.Errorf("génération aléatoire : %w", err)
+	}
+	token := base64.RawURLEncoding.EncodeToString(b)
+	now := time.Now().UTC()
+	link := &store.ActionToken{
+		ID:        ids.New("act"),
+		UserID:    userID,
+		Purpose:   purpose,
+		TokenHash: HashToken(token),
+		ExpiresAt: now.Add(LinkTTL(purpose)),
+		CreatedBy: createdBy,
+		CreatedAt: now,
+	}
+	if err := s.store.ActionTokens().CreateActionToken(ctx, link); err != nil {
+		return "", nil, err
+	}
+	// Le journal garde l'usage et l'auteur, jamais le jeton.
+	s.audit(ctx, "", "user.access_link_create", "user:"+userID, map[string]any{"purpose": string(purpose), "created_by": createdBy})
+	return token, link, nil
+}
+
+func (s *authService) InspectAccessLink(ctx context.Context, token string) (*store.ActionToken, *store.User, error) {
+	if token == "" || len(token) > maxLinkTokenLength {
+		return nil, nil, ErrLinkInvalid
+	}
+	link, err := s.store.ActionTokens().GetActiveActionToken(ctx, HashToken(token), time.Now().UTC())
+	if errors.Is(err, store.ErrNotFound) {
+		return nil, nil, ErrLinkInvalid
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	user, err := s.store.Users().GetUserByID(ctx, link.UserID)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil, nil, ErrLinkInvalid
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	return link, user, nil
+}
+
+func (s *authService) RedeemAccessLink(ctx context.Context, token, newPassword string) (*Result, *store.ActionToken, error) {
+	// Le lien est vérifié avant le hachage, coûteux : un appel sans lien
+	// valable ne fait pas travailler bcrypt.
+	if _, _, err := s.InspectAccessLink(ctx, token); err != nil {
+		return nil, nil, err
+	}
+	// Le mot de passe est vérifié avant d'utiliser le lien : un refus le
+	// laisse valable pour un nouvel essai.
+	hash, err := HashPassword(newPassword)
+	if err != nil {
+		return nil, nil, err
+	}
+	link, revoked, err := s.store.ActionTokens().RedeemActionToken(ctx, HashToken(token), time.Now().UTC(), hash)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil, nil, ErrLinkInvalid
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	s.audit(ctx, link.UserID, "user.access_link_used", "user:"+link.UserID, map[string]any{"purpose": string(link.Purpose), "revoked_sessions": revoked})
+
+	user, err := s.store.Users().GetUserByID(ctx, link.UserID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("lecture du compte : %w", err)
+	}
+	res, err := s.openSession(ctx, user)
+	if err != nil {
+		return nil, nil, err
+	}
+	return res, link, nil
 }
 
 func (s *authService) setPassword(ctx context.Context, user *store.User, next, keepSessionID string) (int64, error) {
