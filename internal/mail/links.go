@@ -55,3 +55,19 @@ func FirstLoginMessage(to, username, url string, local bool) Message {
 			"\n— ForgeNet\n",
 	}
 }
+
+// PasswordResetMessage est l'e-mail d'un mot de passe oublié. Il ne dit
+// jamais l'ancien mot de passe, que ForgeNet ne connaît d'ailleurs pas.
+func PasswordResetMessage(to, username, url string, local bool) Message {
+	var b strings.Builder
+	fmt.Fprintf(&b, "Bonjour %s,\n\n", username)
+	fmt.Fprintf(&b, "Quelqu'un, sans doute vous, a demandé un nouveau mot de passe pour le compte ForgeNet %s.\n", username)
+	b.WriteString("Choisissez-le en ouvrant ce lien, valable une heure et une seule fois :\n\n")
+	fmt.Fprintf(&b, "  %s\n\n", url)
+	if local {
+		b.WriteString(tunnelHint + "\n")
+	}
+	b.WriteString("Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail : votre mot de passe\n")
+	b.WriteString("ne change pas, et le lien expirera de lui-même.\n\n— ForgeNet\n")
+	return Message{To: to, Subject: "Nouveau mot de passe ForgeNet", Body: b.String()}
+}
