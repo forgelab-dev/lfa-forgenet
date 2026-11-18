@@ -22,6 +22,7 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/domains"
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	"github.com/forgelab-dev/lfa-forgenet/internal/logging"
+	"github.com/forgelab-dev/lfa-forgenet/internal/mail"
 	"github.com/forgelab-dev/lfa-forgenet/internal/metrics"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/compose"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/docker"
@@ -172,6 +173,13 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	deploymentAPI := transportGRPC.NewDeploymentServiceServer(deployments, logger)
 	domainAPI := transportGRPC.NewDomainServiceServer(domainService, logger)
 	metricsAPI := transportGRPC.NewMetricsServiceServer(recorder, engine, logger)
+	// Envoi d'e-mails par un relais SMTP, facultatif (ADR-0014).
+	mailAPI := transportGRPC.NewMailServiceServer(cfg.SMTP, mail.NewSMTP(cfg.SMTP), db.Users(), auditor, logger)
+	if cfg.SMTP.Enabled() {
+		logger.Info().Str("relais", cfg.SMTP.Host).Msg("envoi d'e-mails activé")
+	} else {
+		logger.Info().Msg("envoi d'e-mails désactivé : aucun relais SMTP configuré")
+	}
 	// Annonce des nouvelles versions et mise à jour depuis le dashboard
 	// (ADR-0011). Sans FORGENET_INSTALL_DIR (installation hors install.sh),
 	// les versions sont annoncées mais la mise à jour se fait à la main.
@@ -191,6 +199,7 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 		forgenetv1.RegisterDeploymentServiceServer(registrar, deploymentAPI)
 		forgenetv1.RegisterDomainServiceServer(registrar, domainAPI)
 		forgenetv1.RegisterMetricsServiceServer(registrar, metricsAPI)
+		forgenetv1.RegisterMailServiceServer(registrar, mailAPI)
 		forgenetv1.RegisterUpdateServiceServer(registrar, updateAPI)
 	}
 	connectAPI.Mount(httpServer.Mux())
