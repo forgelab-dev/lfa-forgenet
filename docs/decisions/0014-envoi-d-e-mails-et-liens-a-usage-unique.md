@@ -1,6 +1,6 @@
 # ADR-0014 : envoi d'e-mails et liens à usage unique
 
-- Statut : proposé
+- Statut : accepté (choix validés par le porteur du projet le 2026-11-18)
 - Date : 2026-11-18
 - Contexte : ticket #73 ; s'appuie sur le changement de mot de passe (#72,
   v0.6.0) et complète l'ADR-0009 (installation)
