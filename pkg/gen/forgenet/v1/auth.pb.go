@@ -73,6 +73,63 @@ func (UserRole) EnumDescriptor() ([]byte, []int) {
 	return file_forgenet_v1_auth_proto_rawDescGZIP(), []int{0}
 }
 
+// AccessLinkPurpose est l'usage d'un lien à usage unique (ADR-0014). Tous
+// font choisir un mot de passe ; seuls le texte et la durée changent.
+type AccessLinkPurpose int32
+
+const (
+	AccessLinkPurpose_ACCESS_LINK_PURPOSE_UNSPECIFIED AccessLinkPurpose = 0
+	// Premier accès de l'administrateur créé à l'installation (24 heures).
+	AccessLinkPurpose_ACCESS_LINK_PURPOSE_FIRST_LOGIN AccessLinkPurpose = 1
+	// Mot de passe oublié (1 heure).
+	AccessLinkPurpose_ACCESS_LINK_PURPOSE_PASSWORD_RESET AccessLinkPurpose = 2
+	// Invitation d'un membre (7 jours).
+	AccessLinkPurpose_ACCESS_LINK_PURPOSE_INVITATION AccessLinkPurpose = 3
+)
+
+// Enum value maps for AccessLinkPurpose.
+var (
+	AccessLinkPurpose_name = map[int32]string{
+		0: "ACCESS_LINK_PURPOSE_UNSPECIFIED",
+		1: "ACCESS_LINK_PURPOSE_FIRST_LOGIN",
+		2: "ACCESS_LINK_PURPOSE_PASSWORD_RESET",
+		3: "ACCESS_LINK_PURPOSE_INVITATION",
+	}
+	AccessLinkPurpose_value = map[string]int32{
+		"ACCESS_LINK_PURPOSE_UNSPECIFIED":    0,
+		"ACCESS_LINK_PURPOSE_FIRST_LOGIN":    1,
+		"ACCESS_LINK_PURPOSE_PASSWORD_RESET": 2,
+		"ACCESS_LINK_PURPOSE_INVITATION":     3,
+	}
+)
+
+func (x AccessLinkPurpose) Enum() *AccessLinkPurpose {
+	p := new(AccessLinkPurpose)
+	*p = x
+	return p
+}
+
+func (x AccessLinkPurpose) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AccessLinkPurpose) Descriptor() protoreflect.EnumDescriptor {
+	return file_forgenet_v1_auth_proto_enumTypes[1].Descriptor()
+}
+
+func (AccessLinkPurpose) Type() protoreflect.EnumType {
+	return &file_forgenet_v1_auth_proto_enumTypes[1]
+}
+
+func (x AccessLinkPurpose) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AccessLinkPurpose.Descriptor instead.
+func (AccessLinkPurpose) EnumDescriptor() ([]byte, []int) {
+	return file_forgenet_v1_auth_proto_rawDescGZIP(), []int{1}
+}
+
 // User décrit le compte connecté. Le mot de passe et ses empreintes ne
 // quittent jamais le serveur.
 type User struct {
@@ -511,6 +568,226 @@ func (x *ChangePasswordResponse) GetRevokedSessions() int32 {
 	return 0
 }
 
+type InspectAccessLinkRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Jeton du lien, lu dans le fragment de l'adresse (/acces#<jeton>).
+	Token         string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InspectAccessLinkRequest) Reset() {
+	*x = InspectAccessLinkRequest{}
+	mi := &file_forgenet_v1_auth_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InspectAccessLinkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InspectAccessLinkRequest) ProtoMessage() {}
+
+func (x *InspectAccessLinkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_auth_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InspectAccessLinkRequest.ProtoReflect.Descriptor instead.
+func (*InspectAccessLinkRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_auth_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *InspectAccessLinkRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type InspectAccessLinkResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Compte dont le lien fait choisir le mot de passe.
+	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Purpose       AccessLinkPurpose      `protobuf:"varint,2,opt,name=purpose,proto3,enum=forgenet.v1.AccessLinkPurpose" json:"purpose,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InspectAccessLinkResponse) Reset() {
+	*x = InspectAccessLinkResponse{}
+	mi := &file_forgenet_v1_auth_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InspectAccessLinkResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InspectAccessLinkResponse) ProtoMessage() {}
+
+func (x *InspectAccessLinkResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_auth_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InspectAccessLinkResponse.ProtoReflect.Descriptor instead.
+func (*InspectAccessLinkResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_auth_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *InspectAccessLinkResponse) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *InspectAccessLinkResponse) GetPurpose() AccessLinkPurpose {
+	if x != nil {
+		return x.Purpose
+	}
+	return AccessLinkPurpose_ACCESS_LINK_PURPOSE_UNSPECIFIED
+}
+
+func (x *InspectAccessLinkResponse) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+type RedeemAccessLinkRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Token string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	// Mot de passe choisi : 8 caractères au moins, 72 octets au plus.
+	NewPassword   string `protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RedeemAccessLinkRequest) Reset() {
+	*x = RedeemAccessLinkRequest{}
+	mi := &file_forgenet_v1_auth_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RedeemAccessLinkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RedeemAccessLinkRequest) ProtoMessage() {}
+
+func (x *RedeemAccessLinkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_auth_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RedeemAccessLinkRequest.ProtoReflect.Descriptor instead.
+func (*RedeemAccessLinkRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_auth_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RedeemAccessLinkRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *RedeemAccessLinkRequest) GetNewPassword() string {
+	if x != nil {
+		return x.NewPassword
+	}
+	return ""
+}
+
+type RedeemAccessLinkResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Session ouverte sur le compte, comme après Login.
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	User          *User                  `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RedeemAccessLinkResponse) Reset() {
+	*x = RedeemAccessLinkResponse{}
+	mi := &file_forgenet_v1_auth_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RedeemAccessLinkResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RedeemAccessLinkResponse) ProtoMessage() {}
+
+func (x *RedeemAccessLinkResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_auth_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RedeemAccessLinkResponse.ProtoReflect.Descriptor instead.
+func (*RedeemAccessLinkResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_auth_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RedeemAccessLinkResponse) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *RedeemAccessLinkResponse) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+func (x *RedeemAccessLinkResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
 var File_forgenet_v1_auth_proto protoreflect.FileDescriptor
 
 const file_forgenet_v1_auth_proto_rawDesc = "" +
@@ -538,16 +815,38 @@ const file_forgenet_v1_auth_proto_rawDesc = "" +
 	"\x10current_password\x18\x01 \x01(\tR\x0fcurrentPassword\x12!\n" +
 	"\fnew_password\x18\x02 \x01(\tR\vnewPassword\"C\n" +
 	"\x16ChangePasswordResponse\x12)\n" +
-	"\x10revoked_sessions\x18\x01 \x01(\x05R\x0frevokedSessions*P\n" +
+	"\x10revoked_sessions\x18\x01 \x01(\x05R\x0frevokedSessions\"0\n" +
+	"\x18InspectAccessLinkRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"\xac\x01\n" +
+	"\x19InspectAccessLinkResponse\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x128\n" +
+	"\apurpose\x18\x02 \x01(\x0e2\x1e.forgenet.v1.AccessLinkPurposeR\apurpose\x129\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"R\n" +
+	"\x17RedeemAccessLinkRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12!\n" +
+	"\fnew_password\x18\x02 \x01(\tR\vnewPassword\"\x92\x01\n" +
+	"\x18RedeemAccessLinkResponse\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x129\n" +
+	"\n" +
+	"expires_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12%\n" +
+	"\x04user\x18\x03 \x01(\v2\x11.forgenet.v1.UserR\x04user*P\n" +
 	"\bUserRole\x12\x19\n" +
 	"\x15USER_ROLE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fUSER_ROLE_ADMIN\x10\x01\x12\x14\n" +
-	"\x10USER_ROLE_MEMBER\x10\x022\xc6\x02\n" +
+	"\x10USER_ROLE_MEMBER\x10\x02*\xa9\x01\n" +
+	"\x11AccessLinkPurpose\x12#\n" +
+	"\x1fACCESS_LINK_PURPOSE_UNSPECIFIED\x10\x00\x12#\n" +
+	"\x1fACCESS_LINK_PURPOSE_FIRST_LOGIN\x10\x01\x12&\n" +
+	"\"ACCESS_LINK_PURPOSE_PASSWORD_RESET\x10\x02\x12\"\n" +
+	"\x1eACCESS_LINK_PURPOSE_INVITATION\x10\x032\x8b\x04\n" +
 	"\vAuthService\x12>\n" +
 	"\x05Login\x12\x19.forgenet.v1.LoginRequest\x1a\x1a.forgenet.v1.LoginResponse\x12A\n" +
 	"\x06Logout\x12\x1a.forgenet.v1.LogoutRequest\x1a\x1b.forgenet.v1.LogoutResponse\x12Y\n" +
 	"\x0eGetCurrentUser\x12\".forgenet.v1.GetCurrentUserRequest\x1a#.forgenet.v1.GetCurrentUserResponse\x12Y\n" +
-	"\x0eChangePassword\x12\".forgenet.v1.ChangePasswordRequest\x1a#.forgenet.v1.ChangePasswordResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
+	"\x0eChangePassword\x12\".forgenet.v1.ChangePasswordRequest\x1a#.forgenet.v1.ChangePasswordResponse\x12b\n" +
+	"\x11InspectAccessLink\x12%.forgenet.v1.InspectAccessLinkRequest\x1a&.forgenet.v1.InspectAccessLinkResponse\x12_\n" +
+	"\x10RedeemAccessLink\x12$.forgenet.v1.RedeemAccessLinkRequest\x1a%.forgenet.v1.RedeemAccessLinkResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
 
 var (
 	file_forgenet_v1_auth_proto_rawDescOnce sync.Once
@@ -561,39 +860,52 @@ func file_forgenet_v1_auth_proto_rawDescGZIP() []byte {
 	return file_forgenet_v1_auth_proto_rawDescData
 }
 
-var file_forgenet_v1_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_forgenet_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_forgenet_v1_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_forgenet_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_forgenet_v1_auth_proto_goTypes = []any{
-	(UserRole)(0),                  // 0: forgenet.v1.UserRole
-	(*User)(nil),                   // 1: forgenet.v1.User
-	(*LoginRequest)(nil),           // 2: forgenet.v1.LoginRequest
-	(*LoginResponse)(nil),          // 3: forgenet.v1.LoginResponse
-	(*LogoutRequest)(nil),          // 4: forgenet.v1.LogoutRequest
-	(*LogoutResponse)(nil),         // 5: forgenet.v1.LogoutResponse
-	(*GetCurrentUserRequest)(nil),  // 6: forgenet.v1.GetCurrentUserRequest
-	(*GetCurrentUserResponse)(nil), // 7: forgenet.v1.GetCurrentUserResponse
-	(*ChangePasswordRequest)(nil),  // 8: forgenet.v1.ChangePasswordRequest
-	(*ChangePasswordResponse)(nil), // 9: forgenet.v1.ChangePasswordResponse
-	(*timestamppb.Timestamp)(nil),  // 10: google.protobuf.Timestamp
+	(UserRole)(0),                     // 0: forgenet.v1.UserRole
+	(AccessLinkPurpose)(0),            // 1: forgenet.v1.AccessLinkPurpose
+	(*User)(nil),                      // 2: forgenet.v1.User
+	(*LoginRequest)(nil),              // 3: forgenet.v1.LoginRequest
+	(*LoginResponse)(nil),             // 4: forgenet.v1.LoginResponse
+	(*LogoutRequest)(nil),             // 5: forgenet.v1.LogoutRequest
+	(*LogoutResponse)(nil),            // 6: forgenet.v1.LogoutResponse
+	(*GetCurrentUserRequest)(nil),     // 7: forgenet.v1.GetCurrentUserRequest
+	(*GetCurrentUserResponse)(nil),    // 8: forgenet.v1.GetCurrentUserResponse
+	(*ChangePasswordRequest)(nil),     // 9: forgenet.v1.ChangePasswordRequest
+	(*ChangePasswordResponse)(nil),    // 10: forgenet.v1.ChangePasswordResponse
+	(*InspectAccessLinkRequest)(nil),  // 11: forgenet.v1.InspectAccessLinkRequest
+	(*InspectAccessLinkResponse)(nil), // 12: forgenet.v1.InspectAccessLinkResponse
+	(*RedeemAccessLinkRequest)(nil),   // 13: forgenet.v1.RedeemAccessLinkRequest
+	(*RedeemAccessLinkResponse)(nil),  // 14: forgenet.v1.RedeemAccessLinkResponse
+	(*timestamppb.Timestamp)(nil),     // 15: google.protobuf.Timestamp
 }
 var file_forgenet_v1_auth_proto_depIdxs = []int32{
 	0,  // 0: forgenet.v1.User.role:type_name -> forgenet.v1.UserRole
-	10, // 1: forgenet.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
-	1,  // 2: forgenet.v1.LoginResponse.user:type_name -> forgenet.v1.User
-	1,  // 3: forgenet.v1.GetCurrentUserResponse.user:type_name -> forgenet.v1.User
-	2,  // 4: forgenet.v1.AuthService.Login:input_type -> forgenet.v1.LoginRequest
-	4,  // 5: forgenet.v1.AuthService.Logout:input_type -> forgenet.v1.LogoutRequest
-	6,  // 6: forgenet.v1.AuthService.GetCurrentUser:input_type -> forgenet.v1.GetCurrentUserRequest
-	8,  // 7: forgenet.v1.AuthService.ChangePassword:input_type -> forgenet.v1.ChangePasswordRequest
-	3,  // 8: forgenet.v1.AuthService.Login:output_type -> forgenet.v1.LoginResponse
-	5,  // 9: forgenet.v1.AuthService.Logout:output_type -> forgenet.v1.LogoutResponse
-	7,  // 10: forgenet.v1.AuthService.GetCurrentUser:output_type -> forgenet.v1.GetCurrentUserResponse
-	9,  // 11: forgenet.v1.AuthService.ChangePassword:output_type -> forgenet.v1.ChangePasswordResponse
-	8,  // [8:12] is the sub-list for method output_type
-	4,  // [4:8] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	15, // 1: forgenet.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
+	2,  // 2: forgenet.v1.LoginResponse.user:type_name -> forgenet.v1.User
+	2,  // 3: forgenet.v1.GetCurrentUserResponse.user:type_name -> forgenet.v1.User
+	1,  // 4: forgenet.v1.InspectAccessLinkResponse.purpose:type_name -> forgenet.v1.AccessLinkPurpose
+	15, // 5: forgenet.v1.InspectAccessLinkResponse.expires_at:type_name -> google.protobuf.Timestamp
+	15, // 6: forgenet.v1.RedeemAccessLinkResponse.expires_at:type_name -> google.protobuf.Timestamp
+	2,  // 7: forgenet.v1.RedeemAccessLinkResponse.user:type_name -> forgenet.v1.User
+	3,  // 8: forgenet.v1.AuthService.Login:input_type -> forgenet.v1.LoginRequest
+	5,  // 9: forgenet.v1.AuthService.Logout:input_type -> forgenet.v1.LogoutRequest
+	7,  // 10: forgenet.v1.AuthService.GetCurrentUser:input_type -> forgenet.v1.GetCurrentUserRequest
+	9,  // 11: forgenet.v1.AuthService.ChangePassword:input_type -> forgenet.v1.ChangePasswordRequest
+	11, // 12: forgenet.v1.AuthService.InspectAccessLink:input_type -> forgenet.v1.InspectAccessLinkRequest
+	13, // 13: forgenet.v1.AuthService.RedeemAccessLink:input_type -> forgenet.v1.RedeemAccessLinkRequest
+	4,  // 14: forgenet.v1.AuthService.Login:output_type -> forgenet.v1.LoginResponse
+	6,  // 15: forgenet.v1.AuthService.Logout:output_type -> forgenet.v1.LogoutResponse
+	8,  // 16: forgenet.v1.AuthService.GetCurrentUser:output_type -> forgenet.v1.GetCurrentUserResponse
+	10, // 17: forgenet.v1.AuthService.ChangePassword:output_type -> forgenet.v1.ChangePasswordResponse
+	12, // 18: forgenet.v1.AuthService.InspectAccessLink:output_type -> forgenet.v1.InspectAccessLinkResponse
+	14, // 19: forgenet.v1.AuthService.RedeemAccessLink:output_type -> forgenet.v1.RedeemAccessLinkResponse
+	14, // [14:20] is the sub-list for method output_type
+	8,  // [8:14] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_forgenet_v1_auth_proto_init() }
@@ -606,8 +918,8 @@ func file_forgenet_v1_auth_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forgenet_v1_auth_proto_rawDesc), len(file_forgenet_v1_auth_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   9,
+			NumEnums:      2,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

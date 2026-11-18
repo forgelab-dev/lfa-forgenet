@@ -19,10 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Login_FullMethodName          = "/forgenet.v1.AuthService/Login"
-	AuthService_Logout_FullMethodName         = "/forgenet.v1.AuthService/Logout"
-	AuthService_GetCurrentUser_FullMethodName = "/forgenet.v1.AuthService/GetCurrentUser"
-	AuthService_ChangePassword_FullMethodName = "/forgenet.v1.AuthService/ChangePassword"
+	AuthService_Login_FullMethodName             = "/forgenet.v1.AuthService/Login"
+	AuthService_Logout_FullMethodName            = "/forgenet.v1.AuthService/Logout"
+	AuthService_GetCurrentUser_FullMethodName    = "/forgenet.v1.AuthService/GetCurrentUser"
+	AuthService_ChangePassword_FullMethodName    = "/forgenet.v1.AuthService/ChangePassword"
+	AuthService_InspectAccessLink_FullMethodName = "/forgenet.v1.AuthService/InspectAccessLink"
+	AuthService_RedeemAccessLink_FullMethodName  = "/forgenet.v1.AuthService/RedeemAccessLink"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -45,6 +47,17 @@ type AuthServiceClient interface {
 	// fermerait la session du demandeur) ; des échecs répétés répondent
 	// RESOURCE_EXHAUSTED. Le changement est inscrit au journal d'audit.
 	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
+	// InspectAccessLink décrit un lien à usage unique encore valable, sans
+	// l'utiliser : la page dit pour quel compte on choisit un mot de passe.
+	// Appelable sans jeton. Un lien inconnu, expiré, déjà utilisé ou remplacé
+	// répond NOT_FOUND, sans dire lequel.
+	InspectAccessLink(ctx context.Context, in *InspectAccessLinkRequest, opts ...grpc.CallOption) (*InspectAccessLinkResponse, error)
+	// RedeemAccessLink utilise le lien : il fixe le mot de passe choisi, ferme
+	// les sessions et jetons du compte, puis ouvre une session. Appelable sans
+	// jeton. Un lien qui ne vaut plus répond NOT_FOUND ; un mot de passe refusé
+	// répond INVALID_ARGUMENT et laisse le lien valable. L'usage est inscrit au
+	// journal d'audit.
+	RedeemAccessLink(ctx context.Context, in *RedeemAccessLinkRequest, opts ...grpc.CallOption) (*RedeemAccessLinkResponse, error)
 }
 
 type authServiceClient struct {
@@ -95,6 +108,26 @@ func (c *authServiceClient) ChangePassword(ctx context.Context, in *ChangePasswo
 	return out, nil
 }
 
+func (c *authServiceClient) InspectAccessLink(ctx context.Context, in *InspectAccessLinkRequest, opts ...grpc.CallOption) (*InspectAccessLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InspectAccessLinkResponse)
+	err := c.cc.Invoke(ctx, AuthService_InspectAccessLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) RedeemAccessLink(ctx context.Context, in *RedeemAccessLinkRequest, opts ...grpc.CallOption) (*RedeemAccessLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RedeemAccessLinkResponse)
+	err := c.cc.Invoke(ctx, AuthService_RedeemAccessLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -115,6 +148,17 @@ type AuthServiceServer interface {
 	// fermerait la session du demandeur) ; des échecs répétés répondent
 	// RESOURCE_EXHAUSTED. Le changement est inscrit au journal d'audit.
 	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
+	// InspectAccessLink décrit un lien à usage unique encore valable, sans
+	// l'utiliser : la page dit pour quel compte on choisit un mot de passe.
+	// Appelable sans jeton. Un lien inconnu, expiré, déjà utilisé ou remplacé
+	// répond NOT_FOUND, sans dire lequel.
+	InspectAccessLink(context.Context, *InspectAccessLinkRequest) (*InspectAccessLinkResponse, error)
+	// RedeemAccessLink utilise le lien : il fixe le mot de passe choisi, ferme
+	// les sessions et jetons du compte, puis ouvre une session. Appelable sans
+	// jeton. Un lien qui ne vaut plus répond NOT_FOUND ; un mot de passe refusé
+	// répond INVALID_ARGUMENT et laisse le lien valable. L'usage est inscrit au
+	// journal d'audit.
+	RedeemAccessLink(context.Context, *RedeemAccessLinkRequest) (*RedeemAccessLinkResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -136,6 +180,12 @@ func (UnimplementedAuthServiceServer) GetCurrentUser(context.Context, *GetCurren
 }
 func (UnimplementedAuthServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ChangePassword not implemented")
+}
+func (UnimplementedAuthServiceServer) InspectAccessLink(context.Context, *InspectAccessLinkRequest) (*InspectAccessLinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InspectAccessLink not implemented")
+}
+func (UnimplementedAuthServiceServer) RedeemAccessLink(context.Context, *RedeemAccessLinkRequest) (*RedeemAccessLinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RedeemAccessLink not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -230,6 +280,42 @@ func _AuthService_ChangePassword_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_InspectAccessLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InspectAccessLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).InspectAccessLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_InspectAccessLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).InspectAccessLink(ctx, req.(*InspectAccessLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_RedeemAccessLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RedeemAccessLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).RedeemAccessLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_RedeemAccessLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).RedeemAccessLink(ctx, req.(*RedeemAccessLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -252,6 +338,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ChangePassword",
 			Handler:    _AuthService_ChangePassword_Handler,
+		},
+		{
+			MethodName: "InspectAccessLink",
+			Handler:    _AuthService_InspectAccessLink_Handler,
+		},
+		{
+			MethodName: "RedeemAccessLink",
+			Handler:    _AuthService_RedeemAccessLink_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -16,6 +16,18 @@ enum UserRole {
   USER_ROLE_MEMBER = 2;
 }
 
+// AccessLinkPurpose est l'usage d'un lien à usage unique (ADR-0014). Tous
+// font choisir un mot de passe ; seuls le texte et la durée changent.
+enum AccessLinkPurpose {
+  ACCESS_LINK_PURPOSE_UNSPECIFIED = 0;
+  // Premier accès de l'administrateur créé à l'installation (24 heures).
+  ACCESS_LINK_PURPOSE_FIRST_LOGIN = 1;
+  // Mot de passe oublié (1 heure).
+  ACCESS_LINK_PURPOSE_PASSWORD_RESET = 2;
+  // Invitation d'un membre (7 jours).
+  ACCESS_LINK_PURPOSE_INVITATION = 3;
+}
+
 // --- MODELS ---
 
 // User décrit le compte connecté. Le mot de passe et ses empreintes ne
@@ -67,6 +79,31 @@ message ChangePasswordResponse {
   int32 revoked_sessions = 1;
 }
 
+message InspectAccessLinkRequest {
+  // Jeton du lien, lu dans le fragment de l'adresse (/acces#<jeton>).
+  string token = 1;
+}
+
+message InspectAccessLinkResponse {
+  // Compte dont le lien fait choisir le mot de passe.
+  string username = 1;
+  AccessLinkPurpose purpose = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+message RedeemAccessLinkRequest {
+  string token = 1;
+  // Mot de passe choisi : 8 caractères au moins, 72 octets au plus.
+  string new_password = 2;
+}
+
+message RedeemAccessLinkResponse {
+  // Session ouverte sur le compte, comme après Login.
+  string token = 1;
+  google.protobuf.Timestamp expires_at = 2;
+  User user = 3;
+}
+
 // --- SERVICE ---
 
 // AuthService ouvre et ferme les sessions du dashboard et du CLI.
@@ -88,4 +125,17 @@ service AuthService {
   // fermerait la session du demandeur) ; des échecs répétés répondent
   // RESOURCE_EXHAUSTED. Le changement est inscrit au journal d'audit.
   rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
+
+  // InspectAccessLink décrit un lien à usage unique encore valable, sans
+  // l'utiliser : la page dit pour quel compte on choisit un mot de passe.
+  // Appelable sans jeton. Un lien inconnu, expiré, déjà utilisé ou remplacé
+  // répond NOT_FOUND, sans dire lequel.
+  rpc InspectAccessLink(InspectAccessLinkRequest) returns (InspectAccessLinkResponse);
+
+  // RedeemAccessLink utilise le lien : il fixe le mot de passe choisi, ferme
+  // les sessions et jetons du compte, puis ouvre une session. Appelable sans
+  // jeton. Un lien qui ne vaut plus répond NOT_FOUND ; un mot de passe refusé
+  // répond INVALID_ARGUMENT et laisse le lien valable. L'usage est inscrit au
+  // journal d'audit.
+  rpc RedeemAccessLink(RedeemAccessLinkRequest) returns (RedeemAccessLinkResponse);
 }
