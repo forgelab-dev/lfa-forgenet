@@ -77,6 +77,19 @@ func (s *usersStore) SetPassword(ctx context.Context, userID, passwordHash, keep
 	}
 	defer func() { _ = tx.Rollback() }()
 
+	revoked, err := setPasswordTx(ctx, tx, userID, passwordHash, keepSessionID)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("changement du mot de passe : %w", err)
+	}
+	return revoked, nil
+}
+
+// setPasswordTx fixe le mot de passe dans tx, ferme les sessions du compte
+// sauf keepSessionID et annule ses liens à usage unique encore inutilisés.
+func setPasswordTx(ctx context.Context, tx *sql.Tx, userID, passwordHash, keepSessionID string) (int64, error) {
 	res, err := tx.ExecContext(ctx, `UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`,
 		passwordHash, formatTime(time.Now()), userID)
 	if err != nil {
@@ -99,8 +112,10 @@ func (s *usersStore) SetPassword(ctx context.Context, userID, passwordHash, keep
 	if err != nil {
 		return 0, fmt.Errorf("révocation des sessions : %w", err)
 	}
-	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("changement du mot de passe : %w", err)
+	// Un lien encore en attente (mot de passe oublié demandé par un tiers,
+	// par exemple) ne doit pas survivre au mot de passe qu'il remplacerait.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM action_tokens WHERE user_id = ? AND used_at IS NULL`, userID); err != nil {
+		return 0, fmt.Errorf("annulation des liens : %w", err)
 	}
 	return revoked, nil
 }

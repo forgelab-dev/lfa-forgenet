@@ -22,6 +22,7 @@ type sqliteStore struct {
 	audit       store.AuditStore
 	deployments store.DeploymentStore
 	domains     store.DomainStore
+	actions     store.ActionTokenStore
 }
 
 // Open initialise une connexion à la base SQLite, applique les migrations requises et retourne un store prêt à l'emploi.
@@ -76,6 +77,7 @@ func Open(ctx context.Context, cfg config.DatabaseConfig) (store.Store, error) {
 	s.audit = newAuditStore(db)
 	s.deployments = newDeploymentsStore(db)
 	s.domains = newDomainsStore(db)
+	s.actions = newActionTokensStore(db)
 
 	return s, nil
 }
@@ -98,6 +100,10 @@ func (s *sqliteStore) Deployments() store.DeploymentStore {
 
 func (s *sqliteStore) Domains() store.DomainStore {
 	return s.domains
+}
+
+func (s *sqliteStore) ActionTokens() store.ActionTokenStore {
+	return s.actions
 }
 
 // Ping vérifie que la base de données est accessible.
