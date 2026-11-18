@@ -10,6 +10,7 @@ import { useRequest } from '../../lib/useRequest';
 import { useApi, useCurrentUser } from '../auth/session';
 import { listAllContainers } from '../containers/api';
 import { containerStates, type Tone } from '../containers/state';
+import { splitSystem, stoppedSystem } from '../containers/system';
 
 const tones: { tone: Tone; label: (n: number) => string; bar: string }[] = [
   { tone: 'ok', label: (n) => `${n} en marche`, bar: 'bg-ok-400' },
@@ -71,26 +72,37 @@ export function OverviewPage() {
 }
 
 function ContainerSummary({ containers }: { containers: Container[] }) {
-  if (containers.length === 0) {
-    return (
-      <p className="rounded-lg border border-dashed border-iron-700 px-5 py-8 text-iron-300">
-        Aucun conteneur pour l’instant : le serveur est prêt à recevoir un premier déploiement.
-      </p>
-    );
-  }
+  // Les conteneurs de ForgeNet (serveur, Caddy, mise à jour) sont comptés à
+  // part : le conteneur arrêté d'une mise à jour n'est pas une application à
+  // l'arrêt.
+  const { apps, system } = splitSystem(containers);
+  return (
+    <div className="rounded-lg border border-iron-800 bg-iron-900 px-5 py-5">
+      {apps.length === 0 ? (
+        <p className="text-iron-300">
+          Aucune application pour l’instant : le serveur est prêt à recevoir un premier déploiement.
+        </p>
+      ) : (
+        <AppsSummary apps={apps} />
+      )}
+      {system.length > 0 && <SystemLine system={system} />}
+    </div>
+  );
+}
 
+function AppsSummary({ apps }: { apps: Container[] }) {
   const counts = new Map<Tone, number>();
-  for (const c of containers) {
+  for (const c of apps) {
     const { tone } = containerStates[c.state];
     counts.set(tone, (counts.get(tone) ?? 0) + 1);
   }
   const present = tones.filter(({ tone }) => counts.get(tone));
 
   return (
-    <div className="rounded-lg border border-iron-800 bg-iron-900 px-5 py-5">
+    <>
       <p className="text-iron-100">
-        <span className="font-mono text-2xl font-semibold">{containers.length}</span>{' '}
-        {containers.length > 1 ? 'conteneurs sur ce serveur' : 'conteneur sur ce serveur'}
+        <span className="font-mono text-2xl font-semibold">{apps.length}</span>{' '}
+        {apps.length > 1 ? 'conteneurs d’applications' : 'conteneur d’application'}
       </p>
       <div aria-hidden="true" className="mt-4 flex h-2 gap-0.5 overflow-hidden rounded-full">
         {present.map(({ tone, bar }) => (
@@ -105,6 +117,25 @@ function ContainerSummary({ containers }: { containers: Container[] }) {
           </li>
         ))}
       </ul>
-    </div>
+    </>
+  );
+}
+
+function SystemLine({ system }: { system: Container[] }) {
+  const stopped = stoppedSystem(system);
+  return (
+    <p className="mt-4 border-t border-iron-800 pt-4 text-sm text-iron-300">
+      {stopped.length === 0 ? (
+        <>
+          Et {system.length} {system.length > 1 ? 'conteneurs' : 'conteneur'} de ForgeNet lui-même,
+          comptés à part.
+        </>
+      ) : (
+        <span className="text-danger-400">
+          {stopped.map((c) => c.name).join(', ')} {stopped.length > 1 ? 'sont' : 'est'} à l’arrêt :
+          le serveur n’est pas au complet.
+        </span>
+      )}
+    </p>
   );
 }

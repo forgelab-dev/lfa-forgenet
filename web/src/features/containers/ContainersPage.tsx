@@ -9,6 +9,7 @@ import { useApi } from '../auth/session';
 import { listAllContainers } from './api';
 import { StateBadge } from './StateBadge';
 import { formatPort } from './state';
+import { splitSystem } from './system';
 
 const created = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -33,26 +34,58 @@ export function ContainersPage() {
       <div className="mt-8">
         {request.status === 'loading' && <ContainersSkeleton />}
         {request.status === 'error' && <RequestError error={request.error} onRetry={retry} />}
-        {request.status === 'success' && <ContainersTable containers={request.data} />}
+        {request.status === 'success' && <ContainerGroups containers={request.data} />}
       </div>
     </>
   );
 }
 
-function ContainersTable({ containers }: { containers: Container[] }) {
-  if (containers.length === 0) {
-    return (
-      <p className="rounded-lg border border-dashed border-iron-700 px-5 py-10 text-center text-iron-300">
-        Aucun conteneur sur ce serveur pour l’instant. Ils apparaîtront ici dès le premier
-        déploiement.
-      </p>
-    );
-  }
+/**
+ * Les applications d'abord, puis les conteneurs de ForgeNet lui-même : visibles,
+ * car c'est un outil d'administration, mais à part, car ils ne se déploient pas.
+ */
+function ContainerGroups({ containers }: { containers: Container[] }) {
+  const { apps, system } = splitSystem(containers);
+  return (
+    <div className="space-y-10">
+      <section aria-labelledby="containers-apps">
+        <h2 id="containers-apps" className="text-lg font-semibold">
+          Applications
+        </h2>
+        <div className="mt-3">
+          {apps.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-iron-700 px-5 py-10 text-center text-iron-300">
+              Aucune application sur ce serveur pour l’instant. Ses conteneurs apparaîtront ici dès
+              le premier déploiement.
+            </p>
+          ) : (
+            <ContainersTable containers={apps} caption="Conteneurs des applications" />
+          )}
+        </div>
+      </section>
+      {system.length > 0 && (
+        <section aria-labelledby="containers-system">
+          <h2 id="containers-system" className="text-lg font-semibold">
+            ForgeNet
+          </h2>
+          <p className="mt-1 max-w-prose text-sm text-iron-300">
+            Le serveur, Caddy et le conteneur de la dernière mise à jour, gardé arrêté pour ses
+            journaux.
+          </p>
+          <div className="mt-3">
+            <ContainersTable containers={system} caption="Conteneurs de ForgeNet" />
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
 
+function ContainersTable({ containers, caption }: { containers: Container[]; caption: string }) {
   return (
     <div className="animate-rise overflow-hidden rounded-lg border border-iron-800">
       <table className="w-full text-left text-sm">
-        <caption className="sr-only">Conteneurs du serveur</caption>
+        <caption className="sr-only">{caption}</caption>
         <thead className="bg-iron-900 text-iron-300">
           <tr>
             <th scope="col" className="px-4 py-3 font-medium">
