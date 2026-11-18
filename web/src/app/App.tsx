@@ -1,10 +1,11 @@
 import { LoaderCircle, RotateCw, ServerOff } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { Route, Router, Switch, type BaseLocationHook } from 'wouter';
+import { Route, Router, Switch, useLocation, type BaseLocationHook } from 'wouter';
 
 import { Button } from '../components/ui/Button';
 import { Wordmark } from '../components/ui/Wordmark';
 import { AccountPage } from '../features/account/AccountPage';
+import { AccessLinkScreen } from '../features/auth/AccessLinkScreen';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { useSession } from '../features/auth/session';
 import { SessionProvider } from '../features/auth/SessionProvider';
@@ -41,6 +42,13 @@ export function App({ transportFactory = browserTransport, locationHook }: Props
 
 function SessionGate() {
   const { state, retry, logout } = useSession();
+  const [location] = useLocation();
+
+  // Un lien à usage unique s'ouvre avec ou sans session : il en ouvre une
+  // lui-même une fois le mot de passe choisi (ADR-0014).
+  if (location === '/acces') {
+    return <AccessLinkScreen />;
+  }
 
   switch (state.status) {
     case 'checking':

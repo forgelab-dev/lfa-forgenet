@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 
 import { createApiClients, type TransportFactory } from '../../lib/api/client';
 import { describeError } from '../../lib/api/errors';
-import { SessionContext, type Session, type SessionState } from './session';
+import { SessionContext, type OpenedSession, type Session, type SessionState } from './session';
 import { createTokenStore } from './storage';
 
 /** Durée retenue si le serveur ne donne pas la fin de validité du jeton. */
@@ -70,19 +70,25 @@ export function SessionProvider({ transportFactory, children }: Props) {
     return () => abort.abort();
   }, [state.status, api, close]);
 
-  const login = useCallback(
-    async (login: string, password: string) => {
-      const res = await api.auth.login({ login, password });
-      if (!res.user || !res.token) {
+  const adopt = useCallback(
+    (opened: OpenedSession) => {
+      if (!opened.user || !opened.token) {
         throw new ConnectError('réponse de connexion incomplète', Code.Internal);
       }
-      const expiresAt = res.expiresAt
-        ? timestampMs(res.expiresAt)
+      const expiresAt = opened.expiresAt
+        ? timestampMs(opened.expiresAt)
         : Date.now() + FALLBACK_LIFETIME_MS;
-      tokens.set({ token: res.token, expiresAt });
-      setState({ status: 'authenticated', user: res.user });
+      tokens.set({ token: opened.token, expiresAt });
+      setState({ status: 'authenticated', user: opened.user });
     },
-    [api, tokens]
+    [tokens]
+  );
+
+  const login = useCallback(
+    async (login: string, password: string) => {
+      adopt(await api.auth.login({ login, password }));
+    },
+    [api, adopt]
   );
 
   const logout = useCallback(async () => {
@@ -99,8 +105,8 @@ export function SessionProvider({ transportFactory, children }: Props) {
   const expire = useCallback(() => close({ status: 'anonymous', notice: 'expired' }), [close]);
 
   const session = useMemo<Session>(
-    () => ({ state, api, login, logout, retry, token: tokens.get, expire }),
-    [state, api, login, logout, retry, tokens, expire]
+    () => ({ state, api, login, adopt, logout, retry, token: tokens.get, expire }),
+    [state, api, login, adopt, logout, retry, tokens, expire]
   );
 
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;

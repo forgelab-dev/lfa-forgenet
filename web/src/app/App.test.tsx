@@ -4,7 +4,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { memoryLocation } from 'wouter/memory-location';
 
-import { AuthService, UserRole } from '../gen/forgenet/v1/auth_pb';
+import { AccessLinkPurpose, AuthService, UserRole } from '../gen/forgenet/v1/auth_pb';
 import { ContainerService, ContainerState } from '../gen/forgenet/v1/container_pb';
 import { sessionInterceptors, type TransportFactory } from '../lib/api/client';
 import { App } from './App';
@@ -15,7 +15,9 @@ const mike = { id: 'u1', username: 'mike', email: 'mike@forgenet.test', role: Us
 /** Faux serveur ForgeNet : un compte, des jetons révocables, trois conteneurs. */
 function fakeServer(options: { unavailable?: boolean } = {}) {
   const tokens = new Set<string>();
-  const calls = { logout: 0 };
+  const calls = { logout: 0, redeemed: [] as string[] };
+  // Liens à usage unique encore valables (ADR-0014).
+  const links = new Set(['lien-valable']);
   let issued = 0;
 
   const factory: TransportFactory = (session) =>
@@ -36,6 +38,25 @@ function fakeServer(options: { unavailable?: boolean } = {}) {
             if (req.login !== 'mike' || req.password !== PASSWORD) {
               throw new ConnectError('identifiant ou mot de passe incorrect', Code.Unauthenticated);
             }
+            const token = `jeton-${++issued}`;
+            tokens.add(token);
+            return { token, expiresAt: timestampFromMs(Date.now() + 3_600_000), user: mike };
+          },
+          inspectAccessLink(req) {
+            if (!links.has(req.token)) {
+              throw new ConnectError('ce lien n’est plus valable', Code.NotFound);
+            }
+            return {
+              username: 'mike',
+              purpose: AccessLinkPurpose.FIRST_LOGIN,
+              expiresAt: timestampFromMs(Date.UTC(2026, 10, 19, 13, 5)),
+            };
+          },
+          redeemAccessLink(req) {
+            if (!links.delete(req.token)) {
+              throw new ConnectError('ce lien n’est plus valable', Code.NotFound);
+            }
+            calls.redeemed.push(req.newPassword);
             const token = `jeton-${++issued}`;
             tokens.add(token);
             return { token, expiresAt: timestampFromMs(Date.now() + 3_600_000), user: mike };
@@ -73,6 +94,12 @@ function fakeServer(options: { unavailable?: boolean } = {}) {
     );
 
   return { factory, tokens, calls };
+}
+
+/** Ouvre /acces avec le jeton dans le fragment, comme depuis un e-mail. */
+function openAccessLink(server: ReturnType<typeof fakeServer>, token: string) {
+  window.history.replaceState(null, '', `/acces#${token}`);
+  return renderApp(server, '/acces');
 }
 
 function renderApp(server: ReturnType<typeof fakeServer>, path = '/') {
@@ -218,5 +245,85 @@ describe('App', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('ne répond pas');
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument();
     expect(sessionStorage.getItem('forgenet.session')).not.toBeNull();
+  });
+
+  describe('lien à usage unique', () => {
+    it('fait choisir le mot de passe puis ouvre la session', async () => {
+      const server = fakeServer();
+      const location = openAccessLink(server, 'lien-valable');
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Premier accès' })
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Choisissez le mot de passe du compte mike/)).toBeInTheDocument();
+      expect(screen.getByText(/jusqu’au 19 novembre 2026/)).toBeInTheDocument();
+      expect(window.location.hash, 'le jeton quitte la barre d’adresse').toBe('');
+
+      const motDePasse = 'phrase de passe choisie';
+      fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: motDePasse } });
+      fireEvent.change(screen.getByLabelText('Confirmation'), { target: { value: 'autre chose' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Choisir ce mot de passe' }));
+      expect(screen.getByText('Les deux saisies diffèrent.')).toBeInTheDocument();
+      expect(server.calls.redeemed).toEqual([]);
+
+      fireEvent.change(screen.getByLabelText('Confirmation'), { target: { value: motDePasse } });
+      fireEvent.click(screen.getByRole('button', { name: 'Choisir ce mot de passe' }));
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Vue d’ensemble' })
+      ).toBeInTheDocument();
+      expect(server.calls.redeemed).toEqual([motDePasse]);
+      expect(location.history?.at(-1)).toBe('/');
+      expect(JSON.parse(sessionStorage.getItem('forgenet.session') ?? '{}').token).toBe('jeton-1');
+    });
+
+    it('refuse un mot de passe trop court sans appeler le serveur', async () => {
+      const server = fakeServer();
+      openAccessLink(server, 'lien-valable');
+
+      fireEvent.change(await screen.findByLabelText('Mot de passe'), {
+        target: { value: 'court' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Choisir ce mot de passe' }));
+
+      expect(screen.getByText(/au moins 8 caractères/)).toBeInTheDocument();
+      expect(server.calls.redeemed).toEqual([]);
+    });
+
+    it('explique un lien expiré ou déjà utilisé, et mène à la connexion', async () => {
+      openAccessLink(fakeServer(), 'lien-utilise');
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Ce lien ne vaut plus' })
+      ).toBeInTheDocument();
+      expect(screen.getByText('sudo forgenet user login-link --username NOM')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Aller à la connexion' }));
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Connexion' })
+      ).toBeInTheDocument();
+    });
+
+    it('relit un nouveau lien collé dans le même onglet', async () => {
+      openAccessLink(fakeServer(), 'lien-utilise');
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Ce lien ne vaut plus' })
+      ).toBeInTheDocument();
+
+      window.location.hash = 'lien-valable';
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Premier accès' })
+      ).toBeInTheDocument();
+      expect(window.location.hash).toBe('');
+    });
+
+    it('traite une adresse sans jeton comme un lien qui ne vaut plus', async () => {
+      openAccessLink(fakeServer(), '');
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Ce lien ne vaut plus' })
+      ).toBeInTheDocument();
+    });
   });
 });

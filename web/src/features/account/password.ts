@@ -18,21 +18,36 @@ export const MAX_PASSWORD_BYTES = 72;
  * qui est la limite réelle de bcrypt.
  */
 export function checkPasswordForm(form: PasswordForm): PasswordProblems {
-  const problems: PasswordProblems = {};
+  const problems: PasswordProblems = { ...checkChosenPassword(form.next, form.confirm) };
   if (!form.current) {
     problems.current = 'Saisissez votre mot de passe actuel.';
   }
-  if ([...form.next].length < MIN_PASSWORD_CHARS) {
-    problems.next = `Le nouveau mot de passe doit comporter au moins ${MIN_PASSWORD_CHARS} caractères.`;
-  } else if (new TextEncoder().encode(form.next).length > MAX_PASSWORD_BYTES) {
-    problems.next = `Le nouveau mot de passe doit comporter au plus ${MAX_PASSWORD_BYTES} octets (environ ${MAX_PASSWORD_BYTES} caractères sans accent).`;
-  } else if (form.current && form.next === form.current) {
+  if (!problems.next && form.current && form.next === form.current) {
     problems.next = 'Le nouveau mot de passe doit être différent de l’actuel.';
-  }
-  if (!problems.next && form.confirm !== form.next) {
-    problems.confirm = 'Les deux saisies diffèrent.';
+    delete problems.confirm;
   }
   return problems;
+}
+
+/**
+ * Contrôle un mot de passe choisi et sa confirmation, sans mot de passe
+ * actuel : c'est le cas d'un lien à usage unique (page /acces).
+ */
+export function checkChosenPassword(
+  next: string,
+  confirm: string
+): Partial<Record<'next' | 'confirm', string>> {
+  if ([...next].length < MIN_PASSWORD_CHARS) {
+    return {
+      next: `Le nouveau mot de passe doit comporter au moins ${MIN_PASSWORD_CHARS} caractères.`,
+    };
+  }
+  if (new TextEncoder().encode(next).length > MAX_PASSWORD_BYTES) {
+    return {
+      next: `Le nouveau mot de passe doit comporter au plus ${MAX_PASSWORD_BYTES} octets (environ ${MAX_PASSWORD_BYTES} caractères sans accent).`,
+    };
+  }
+  return confirm === next ? {} : { confirm: 'Les deux saisies diffèrent.' };
 }
 
 /** Phrase de réussite, avec le nombre de sessions fermées ailleurs. */
