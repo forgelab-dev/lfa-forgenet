@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.6.0...v0.7.0) (2026-11-18)
+
+
+### Fonctionnalités
+
+* **api:** Container.system pour les conteneurs de ForgeNet ([f7042f4](https://github.com/forgelab-dev/lfa-forgenet/commit/f7042f43592cf46c864a07220b636fb350b2a53f)), closes [#74](https://github.com/forgelab-dev/lfa-forgenet/issues/74)
+* **deploy:** étiqueter le serveur et Caddy comme conteneurs de ForgeNet ([9456ba0](https://github.com/forgelab-dev/lfa-forgenet/commit/9456ba024249ef5beabdd4838a0e900d7c692802)), closes [#74](https://github.com/forgelab-dev/lfa-forgenet/issues/74)
+* **orchestrator:** reconnaître l'étiquette forgenet.system ([69a10af](https://github.com/forgelab-dev/lfa-forgenet/commit/69a10af510d993d959a0bfbee5d0dd6c4330e0f6)), closes [#74](https://github.com/forgelab-dev/lfa-forgenet/issues/74)
+
+
+### Corrections
+
+* **web:** « Vérifier les mises à jour » sur sa propre ligne ([cc77021](https://github.com/forgelab-dev/lfa-forgenet/commit/cc7702193767d81d1aaec562c5ece2bb35562af8)), closes [#74](https://github.com/forgelab-dev/lfa-forgenet/issues/74)
+* **web:** compter les conteneurs de ForgeNet à part des applications ([20160cc](https://github.com/forgelab-dev/lfa-forgenet/commit/20160cc49aad58ee5e66714a2cb27ff825914e14)), closes [#74](https://github.com/forgelab-dev/lfa-forgenet/issues/74)
+* **web:** relire l'état des mises à jour à la fin du suivi ([72a9e99](https://github.com/forgelab-dev/lfa-forgenet/commit/72a9e99e415212c39e7df08afdc6b850d73696c5)), closes [#74](https://github.com/forgelab-dev/lfa-forgenet/issues/74)
+
 ## [0.6.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.5.0...v0.6.0) (2026-11-18)
 
 
