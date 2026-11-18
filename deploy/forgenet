@@ -53,6 +53,9 @@ Usage : forgenet COMMANDE [options]
                           « forgenet backups » l'affiche (root).
   user create --username NOM --email ADRESSE [--role admin|member]
                           Crée un compte ; le mot de passe est demandé.
+  user set-password --username NOM
+                          Remplace le mot de passe d'un compte, par exemple
+                          perdu ; ses sessions ouvertes sont fermées.
   help                    Cette aide.
 
 Le dossier d'installation est /opt/forgenet, ou celui choisi à l'installation ;
@@ -303,7 +306,7 @@ cmd_restore() {
 }
 
 cmd_user() {
-	[ $# -gt 0 ] || die "usage : forgenet user create --username NOM --email ADRESSE [--role admin|member]"
+	[ $# -gt 0 ] || die "usage : forgenet user create --username NOM --email ADRESSE [--role admin|member] | forgenet user set-password --username NOM"
 	need_docker
 	need_server
 	# -t seulement dans un terminal : le mot de passe est alors saisi masqué ;

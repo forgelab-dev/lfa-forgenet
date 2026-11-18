@@ -180,6 +180,7 @@ mv "$WORK/install.sh.de-cote" "$WORK/install/install.sh"
 
 FAKE_UID=1000 check "user, membre du groupe docker" 0 "exec exec -i forgenet-server forgenet-server user create --username ana" -- user create --username ana
 check "user sans sous-commande" 1 "usage : forgenet user create" -- user
+FAKE_UID=1000 check "user set-password, transmis au serveur" 0 "exec exec -i forgenet-server forgenet-server user set-password --username ana" -- user set-password --username ana
 FAKE_SERVER="exited " check "user, serveur arrêté" 1 "serveur ForgeNet est arrêté" -- user create
 
 printf '\n%d vérifications, %d en échec\n' "$runs" "$fails"

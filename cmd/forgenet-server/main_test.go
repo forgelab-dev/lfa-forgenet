@@ -22,6 +22,7 @@ import (
 	grpcHealth "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
+	"github.com/forgelab-dev/lfa-forgenet/internal/auth"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
@@ -279,4 +280,42 @@ func TestUserCreate_FirstAdminFromCommandLine(t *testing.T) {
 	user, err := db.Users().GetUserByUsername(context.Background(), "admin")
 	require.NoError(t, err)
 	assert.Equal(t, store.RoleAdmin, user.Role)
+}
+
+func TestUserSetPassword_FromCommandLine(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "forgenet.db")
+	configFile := writeConfig(t, fmt.Sprintf("database:\n  path: %q\n", dbPath))
+	run := func(stdin string, args ...string) (string, int) {
+		cmd := exec.Command(binPath, append([]string{"user"}, append(args, "--config", configFile)...)...)
+		cmd.Stdin = strings.NewReader(stdin)
+		out, err := cmd.CombinedOutput()
+		return string(out), exitCode(t, err)
+	}
+
+	out, code := run("motdepasse-de-test\n", "create", "--username", "admin", "--email", "admin@forgenet.test")
+	require.Equal(t, 0, code, out)
+
+	out, code = run("mot-de-passe-retrouve\n", "set-password", "--username", "admin")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "Mot de passe de admin changé")
+	assert.NotContains(t, out, "mot-de-passe-retrouve", "le mot de passe ne doit jamais être affiché")
+
+	out, code = run("mot-de-passe-retrouve\n", "set-password", "--username", "personne")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "aucun compte")
+
+	out, code = run("court\n", "set-password", "--username", "admin")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "8 caractères")
+
+	out, code = run("", "set-password")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "--username est obligatoire")
+
+	db, err := sqlite.Open(context.Background(), config.DatabaseConfig{Path: dbPath, BusyTimeout: time.Second})
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	user, err := db.Users().GetUserByUsername(context.Background(), "admin")
+	require.NoError(t, err)
+	assert.NoError(t, auth.CheckPassword(user.PasswordHash, "mot-de-passe-retrouve"))
 }
