@@ -197,13 +197,17 @@ func (x *PortMapping) GetProtocol() string {
 
 // Container représente l'état complet et les métadonnées d'un conteneur.
 type Container struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Image         string                 `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`
-	State         ContainerState         `protobuf:"varint,4,opt,name=state,proto3,enum=forgenet.v1.ContainerState" json:"state,omitempty"`
-	Ports         []*PortMapping         `protobuf:"bytes,5,rep,name=ports,proto3" json:"ports,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name      string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Image     string                 `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`
+	State     ContainerState         `protobuf:"varint,4,opt,name=state,proto3,enum=forgenet.v1.ContainerState" json:"state,omitempty"`
+	Ports     []*PortMapping         `protobuf:"bytes,5,rep,name=ports,proto3" json:"ports,omitempty"`
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// Conteneur de ForgeNet lui-même (serveur, Caddy, mise à jour), reconnu à
+	// son étiquette Docker « forgenet.system=true ». Le dashboard le range à
+	// part des applications, sans le cacher.
+	System        bool `protobuf:"varint,7,opt,name=system,proto3" json:"system,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -278,6 +282,13 @@ func (x *Container) GetCreatedAt() *timestamppb.Timestamp {
 		return x.CreatedAt
 	}
 	return nil
+}
+
+func (x *Container) GetSystem() bool {
+	if x != nil {
+		return x.System
+	}
+	return false
 }
 
 type ListContainersRequest struct {
@@ -896,7 +907,7 @@ const file_forgenet_v1_container_proto_rawDesc = "" +
 	"\vPortMapping\x12\x1b\n" +
 	"\thost_port\x18\x01 \x01(\rR\bhostPort\x12%\n" +
 	"\x0econtainer_port\x18\x02 \x01(\rR\rcontainerPort\x12\x1a\n" +
-	"\bprotocol\x18\x03 \x01(\tR\bprotocol\"\xe3\x01\n" +
+	"\bprotocol\x18\x03 \x01(\tR\bprotocol\"\xfb\x01\n" +
 	"\tContainer\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
@@ -904,7 +915,8 @@ const file_forgenet_v1_container_proto_rawDesc = "" +
 	"\x05state\x18\x04 \x01(\x0e2\x1b.forgenet.v1.ContainerStateR\x05state\x12.\n" +
 	"\x05ports\x18\x05 \x03(\v2\x18.forgenet.v1.PortMappingR\x05ports\x129\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"|\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x16\n" +
+	"\x06system\x18\a \x01(\bR\x06system\"|\n" +
 	"\x15ListContainersRequest\x12'\n" +
 	"\x0finclude_stopped\x18\x01 \x01(\bR\x0eincludeStopped\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
