@@ -114,6 +114,8 @@ type Service struct {
 type execution struct {
 	cancel context.CancelFunc
 	reason string // motif d'annulation, vide si personne n'a annulé
+	// done est fermé quand l'exécution est finie et le projet libéré.
+	done chan struct{}
 }
 
 // Option règle le service.
@@ -292,10 +294,11 @@ func (s *Service) cancel(ctx context.Context, id, reason string) (*store.Deploym
 			}
 			return cancelled, err
 		case store.DeploymentBuilding, store.DeploymentDeploying:
-			if !s.interrupt(id, message) {
+			done, ok := s.interrupt(id, message)
+			if !ok {
 				continue
 			}
-			return s.waitFinished(ctx, id)
+			return s.waitFinished(ctx, id, done)
 		default:
 			return nil, fmt.Errorf("%w : %s", ErrNotCancellable, d.State)
 		}
@@ -303,39 +306,32 @@ func (s *Service) cancel(ctx context.Context, id, reason string) (*store.Deploym
 	return nil, fmt.Errorf("%w : l'état change trop vite, réessayez", ErrNotCancellable)
 }
 
-// interrupt annule l'exécution en cours de id ; false si elle n'est pas (ou plus) en cours.
-func (s *Service) interrupt(id, reason string) bool {
+// interrupt annule l'exécution en cours de id et renvoie le signal de sa fin ;
+// false si elle n'est pas (ou plus) en cours.
+func (s *Service) interrupt(id, reason string) (<-chan struct{}, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	run, ok := s.running[id]
 	if !ok {
-		return false
+		return nil, false
 	}
 	run.reason = reason
 	run.cancel()
-	return true
+	return run.done, true
 }
 
-// waitFinished attend qu'un déploiement interrompu atteigne un état final.
-func (s *Service) waitFinished(ctx context.Context, id string) (*store.Deployment, error) {
-	ctx, cancel := context.WithTimeout(ctx, cancelWait)
+// waitFinished attend la fin d'un déploiement interrompu, projet libéré
+// compris : l'état final est écrit un instant avant, et une suppression de la
+// stack lancée entre les deux serait refusée comme « occupée ». L'attente est
+// bornée ; le déploiement est relu tel qu'il est alors.
+func (s *Service) waitFinished(ctx context.Context, id string, done <-chan struct{}) (*store.Deployment, error) {
+	wait, cancel := context.WithTimeout(ctx, cancelWait)
 	defer cancel()
-	ticker := time.NewTicker(50 * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		d, err := s.store.GetDeployment(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		if d.State.IsTerminal() {
-			return d, nil
-		}
-		select {
-		case <-ctx.Done():
-			return d, nil
-		case <-ticker.C:
-		}
+	select {
+	case <-done:
+	case <-wait.Done():
 	}
+	return s.store.GetDeployment(ctx, id)
 }
 
 // DeleteStack supprime la stack en service d'un projet. Il est refusé tant
