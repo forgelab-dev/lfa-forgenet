@@ -81,7 +81,7 @@ function LostPassword() {
         Un administrateur le remplace depuis le serveur, sans l’ancien :
       </p>
       <pre className="mt-3 overflow-x-auto rounded-md bg-iron-950 px-3 py-2.5 font-mono text-xs text-iron-100">
-        sudo forgenet user set-password --username NOM
+        {'sudo forgenet user set-password \\\n  --username NOM'}
       </pre>
     </section>
   );
@@ -213,7 +213,7 @@ function ChangePasswordForm() {
 
       <label
         htmlFor={ids.reveal}
-        className="mt-3 inline-flex min-h-11 cursor-pointer items-center gap-2.5 text-sm text-iron-300 hover:text-iron-100"
+        className="mt-3 flex w-fit min-h-11 cursor-pointer items-center gap-2.5 text-sm text-iron-300 hover:text-iron-100"
       >
         <input
           id={ids.reveal}
