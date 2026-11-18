@@ -13,6 +13,7 @@ import { DeploymentsPage } from '../features/deployments/DeploymentsPage';
 import { DomainsPage } from '../features/domains/DomainsPage';
 import { MonitoringPage } from '../features/monitoring/MonitoringPage';
 import { OverviewPage } from '../features/overview/OverviewPage';
+import { SettingsPage } from '../features/settings/SettingsPage';
 import { createApiTransport, type TransportFactory } from '../lib/api/client';
 import { AppShell } from './AppShell';
 import { sections } from './navigation';
@@ -82,6 +83,7 @@ function SessionGate() {
             <Route path="/surveillance" component={MonitoringPage} />
             <Route path="/domaines" component={DomainsPage} />
             <Route path="/compte" component={AccountPage} />
+            <Route path="/reglages" component={SettingsPage} />
             {sections
               .filter((section) => section.upcoming)
               .map((section) => (

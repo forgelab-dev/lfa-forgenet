@@ -12,6 +12,7 @@ import { AuthService } from '../../gen/forgenet/v1/auth_pb';
 import { ContainerService } from '../../gen/forgenet/v1/container_pb';
 import { DeploymentService } from '../../gen/forgenet/v1/deploy_pb';
 import { DomainService } from '../../gen/forgenet/v1/domain_pb';
+import { MailService } from '../../gen/forgenet/v1/mail_pb';
 import { MetricsService } from '../../gen/forgenet/v1/metrics_pb';
 import { UpdateService } from '../../gen/forgenet/v1/update_pb';
 
@@ -83,6 +84,7 @@ export interface ApiClients {
   containers: Client<typeof ContainerService>;
   deployments: Client<typeof DeploymentService>;
   domains: Client<typeof DomainService>;
+  mail: Client<typeof MailService>;
   metrics: Client<typeof MetricsService>;
   updates: Client<typeof UpdateService>;
 }
@@ -93,6 +95,7 @@ export function createApiClients(transport: Transport): ApiClients {
     containers: createClient(ContainerService, transport),
     deployments: createClient(DeploymentService, transport),
     domains: createClient(DomainService, transport),
+    mail: createClient(MailService, transport),
     metrics: createClient(MetricsService, transport),
     updates: createClient(UpdateService, transport),
   };
