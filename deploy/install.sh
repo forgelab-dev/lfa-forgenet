@@ -422,7 +422,9 @@ create_admin() {
 	printf '%s\n' "$ADMIN_USER" >"$marker"
 	chmod 0600 "$marker"
 	if [ -n "$password_file" ]; then
-		warn "mot de passe généré dans $password_file : notez-le, puis supprimez ce fichier"
+		# Le fichier ne se supprime qu'une fois le mot de passe changé : sinon,
+		# plus personne ne le connaîtrait.
+		warn "mot de passe généré dans $password_file : connectez-vous avec, changez-le dans le dashboard (Mon compte), puis supprimez ce fichier"
 	fi
 }
 

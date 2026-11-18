@@ -96,7 +96,7 @@ sudo bash install.sh --domain forgenet.exemple.org --email vous@exemple.org
 
 Le script vient du tag de la version : il installe l'image de cette même version, `ghcr.io/forgelab-dev/forgenet-server`, signée par cosign. Sa vérification est décrite dans [`docs/RELEASING.md`](docs/RELEASING.md#vérifier-une-image-publiée).
 
-Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écrit `/opt/forgenet`, démarre le serveur et Caddy, puis crée le premier administrateur. Lancé sans terminal (cloud-init par exemple), il tire son mot de passe au hasard et le range dans `/opt/forgenet/admin-password`, lisible par root seul : gardez ce fichier, le changement de mot de passe n'existe pas encore ([#72](https://github.com/forgelab-dev/lfa-forgenet/issues/72)). Le script se relance sans risque, par exemple pour ajouter un domaine ou changer de version (`bash install.sh --help`). Il installe aussi la commande d'administration `forgenet`, décrite plus bas.
+Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écrit `/opt/forgenet`, démarre le serveur et Caddy, puis crée le premier administrateur. Lancé sans terminal (cloud-init par exemple), il tire son mot de passe au hasard et le range dans `/opt/forgenet/admin-password`, lisible par root seul : connectez-vous avec, changez-le dans « Mon compte », puis supprimez ce fichier. Un mot de passe perdu se remplace sur le serveur par `forgenet user set-password --username NOM`. Le script se relance sans risque, par exemple pour ajouter un domaine ou changer de version (`bash install.sh --help`). Il installe aussi la commande d'administration `forgenet`, décrite plus bas.
 
 **Sans domaine**, le dashboard n'écoute que sur le serveur : ouvrez-le par un tunnel SSH, `ssh -N -L 8080:127.0.0.1:8080 utilisateur@serveur`, puis `http://localhost:8080`. Les raisons de ce choix sont dans l'[ADR-0009](docs/decisions/0009-service-du-dashboard-en-production.md).
 
@@ -117,6 +117,7 @@ Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écri
 | `sudo forgenet update [--version X.Y.Z]` | mise à jour, avec sauvegarde et retour arrière automatique |
 | `sudo forgenet backups` · `sudo forgenet restore SAUVEGARDE` | lister les sauvegardes, revenir à l'une d'elles |
 | `forgenet user create --username NOM --email ADRESSE` | créer un compte (mot de passe demandé) |
+| `forgenet user set-password --username NOM` | remplacer un mot de passe perdu ; ferme les sessions du compte |
 
 `forgenet help` donne le détail. Les commandes marquées `sudo` demandent root, les autres marchent aussi pour un membre du groupe `docker`. Une mise à jour faite depuis le dashboard ne touche pas à la commande : `forgenet version` le signale, et `sudo forgenet update` la remet à niveau. Sur une installation antérieure à la 0.5.0, lancez une fois le `install.sh` de la nouvelle version (`sudo bash install.sh`), qui l'ajoute. À ne pas confondre avec `forgenet-cli`, le client d'API à distance prévu pour les scripts et la CI. Le choix est expliqué dans l'[ADR-0013](docs/decisions/0013-commande-forgenet-sur-le-serveur.md).
 
