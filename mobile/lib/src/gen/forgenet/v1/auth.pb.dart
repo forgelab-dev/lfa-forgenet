@@ -461,6 +461,142 @@ class GetCurrentUserResponse extends $pb.GeneratedMessage {
   User ensureUser() => $_ensure(0);
 }
 
+class ChangePasswordRequest extends $pb.GeneratedMessage {
+  factory ChangePasswordRequest({
+    $core.String? currentPassword,
+    $core.String? newPassword,
+  }) {
+    final result = ChangePasswordRequest._();
+    if (currentPassword != null) result.currentPassword = currentPassword;
+    if (newPassword != null) result.newPassword = newPassword;
+    return result;
+  }
+
+  ChangePasswordRequest._();
+
+  factory ChangePasswordRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangePasswordRequest()..mergeFromBuffer(data, registry);
+  factory ChangePasswordRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangePasswordRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChangePasswordRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: ChangePasswordRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'currentPassword')
+    ..aOS(2, _omitFieldNames ? '' : 'newPassword')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangePasswordRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangePasswordRequest copyWith(
+          void Function(ChangePasswordRequest) updates) =>
+      super.copyWith((message) => updates(message as ChangePasswordRequest))
+          as ChangePasswordRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ChangePasswordRequest() / ChangePasswordRequest.new instead')
+  static ChangePasswordRequest create() => ChangePasswordRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ChangePasswordRequest._();
+  @$core.override
+  ChangePasswordRequest createEmptyInstance() => ChangePasswordRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ChangePasswordRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChangePasswordRequest>(
+          ChangePasswordRequest.$_createMessage);
+  static ChangePasswordRequest? _defaultInstance;
+
+  /// Mot de passe actuel, exigé même avec une session ouverte : un poste
+  /// laissé déverrouillé ne suffit pas à prendre le compte.
+  @$pb.TagNumber(1)
+  $core.String get currentPassword => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set currentPassword($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCurrentPassword() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCurrentPassword() => $_clearField(1);
+
+  /// Nouveau mot de passe : 8 caractères au moins, 72 octets au plus (limite
+  /// de bcrypt), différent de l'actuel.
+  @$pb.TagNumber(2)
+  $core.String get newPassword => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set newPassword($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasNewPassword() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearNewPassword() => $_clearField(2);
+}
+
+class ChangePasswordResponse extends $pb.GeneratedMessage {
+  factory ChangePasswordResponse({
+    $core.int? revokedSessions,
+  }) {
+    final result = ChangePasswordResponse._();
+    if (revokedSessions != null) result.revokedSessions = revokedSessions;
+    return result;
+  }
+
+  ChangePasswordResponse._();
+
+  factory ChangePasswordResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangePasswordResponse()..mergeFromBuffer(data, registry);
+  factory ChangePasswordResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangePasswordResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChangePasswordResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: ChangePasswordResponse.$_createMessage)
+    ..aI(1, _omitFieldNames ? '' : 'revokedSessions')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangePasswordResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangePasswordResponse copyWith(
+          void Function(ChangePasswordResponse) updates) =>
+      super.copyWith((message) => updates(message as ChangePasswordResponse))
+          as ChangePasswordResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ChangePasswordResponse() / ChangePasswordResponse.new instead')
+  static ChangePasswordResponse create() => ChangePasswordResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ChangePasswordResponse._();
+  @$core.override
+  ChangePasswordResponse createEmptyInstance() => ChangePasswordResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ChangePasswordResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChangePasswordResponse>(
+          ChangePasswordResponse.$_createMessage);
+  static ChangePasswordResponse? _defaultInstance;
+
+  /// Nombre de sessions et de jetons API du compte fermés par le changement
+  /// (tous sauf la session qui l'a demandé).
+  @$pb.TagNumber(1)
+  $core.int get revokedSessions => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set revokedSessions($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasRevokedSessions() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearRevokedSessions() => $_clearField(1);
+}
+
 const $core.bool _omitFieldNames =
     $core.bool.fromEnvironment('protobuf.omit_field_names');
 const $core.bool _omitMessageNames =

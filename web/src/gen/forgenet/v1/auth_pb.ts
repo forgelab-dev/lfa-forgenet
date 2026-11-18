@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file forgenet/v1/auth.proto.
  */
 export const file_forgenet_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChZmb3JnZW5ldC92MS9hdXRoLnByb3RvEgtmb3JnZW5ldC52MSJYCgRVc2VyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZSIvCgxMb2dpblJlcXVlc3QSDQoFbG9naW4YASABKAkSEAoIcGFzc3dvcmQYAiABKAkibwoNTG9naW5SZXNwb25zZRINCgV0b2tlbhgBIAEoCRIuCgpleHBpcmVzX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIfCgR1c2VyGAMgASgLMhEuZm9yZ2VuZXQudjEuVXNlciIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIhcKFUdldEN1cnJlbnRVc2VyUmVxdWVzdCI5ChZHZXRDdXJyZW50VXNlclJlc3BvbnNlEh8KBHVzZXIYASABKAsyES5mb3JnZW5ldC52MS5Vc2VyKlAKCFVzZXJSb2xlEhkKFVVTRVJfUk9MRV9VTlNQRUNJRklFRBAAEhMKD1VTRVJfUk9MRV9BRE1JThABEhQKEFVTRVJfUk9MRV9NRU1CRVIQAjLrAQoLQXV0aFNlcnZpY2USPgoFTG9naW4SGS5mb3JnZW5ldC52MS5Mb2dpblJlcXVlc3QaGi5mb3JnZW5ldC52MS5Mb2dpblJlc3BvbnNlEkEKBkxvZ291dBIaLmZvcmdlbmV0LnYxLkxvZ291dFJlcXVlc3QaGy5mb3JnZW5ldC52MS5Mb2dvdXRSZXNwb25zZRJZCg5HZXRDdXJyZW50VXNlchIiLmZvcmdlbmV0LnYxLkdldEN1cnJlbnRVc2VyUmVxdWVzdBojLmZvcmdlbmV0LnYxLkdldEN1cnJlbnRVc2VyUmVzcG9uc2VCRVpDZ2l0aHViLmNvbS9mb3JnZWxhYi1kZXYvbGZhLWZvcmdlbmV0L3BrZy9nZW4vZm9yZ2VuZXQvdjE7Zm9yZ2VuZXR2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChZmb3JnZW5ldC92MS9hdXRoLnByb3RvEgtmb3JnZW5ldC52MSJYCgRVc2VyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZSIvCgxMb2dpblJlcXVlc3QSDQoFbG9naW4YASABKAkSEAoIcGFzc3dvcmQYAiABKAkibwoNTG9naW5SZXNwb25zZRINCgV0b2tlbhgBIAEoCRIuCgpleHBpcmVzX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIfCgR1c2VyGAMgASgLMhEuZm9yZ2VuZXQudjEuVXNlciIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIhcKFUdldEN1cnJlbnRVc2VyUmVxdWVzdCI5ChZHZXRDdXJyZW50VXNlclJlc3BvbnNlEh8KBHVzZXIYASABKAsyES5mb3JnZW5ldC52MS5Vc2VyIkcKFUNoYW5nZVBhc3N3b3JkUmVxdWVzdBIYChBjdXJyZW50X3Bhc3N3b3JkGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIyChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlEhgKEHJldm9rZWRfc2Vzc2lvbnMYASABKAUqUAoIVXNlclJvbGUSGQoVVVNFUl9ST0xFX1VOU1BFQ0lGSUVEEAASEwoPVVNFUl9ST0xFX0FETUlOEAESFAoQVVNFUl9ST0xFX01FTUJFUhACMsYCCgtBdXRoU2VydmljZRI+CgVMb2dpbhIZLmZvcmdlbmV0LnYxLkxvZ2luUmVxdWVzdBoaLmZvcmdlbmV0LnYxLkxvZ2luUmVzcG9uc2USQQoGTG9nb3V0EhouZm9yZ2VuZXQudjEuTG9nb3V0UmVxdWVzdBobLmZvcmdlbmV0LnYxLkxvZ291dFJlc3BvbnNlElkKDkdldEN1cnJlbnRVc2VyEiIuZm9yZ2VuZXQudjEuR2V0Q3VycmVudFVzZXJSZXF1ZXN0GiMuZm9yZ2VuZXQudjEuR2V0Q3VycmVudFVzZXJSZXNwb25zZRJZCg5DaGFuZ2VQYXNzd29yZBIiLmZvcmdlbmV0LnYxLkNoYW5nZVBhc3N3b3JkUmVxdWVzdBojLmZvcmdlbmV0LnYxLkNoYW5nZVBhc3N3b3JkUmVzcG9uc2VCRVpDZ2l0aHViLmNvbS9mb3JnZWxhYi1kZXYvbGZhLWZvcmdlbmV0L3BrZy9nZW4vZm9yZ2VuZXQvdjE7Zm9yZ2VuZXR2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * User décrit le compte connecté. Le mot de passe et ses empreintes ne
@@ -159,6 +159,54 @@ export const GetCurrentUserResponseSchema: GenMessage<GetCurrentUserResponse> = 
   messageDesc(file_forgenet_v1_auth, 6);
 
 /**
+ * @generated from message forgenet.v1.ChangePasswordRequest
+ */
+export type ChangePasswordRequest = Message<"forgenet.v1.ChangePasswordRequest"> & {
+  /**
+   * Mot de passe actuel, exigé même avec une session ouverte : un poste
+   * laissé déverrouillé ne suffit pas à prendre le compte.
+   *
+   * @generated from field: string current_password = 1;
+   */
+  currentPassword: string;
+
+  /**
+   * Nouveau mot de passe : 8 caractères au moins, 72 octets au plus (limite
+   * de bcrypt), différent de l'actuel.
+   *
+   * @generated from field: string new_password = 2;
+   */
+  newPassword: string;
+};
+
+/**
+ * Describes the message forgenet.v1.ChangePasswordRequest.
+ * Use `create(ChangePasswordRequestSchema)` to create a new message.
+ */
+export const ChangePasswordRequestSchema: GenMessage<ChangePasswordRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 7);
+
+/**
+ * @generated from message forgenet.v1.ChangePasswordResponse
+ */
+export type ChangePasswordResponse = Message<"forgenet.v1.ChangePasswordResponse"> & {
+  /**
+   * Nombre de sessions et de jetons API du compte fermés par le changement
+   * (tous sauf la session qui l'a demandé).
+   *
+   * @generated from field: int32 revoked_sessions = 1;
+   */
+  revokedSessions: number;
+};
+
+/**
+ * Describes the message forgenet.v1.ChangePasswordResponse.
+ * Use `create(ChangePasswordResponseSchema)` to create a new message.
+ */
+export const ChangePasswordResponseSchema: GenMessage<ChangePasswordResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 8);
+
+/**
  * UserRole reprend les rôles du serveur. Un admin gère tout ; un membre
  * consulte et agit dans les limites de la politique d'accès.
  *
@@ -224,6 +272,20 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof GetCurrentUserRequestSchema;
     output: typeof GetCurrentUserResponseSchema;
+  },
+  /**
+   * ChangePassword change le mot de passe du compte connecté, puis ferme ses
+   * autres sessions et jetons. Un mot de passe actuel incorrect ou un nouveau
+   * mot de passe refusé répond INVALID_ARGUMENT (jamais UNAUTHENTICATED, qui
+   * fermerait la session du demandeur) ; des échecs répétés répondent
+   * RESOURCE_EXHAUSTED. Le changement est inscrit au journal d'audit.
+   *
+   * @generated from rpc forgenet.v1.AuthService.ChangePassword
+   */
+  changePassword: {
+    methodKind: "unary";
+    input: typeof ChangePasswordRequestSchema;
+    output: typeof ChangePasswordResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_forgenet_v1_auth, 0);

@@ -52,6 +52,21 @@ message GetCurrentUserResponse {
   User user = 1;
 }
 
+message ChangePasswordRequest {
+  // Mot de passe actuel, exigé même avec une session ouverte : un poste
+  // laissé déverrouillé ne suffit pas à prendre le compte.
+  string current_password = 1;
+  // Nouveau mot de passe : 8 caractères au moins, 72 octets au plus (limite
+  // de bcrypt), différent de l'actuel.
+  string new_password = 2;
+}
+
+message ChangePasswordResponse {
+  // Nombre de sessions et de jetons API du compte fermés par le changement
+  // (tous sauf la session qui l'a demandé).
+  int32 revoked_sessions = 1;
+}
+
 // --- SERVICE ---
 
 // AuthService ouvre et ferme les sessions du dashboard et du CLI.
@@ -66,4 +81,11 @@ service AuthService {
 
   // GetCurrentUser renvoie le compte du jeton présenté, avec son rôle actuel.
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+
+  // ChangePassword change le mot de passe du compte connecté, puis ferme ses
+  // autres sessions et jetons. Un mot de passe actuel incorrect ou un nouveau
+  // mot de passe refusé répond INVALID_ARGUMENT (jamais UNAUTHENTICATED, qui
+  // fermerait la session du demandeur) ; des échecs répétés répondent
+  // RESOURCE_EXHAUSTED. Le changement est inscrit au journal d'audit.
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordResponse);
 }

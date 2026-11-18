@@ -409,6 +409,108 @@ func (x *GetCurrentUserResponse) GetUser() *User {
 	return nil
 }
 
+type ChangePasswordRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Mot de passe actuel, exigé même avec une session ouverte : un poste
+	// laissé déverrouillé ne suffit pas à prendre le compte.
+	CurrentPassword string `protobuf:"bytes,1,opt,name=current_password,json=currentPassword,proto3" json:"current_password,omitempty"`
+	// Nouveau mot de passe : 8 caractères au moins, 72 octets au plus (limite
+	// de bcrypt), différent de l'actuel.
+	NewPassword   string `protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChangePasswordRequest) Reset() {
+	*x = ChangePasswordRequest{}
+	mi := &file_forgenet_v1_auth_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangePasswordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangePasswordRequest) ProtoMessage() {}
+
+func (x *ChangePasswordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_auth_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangePasswordRequest.ProtoReflect.Descriptor instead.
+func (*ChangePasswordRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_auth_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ChangePasswordRequest) GetCurrentPassword() string {
+	if x != nil {
+		return x.CurrentPassword
+	}
+	return ""
+}
+
+func (x *ChangePasswordRequest) GetNewPassword() string {
+	if x != nil {
+		return x.NewPassword
+	}
+	return ""
+}
+
+type ChangePasswordResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Nombre de sessions et de jetons API du compte fermés par le changement
+	// (tous sauf la session qui l'a demandé).
+	RevokedSessions int32 `protobuf:"varint,1,opt,name=revoked_sessions,json=revokedSessions,proto3" json:"revoked_sessions,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ChangePasswordResponse) Reset() {
+	*x = ChangePasswordResponse{}
+	mi := &file_forgenet_v1_auth_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangePasswordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangePasswordResponse) ProtoMessage() {}
+
+func (x *ChangePasswordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_auth_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangePasswordResponse.ProtoReflect.Descriptor instead.
+func (*ChangePasswordResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_auth_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ChangePasswordResponse) GetRevokedSessions() int32 {
+	if x != nil {
+		return x.RevokedSessions
+	}
+	return 0
+}
+
 var File_forgenet_v1_auth_proto protoreflect.FileDescriptor
 
 const file_forgenet_v1_auth_proto_rawDesc = "" +
@@ -431,15 +533,21 @@ const file_forgenet_v1_auth_proto_rawDesc = "" +
 	"\x0eLogoutResponse\"\x17\n" +
 	"\x15GetCurrentUserRequest\"?\n" +
 	"\x16GetCurrentUserResponse\x12%\n" +
-	"\x04user\x18\x01 \x01(\v2\x11.forgenet.v1.UserR\x04user*P\n" +
+	"\x04user\x18\x01 \x01(\v2\x11.forgenet.v1.UserR\x04user\"e\n" +
+	"\x15ChangePasswordRequest\x12)\n" +
+	"\x10current_password\x18\x01 \x01(\tR\x0fcurrentPassword\x12!\n" +
+	"\fnew_password\x18\x02 \x01(\tR\vnewPassword\"C\n" +
+	"\x16ChangePasswordResponse\x12)\n" +
+	"\x10revoked_sessions\x18\x01 \x01(\x05R\x0frevokedSessions*P\n" +
 	"\bUserRole\x12\x19\n" +
 	"\x15USER_ROLE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fUSER_ROLE_ADMIN\x10\x01\x12\x14\n" +
-	"\x10USER_ROLE_MEMBER\x10\x022\xeb\x01\n" +
+	"\x10USER_ROLE_MEMBER\x10\x022\xc6\x02\n" +
 	"\vAuthService\x12>\n" +
 	"\x05Login\x12\x19.forgenet.v1.LoginRequest\x1a\x1a.forgenet.v1.LoginResponse\x12A\n" +
 	"\x06Logout\x12\x1a.forgenet.v1.LogoutRequest\x1a\x1b.forgenet.v1.LogoutResponse\x12Y\n" +
-	"\x0eGetCurrentUser\x12\".forgenet.v1.GetCurrentUserRequest\x1a#.forgenet.v1.GetCurrentUserResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
+	"\x0eGetCurrentUser\x12\".forgenet.v1.GetCurrentUserRequest\x1a#.forgenet.v1.GetCurrentUserResponse\x12Y\n" +
+	"\x0eChangePassword\x12\".forgenet.v1.ChangePasswordRequest\x1a#.forgenet.v1.ChangePasswordResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
 
 var (
 	file_forgenet_v1_auth_proto_rawDescOnce sync.Once
@@ -454,7 +562,7 @@ func file_forgenet_v1_auth_proto_rawDescGZIP() []byte {
 }
 
 var file_forgenet_v1_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_forgenet_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_forgenet_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_forgenet_v1_auth_proto_goTypes = []any{
 	(UserRole)(0),                  // 0: forgenet.v1.UserRole
 	(*User)(nil),                   // 1: forgenet.v1.User
@@ -464,24 +572,28 @@ var file_forgenet_v1_auth_proto_goTypes = []any{
 	(*LogoutResponse)(nil),         // 5: forgenet.v1.LogoutResponse
 	(*GetCurrentUserRequest)(nil),  // 6: forgenet.v1.GetCurrentUserRequest
 	(*GetCurrentUserResponse)(nil), // 7: forgenet.v1.GetCurrentUserResponse
-	(*timestamppb.Timestamp)(nil),  // 8: google.protobuf.Timestamp
+	(*ChangePasswordRequest)(nil),  // 8: forgenet.v1.ChangePasswordRequest
+	(*ChangePasswordResponse)(nil), // 9: forgenet.v1.ChangePasswordResponse
+	(*timestamppb.Timestamp)(nil),  // 10: google.protobuf.Timestamp
 }
 var file_forgenet_v1_auth_proto_depIdxs = []int32{
-	0, // 0: forgenet.v1.User.role:type_name -> forgenet.v1.UserRole
-	8, // 1: forgenet.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
-	1, // 2: forgenet.v1.LoginResponse.user:type_name -> forgenet.v1.User
-	1, // 3: forgenet.v1.GetCurrentUserResponse.user:type_name -> forgenet.v1.User
-	2, // 4: forgenet.v1.AuthService.Login:input_type -> forgenet.v1.LoginRequest
-	4, // 5: forgenet.v1.AuthService.Logout:input_type -> forgenet.v1.LogoutRequest
-	6, // 6: forgenet.v1.AuthService.GetCurrentUser:input_type -> forgenet.v1.GetCurrentUserRequest
-	3, // 7: forgenet.v1.AuthService.Login:output_type -> forgenet.v1.LoginResponse
-	5, // 8: forgenet.v1.AuthService.Logout:output_type -> forgenet.v1.LogoutResponse
-	7, // 9: forgenet.v1.AuthService.GetCurrentUser:output_type -> forgenet.v1.GetCurrentUserResponse
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	0,  // 0: forgenet.v1.User.role:type_name -> forgenet.v1.UserRole
+	10, // 1: forgenet.v1.LoginResponse.expires_at:type_name -> google.protobuf.Timestamp
+	1,  // 2: forgenet.v1.LoginResponse.user:type_name -> forgenet.v1.User
+	1,  // 3: forgenet.v1.GetCurrentUserResponse.user:type_name -> forgenet.v1.User
+	2,  // 4: forgenet.v1.AuthService.Login:input_type -> forgenet.v1.LoginRequest
+	4,  // 5: forgenet.v1.AuthService.Logout:input_type -> forgenet.v1.LogoutRequest
+	6,  // 6: forgenet.v1.AuthService.GetCurrentUser:input_type -> forgenet.v1.GetCurrentUserRequest
+	8,  // 7: forgenet.v1.AuthService.ChangePassword:input_type -> forgenet.v1.ChangePasswordRequest
+	3,  // 8: forgenet.v1.AuthService.Login:output_type -> forgenet.v1.LoginResponse
+	5,  // 9: forgenet.v1.AuthService.Logout:output_type -> forgenet.v1.LogoutResponse
+	7,  // 10: forgenet.v1.AuthService.GetCurrentUser:output_type -> forgenet.v1.GetCurrentUserResponse
+	9,  // 11: forgenet.v1.AuthService.ChangePassword:output_type -> forgenet.v1.ChangePasswordResponse
+	8,  // [8:12] is the sub-list for method output_type
+	4,  // [4:8] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_forgenet_v1_auth_proto_init() }
@@ -495,7 +607,7 @@ func file_forgenet_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forgenet_v1_auth_proto_rawDesc), len(file_forgenet_v1_auth_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
