@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.10.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.9.0...v0.10.0) (2026-11-18)
+
+
+### Fonctionnalités
+
+* **grpc:** mot de passe oublié, GetLoginOptions et RequestPasswordReset ([892b047](https://github.com/forgelab-dev/lfa-forgenet/commit/892b047f9b645ecb586e5e03a24a04294912a03b)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **grpc:** TeamService, membres et invitations ([72a6629](https://github.com/forgelab-dev/lfa-forgenet/commit/72a6629aeed56eaebc64444cacc95ab695aa0ca7)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **mail:** e-mail d'invitation d'un membre ([3d0f7e2](https://github.com/forgelab-dev/lfa-forgenet/commit/3d0f7e26d87b6fed113cb87e9e06863007b46300))
+* **mail:** file d'envoi en tâche de fond, trois essais espacés ([2b8ebef](https://github.com/forgelab-dev/lfa-forgenet/commit/2b8ebef445cad0e16541177ac691da1fdd06f443)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **web:** « Mot de passe oublié ? » sur l'écran de connexion ([ef5e1ab](https://github.com/forgelab-dev/lfa-forgenet/commit/ef5e1ab932ba13bbb2e9a8326c404dca57970357)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+* **web:** page Équipe, membres et invitations ([ee0e364](https://github.com/forgelab-dev/lfa-forgenet/commit/ee0e364716b33004e5d5242370e710c239bd0a81)), closes [#73](https://github.com/forgelab-dev/lfa-forgenet/issues/73)
+
+
+### Corrections
+
+* **deploy:** Cancel rend la main une fois le projet libéré ([1e23f7f](https://github.com/forgelab-dev/lfa-forgenet/commit/1e23f7f4ad8b37a7bedda5ee6fd07f47ca5caaed))
+
 ## [0.9.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.8.0...v0.9.0) (2026-11-18)
 
 
