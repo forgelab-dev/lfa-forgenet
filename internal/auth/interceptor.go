@@ -41,8 +41,10 @@ func DefaultPolicy() Policy {
 			forgenetv1.AuthService_Login_FullMethodName: true,
 		},
 		MinRole: map[string]store.Role{
-			forgenetv1.AuthService_Logout_FullMethodName:                   store.RoleMember,
-			forgenetv1.AuthService_GetCurrentUser_FullMethodName:           store.RoleMember,
+			forgenetv1.AuthService_Logout_FullMethodName:         store.RoleMember,
+			forgenetv1.AuthService_GetCurrentUser_FullMethodName: store.RoleMember,
+			// Chacun change son propre mot de passe, quel que soit son rôle.
+			forgenetv1.AuthService_ChangePassword_FullMethodName:           store.RoleMember,
 			forgenetv1.ContainerService_ListContainers_FullMethodName:      store.RoleMember,
 			forgenetv1.ContainerService_GetContainer_FullMethodName:        store.RoleMember,
 			forgenetv1.ContainerService_StreamContainerLogs_FullMethodName: store.RoleMember,

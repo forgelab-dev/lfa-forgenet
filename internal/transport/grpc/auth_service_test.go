@@ -94,3 +94,63 @@ func TestAuthService_OnlyLoginIsPublic(t *testing.T) {
 	_, err = client.Logout(context.Background(), &forgenetv1.LogoutRequest{})
 	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 }
+
+func TestAuthService_ChangePassword(t *testing.T) {
+	ts, client := startAuthServer(t)
+	ctx := context.Background()
+	login := func(password string) (*forgenetv1.LoginResponse, error) {
+		return client.Login(ctx, &forgenetv1.LoginRequest{Login: "membre", Password: password})
+	}
+	current, err := login(testPassword)
+	require.NoError(t, err)
+	other, err := login(testPassword)
+	require.NoError(t, err)
+
+	for name, req := range map[string]*forgenetv1.ChangePasswordRequest{
+		"actuel incorrect": {CurrentPassword: "faux", NewPassword: "nouveau-mot-de-passe"},
+		"trop court":       {CurrentPassword: testPassword, NewPassword: "court"},
+		"identique":        {CurrentPassword: testPassword, NewPassword: testPassword},
+	} {
+		_, err := client.ChangePassword(as(current.GetToken()), req)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err), name)
+		assert.NotEmpty(t, status.Convert(err).Message(), name)
+	}
+
+	res, err := client.ChangePassword(as(current.GetToken()), &forgenetv1.ChangePasswordRequest{
+		CurrentPassword: testPassword, NewPassword: "nouveau-mot-de-passe",
+	})
+	require.NoError(t, err)
+	// L'autre session, et le jeton API que startTestServer crée pour le membre.
+	assert.Equal(t, int32(2), res.GetRevokedSessions())
+
+	_, err = client.GetCurrentUser(as(current.GetToken()), &forgenetv1.GetCurrentUserRequest{})
+	require.NoError(t, err, "la session du demandeur reste ouverte")
+	_, err = client.GetCurrentUser(as(other.GetToken()), &forgenetv1.GetCurrentUserRequest{})
+	assert.Equal(t, codes.Unauthenticated, status.Code(err), "les autres sessions sont fermées")
+	_, err = client.GetCurrentUser(as(ts.memberToken), &forgenetv1.GetCurrentUserRequest{})
+	assert.Equal(t, codes.Unauthenticated, status.Code(err), "les jetons API aussi")
+	_, err = login("nouveau-mot-de-passe")
+	require.NoError(t, err)
+}
+
+func TestAuthService_ChangePasswordNeedsASession(t *testing.T) {
+	_, client := startAuthServer(t)
+	_, err := client.ChangePassword(context.Background(), &forgenetv1.ChangePasswordRequest{
+		CurrentPassword: testPassword, NewPassword: "nouveau-mot-de-passe",
+	})
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+func TestAuthService_ChangePasswordIsThrottled(t *testing.T) {
+	_, client := startAuthServer(t)
+	res, err := client.Login(context.Background(), &forgenetv1.LoginRequest{Login: "membre", Password: testPassword})
+	require.NoError(t, err)
+	ctx := as(res.GetToken())
+
+	for range 10 {
+		_, err := client.ChangePassword(ctx, &forgenetv1.ChangePasswordRequest{CurrentPassword: "faux", NewPassword: "nouveau-mot-de-passe"})
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+	}
+	_, err = client.ChangePassword(ctx, &forgenetv1.ChangePasswordRequest{CurrentPassword: testPassword, NewPassword: "nouveau-mot-de-passe"})
+	assert.Equal(t, codes.ResourceExhausted, status.Code(err), "même l'actuel exact est refusé pendant la fenêtre")
+}

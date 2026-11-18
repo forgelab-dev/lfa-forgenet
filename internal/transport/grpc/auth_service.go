@@ -39,7 +39,10 @@ type AuthServiceServer struct {
 	auth    auth.Service
 	users   UserLookup
 	limiter *loginLimiter
-	logger  zerolog.Logger
+	// passwords freine les essais du mot de passe actuel lors d'un
+	// changement : une session volée ne doit pas servir à le deviner.
+	passwords *loginLimiter
+	logger    zerolog.Logger
 }
 
 var _ forgenetv1.AuthServiceServer = (*AuthServiceServer)(nil)
@@ -47,10 +50,11 @@ var _ forgenetv1.AuthServiceServer = (*AuthServiceServer)(nil)
 // NewAuthServiceServer instancie le service des sessions.
 func NewAuthServiceServer(authSvc auth.Service, users UserLookup, logger zerolog.Logger) *AuthServiceServer {
 	return &AuthServiceServer{
-		auth:    authSvc,
-		users:   users,
-		limiter: newLoginLimiter(time.Now),
-		logger:  logger.With().Str("component", "transport.grpc.auth").Logger(),
+		auth:      authSvc,
+		users:     users,
+		limiter:   newLoginLimiter(time.Now),
+		passwords: newLoginLimiter(time.Now),
+		logger:    logger.With().Str("component", "transport.grpc.auth").Logger(),
 	}
 }
 
@@ -105,6 +109,37 @@ func (s *AuthServiceServer) GetCurrentUser(ctx context.Context, _ *forgenetv1.Ge
 		return nil, s.unavailable(err, "lecture du compte impossible", "compte momentanément indisponible")
 	}
 	return &forgenetv1.GetCurrentUserResponse{User: toUser(user, claims.Role)}, nil
+}
+
+// ChangePassword change le mot de passe du compte connecté. Les refus
+// répondent INVALID_ARGUMENT, jamais UNAUTHENTICATED : le dashboard fermerait
+// la session pour une faute de frappe.
+func (s *AuthServiceServer) ChangePassword(ctx context.Context, req *forgenetv1.ChangePasswordRequest) (*forgenetv1.ChangePasswordResponse, error) {
+	claims, ok := auth.UserFromContext(ctx)
+	if !ok || claims.SessionID == "" {
+		return nil, status.Error(codes.Unauthenticated, "authentification requise")
+	}
+	// Le compte, et non l'adresse : une session volée change d'adresse à
+	// volonté.
+	key := claims.UserID
+	if s.passwords.blocked(key) {
+		return nil, status.Error(codes.ResourceExhausted, "trop d'essais du mot de passe actuel, réessayez dans quelques minutes")
+	}
+
+	revoked, err := s.auth.ChangePassword(ctx, claims.UserID, claims.SessionID, req.GetCurrentPassword(), req.GetNewPassword())
+	switch {
+	case errors.Is(err, auth.ErrWrongCurrentPassword):
+		s.passwords.fail(key)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, auth.ErrSamePassword), errors.Is(err, auth.ErrPasswordTooShort), errors.Is(err, auth.ErrPasswordTooLong):
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, auth.ErrInvalidToken):
+		return nil, status.Error(codes.Unauthenticated, "compte introuvable")
+	case err != nil:
+		return nil, s.unavailable(err, "changement de mot de passe impossible", "changement de mot de passe momentanément indisponible")
+	}
+	s.passwords.reset(key)
+	return &forgenetv1.ChangePasswordResponse{RevokedSessions: int32(min(revoked, 1<<31-1))}, nil //nolint:gosec // borné juste avant
 }
 
 // unavailable traduit une panne de la base en UNAVAILABLE, journalisée. Un
