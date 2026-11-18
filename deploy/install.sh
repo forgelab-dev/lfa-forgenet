@@ -40,6 +40,12 @@ UPDATE=0
 RESTORE=""
 VERSION_SET=0
 EMAIL_SET=0
+SMTP_HOST="${FORGENET_SMTP_HOST-}"
+SMTP_PORT="${FORGENET_SMTP_PORT:-587}"
+SMTP_USER="${FORGENET_SMTP_USER-}"
+SMTP_FROM="${FORGENET_SMTP_FROM-}"
+SMTP_SET=0
+[ -n "${FORGENET_SMTP_HOST+x}" ] && SMTP_SET=1
 [ -n "${FORGENET_DOMAIN+x}" ] && DOMAIN_SET=1
 [ -n "${FORGENET_ACME_EMAIL+x}" ] && EMAIL_SET=1
 
@@ -68,6 +74,14 @@ Usage : sudo bash install.sh [options]
   --restore DOSSIER   Revient à une sauvegarde de /opt/forgenet/sauvegardes
                       (son nom ou son chemin) : base, .env et fichiers
                       d'installation, avec la version qu'ils désignent.
+  --smtp-host HÔTE    Relais SMTP pour les e-mails de ForgeNet (ADR-0014).
+                      --smtp-host "" coupe l'envoi d'e-mails.
+  --smtp-port PORT    587 (STARTTLS, défaut) ou 465 (TLS direct).
+  --smtp-user NOM     Identifiant du relais ; le mot de passe est demandé sur
+                      le terminal, ou lu dans FORGENET_SMTP_PASSWORD, jamais
+                      en argument.
+  --smtp-from ADRESSE Expéditeur des e-mails (défaut : --smtp-user, si c'est
+                      une adresse).
   --admin-user NOM    Nom du premier administrateur (sinon demandé).
   --admin-email ADR   Adresse du premier administrateur (sinon demandée).
   --dir CHEMIN        Dossier d'installation (défaut : /opt/forgenet).
@@ -76,7 +90,8 @@ Usage : sudo bash install.sh [options]
   -h, --help          Cette aide.
 
 Les mêmes réglages sont lus dans FORGENET_DOMAIN, FORGENET_ACME_EMAIL,
-FORGENET_VERSION, FORGENET_ADMIN_USER, FORGENET_ADMIN_EMAIL et FORGENET_DIR.
+FORGENET_VERSION, FORGENET_ADMIN_USER, FORGENET_ADMIN_EMAIL, FORGENET_DIR et
+FORGENET_SMTP_HOST, _PORT, _USER, _FROM, _PASSWORD.
 EOF
 }
 
@@ -87,6 +102,10 @@ while [ $# -gt 0 ]; do
 	--domain) need_value "$@"; DOMAIN="$2"; DOMAIN_SET=1; shift 2 ;;
 	--email) need_value "$@"; ACME_EMAIL="$2"; EMAIL_SET=1; shift 2 ;;
 	--version) need_value "$@"; VERSION="$2"; VERSION_SET=1; shift 2 ;;
+	--smtp-host) need_value "$@"; SMTP_HOST="$2"; SMTP_SET=1; shift 2 ;;
+	--smtp-port) need_value "$@"; SMTP_PORT="$2"; shift 2 ;;
+	--smtp-user) need_value "$@"; SMTP_USER="$2"; shift 2 ;;
+	--smtp-from) need_value "$@"; SMTP_FROM="$2"; shift 2 ;;
 	--admin-user) need_value "$@"; ADMIN_USER="$2"; shift 2 ;;
 	--admin-email) need_value "$@"; ADMIN_EMAIL="$2"; shift 2 ;;
 	--dir) need_value "$@"; INSTALL_DIR="$2"; shift 2 ;;
@@ -110,6 +129,20 @@ fi
 email_re='^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
 if [ -n "$ACME_EMAIL" ] && ! [[ "$ACME_EMAIL" =~ $email_re ]]; then
 	die "adresse Let's Encrypt invalide : « $ACME_EMAIL »"
+fi
+if [ -n "$SMTP_HOST" ]; then
+	SMTP_HOST="$(printf '%s' "$SMTP_HOST" | tr '[:upper:]' '[:lower:]')"
+	[[ "$SMTP_HOST" =~ ^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$ ]] || die "relais SMTP invalide : « $SMTP_HOST » (exemple : smtp.exemple.org)"
+	if ! [[ "$SMTP_PORT" =~ ^[0-9]{1,5}$ ]] || [ "$SMTP_PORT" -lt 1 ] || [ "$SMTP_PORT" -gt 65535 ]; then
+		die "port SMTP invalide : « $SMTP_PORT »"
+	fi
+	if [ -n "$SMTP_USER" ] && ! [[ "$SMTP_USER" =~ ^[A-Za-z0-9._%+@-]{1,254}$ ]]; then
+		die "identifiant SMTP invalide : lettres, chiffres et . _ % + @ - seulement"
+	fi
+	if [ -z "$SMTP_FROM" ] && [[ "$SMTP_USER" =~ $email_re ]]; then
+		SMTP_FROM="$SMTP_USER"
+	fi
+	[[ "$SMTP_FROM" =~ $email_re ]] || die "--smtp-from attend l'adresse d'expéditeur des e-mails (reçu : « $SMTP_FROM »)"
 fi
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || die "version invalide : « $VERSION » (exemple : 0.1.0)"
 # Le dossier finit dans .env et dans la commande forgenet : chemin absolu,
@@ -313,7 +346,60 @@ write_files() {
 	else
 		[ -n "$(get_env FORGENET_ACME_EMAIL)" ] || set_env FORGENET_ACME_EMAIL ""
 	fi
+	write_smtp
 	ok "docker-compose.yml, Caddyfile.base, .env (0600)"
+}
+
+# write_smtp écrit les réglages du relais (ADR-0014) quand --smtp-host est
+# donné, sinon garde ceux en place. Le mot de passe ne passe jamais par un
+# argument : il resterait dans l'historique du shell et dans ps.
+write_smtp() {
+	local key
+	if [ "$SMTP_SET" -eq 0 ]; then
+		for key in FORGENET_SMTP_HOST FORGENET_SMTP_PORT FORGENET_SMTP_TLS FORGENET_SMTP_USER FORGENET_SMTP_PASSWORD FORGENET_SMTP_FROM; do
+			grep -q "^${key}=" "$INSTALL_DIR/.env" || set_env "$key" ""
+		done
+		return
+	fi
+	if [ -z "$SMTP_HOST" ]; then
+		for key in FORGENET_SMTP_HOST FORGENET_SMTP_PORT FORGENET_SMTP_TLS FORGENET_SMTP_USER FORGENET_SMTP_PASSWORD FORGENET_SMTP_FROM; do
+			set_env "$key" ""
+		done
+		ok "envoi d'e-mails coupé"
+		return
+	fi
+
+	local password="" tls=starttls
+	[ "$SMTP_PORT" = 465 ] && tls=implicit
+	if [ -n "$SMTP_USER" ]; then
+		password="${FORGENET_SMTP_PASSWORD-}"
+		if [ -z "$password" ]; then
+			if ! { [ -r /dev/tty ] && [ -w /dev/tty ] && (: </dev/tty) 2>/dev/null; }; then
+				die "pas de terminal : passez le mot de passe du relais dans FORGENET_SMTP_PASSWORD"
+			fi
+			printf 'Mot de passe du relais SMTP (%s) : ' "$SMTP_USER" >/dev/tty
+			IFS= read -rs password </dev/tty
+			printf '\n' >/dev/tty
+		fi
+		[ -n "$password" ] || die "mot de passe du relais vide"
+		# Entre apostrophes, Compose lit la valeur telle quelle, « $ » compris ;
+		# une apostrophe ou un saut de ligne casserait la ligne.
+		case "$password" in
+		*"'"* | *$'\n'* | *$'\r'*) die "le mot de passe du relais ne peut pas contenir d'apostrophe ni de saut de ligne" ;;
+		esac
+	fi
+	set_env FORGENET_SMTP_HOST "$SMTP_HOST"
+	set_env FORGENET_SMTP_PORT "$SMTP_PORT"
+	set_env FORGENET_SMTP_TLS "$tls"
+	set_env FORGENET_SMTP_USER "$SMTP_USER"
+	if [ -n "$password" ]; then
+		set_env FORGENET_SMTP_PASSWORD "'$password'"
+	else
+		set_env FORGENET_SMTP_PASSWORD ""
+	fi
+	set_env FORGENET_SMTP_FROM "$SMTP_FROM"
+	unset password
+	ok "envoi d'e-mails par $SMTP_HOST:$SMTP_PORT ($tls) ; à essayer depuis le dashboard"
 }
 
 # release_digest lit l'empreinte de l'image dans la fiche de la release
@@ -656,4 +742,9 @@ main() {
 	summary
 }
 
-main
+# FORGENET_INSTALL_LIB=1 charge les fonctions sans rien lancer : réservé aux
+# tests (deploy/tests/install_test.sh). Par défaut, le script s'exécute, y
+# compris lu par un tube (curl | bash).
+if [ "${FORGENET_INSTALL_LIB:-0}" != 1 ]; then
+	main
+fi
