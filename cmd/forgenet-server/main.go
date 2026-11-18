@@ -179,12 +179,18 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	// Les e-mails des comptes (mot de passe oublié, invitations) partent en
 	// tâche de fond, avec trois essais espacés.
 	outbox := mail.NewOutbox(smtpSender, nil, logger)
+	teamDeps := transportGRPC.TeamDeps{
+		Auth: authService, Users: db.Users(), Links: db.ActionTokens(),
+		DashboardHost: cfg.Proxy.DashboardHost, Auditor: auditor,
+	}
 	if cfg.SMTP.Enabled() {
 		logger.Info().Str("relais", cfg.SMTP.Host).Msg("envoi d'e-mails activé")
 		authAPI.EnablePasswordReset(outbox, cfg.Proxy.DashboardHost)
+		teamDeps.Outbox = outbox
 	} else {
 		logger.Info().Msg("envoi d'e-mails désactivé : aucun relais SMTP configuré")
 	}
+	teamAPI := transportGRPC.NewTeamServiceServer(teamDeps, logger)
 	// Annonce des nouvelles versions et mise à jour depuis le dashboard
 	// (ADR-0011). Sans FORGENET_INSTALL_DIR (installation hors install.sh),
 	// les versions sont annoncées mais la mise à jour se fait à la main.
@@ -205,6 +211,7 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 		forgenetv1.RegisterDomainServiceServer(registrar, domainAPI)
 		forgenetv1.RegisterMetricsServiceServer(registrar, metricsAPI)
 		forgenetv1.RegisterMailServiceServer(registrar, mailAPI)
+		forgenetv1.RegisterTeamServiceServer(registrar, teamAPI)
 		forgenetv1.RegisterUpdateServiceServer(registrar, updateAPI)
 	}
 	connectAPI.Mount(httpServer.Mux())

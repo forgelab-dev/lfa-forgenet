@@ -33,6 +33,9 @@ func (o *syncOutbox) Enqueue(job mail.Job) bool {
 	return true
 }
 
+// SetFull fait refuser les envois suivants, comme une file pleine.
+func (o *syncOutbox) SetFull(full bool) { o.full = full }
+
 func (o *syncOutbox) Messages() []mail.Message {
 	o.mu.Lock()
 	defer o.mu.Unlock()

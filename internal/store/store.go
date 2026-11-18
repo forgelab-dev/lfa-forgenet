@@ -298,6 +298,9 @@ type ActionTokenStore interface {
 	// GetActiveActionToken renvoie le lien d'empreinte tokenHash s'il n'a ni
 	// servi ni expiré à now ; ErrNotFound sinon, sans distinguer les cas.
 	GetActiveActionToken(ctx context.Context, tokenHash string, now time.Time) (*ActionToken, error)
+	// ListActiveActionTokens renvoie les liens de l'usage purpose qui n'ont
+	// ni servi ni expiré à now, tous comptes confondus.
+	ListActiveActionTokens(ctx context.Context, purpose ActionPurpose, now time.Time) ([]*ActionToken, error)
 	// RedeemActionToken utilise le lien en une transaction : il le marque
 	// utilisé s'il valait encore à now, fixe le mot de passe du compte, ferme
 	// toutes ses sessions et jetons et annule ses autres liens. Renvoie le

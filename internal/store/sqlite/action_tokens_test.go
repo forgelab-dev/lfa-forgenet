@@ -160,3 +160,24 @@ func TestActionTokens_DeletedWithTheUser(t *testing.T) {
 	_, err := st.ActionTokens().GetActiveActionToken(ctx, "h_act_1", now)
 	require.ErrorIs(t, err, store.ErrNotFound)
 }
+
+func TestActionTokens_ListActiveKeepsOnlyValidLinksOfThePurpose(t *testing.T) {
+	st := newTestStore(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	for _, id := range []string{"usr_a", "usr_b", "usr_c", "usr_d"} {
+		seedLinkUser(t, st, id)
+	}
+	newLink(t, st, "act_valable", "usr_a", store.PurposeInvitation, now.Add(time.Hour))
+	newLink(t, st, "act_expire", "usr_b", store.PurposeInvitation, now.Add(-time.Minute))
+	newLink(t, st, "act_autre", "usr_c", store.PurposePasswordReset, now.Add(time.Hour))
+	newLink(t, st, "act_servi", "usr_d", store.PurposeInvitation, now.Add(time.Hour))
+	_, _, err := st.ActionTokens().RedeemActionToken(ctx, "h_act_servi", now, "$2a$hash")
+	require.NoError(t, err)
+
+	links, err := st.ActionTokens().ListActiveActionTokens(ctx, store.PurposeInvitation, now)
+	require.NoError(t, err)
+	require.Len(t, links, 1)
+	assert.Equal(t, "usr_a", links[0].UserID)
+	assert.WithinDuration(t, now.Add(time.Hour), links[0].ExpiresAt, time.Second)
+}
