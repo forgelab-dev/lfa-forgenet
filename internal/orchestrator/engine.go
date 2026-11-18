@@ -43,6 +43,11 @@ type Port struct {
 	Protocol      string // tcp, udp ou sctp
 }
 
+// SystemLabel marque les conteneurs de ForgeNet lui-même (serveur, Caddy,
+// mise à jour) : posé par le Compose d'installation et par le lancement d'une
+// mise à jour, il les sépare des applications déployées.
+const SystemLabel = "forgenet.system"
+
 // Container décrit un conteneur tel que le moteur le rapporte.
 type Container struct {
 	ID        string
@@ -51,6 +56,8 @@ type Container struct {
 	State     State
 	Ports     []Port
 	CreatedAt time.Time
+	// System vaut vrai pour un conteneur de ForgeNet lui-même (SystemLabel).
+	System bool
 }
 
 // CreateSpec décrit le conteneur à créer.

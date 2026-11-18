@@ -189,11 +189,12 @@ func toProtoContainer(c orchestrator.Container) *forgenetv1.Container {
 		})
 	}
 	pc := &forgenetv1.Container{
-		Id:    c.ID,
-		Name:  c.Name,
-		Image: c.Image,
-		State: toProtoState(c.State),
-		Ports: ports,
+		Id:     c.ID,
+		Name:   c.Name,
+		Image:  c.Image,
+		State:  toProtoState(c.State),
+		Ports:  ports,
+		System: c.System,
 	}
 	if !c.CreatedAt.IsZero() {
 		pc.CreatedAt = timestamppb.New(c.CreatedAt)

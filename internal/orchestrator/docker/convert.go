@@ -33,6 +33,7 @@ func fromSummary(c container.Summary) orchestrator.Container {
 		Image:     c.Image,
 		State:     fromState(c.State),
 		Ports:     ports,
+		System:    c.Labels[orchestrator.SystemLabel] == "true",
 		CreatedAt: time.Unix(c.Created, 0).UTC(),
 	}
 }
@@ -48,6 +49,9 @@ func fromInspect(res client.ContainerInspectResult) orchestrator.Container {
 	}
 	if c.Config != nil && c.Config.Image != "" {
 		out.Image = c.Config.Image
+	}
+	if c.Config != nil {
+		out.System = c.Config.Labels[orchestrator.SystemLabel] == "true"
 	}
 	if c.State != nil {
 		out.State = fromState(c.State.Status)
