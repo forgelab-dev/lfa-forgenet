@@ -469,3 +469,58 @@ func (r *plainRelay) received() string {
 	defer r.mu.Unlock()
 	return r.data
 }
+
+func TestUserSuspendResumeDelete_FromCommandLine(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "forgenet.db")
+	configFile := writeConfig(t, fmt.Sprintf("database:\n  path: %q\n", dbPath))
+	run := func(stdin string, args ...string) (string, int) {
+		cmd := exec.Command(binPath, append([]string{"user"}, append(args, "--config", configFile)...)...)
+		cmd.Stdin = strings.NewReader(stdin)
+		out, err := cmd.CombinedOutput()
+		return string(out), exitCode(t, err)
+	}
+	for _, name := range []string{"admin", "bob"} {
+		out, code := run("motdepasse-de-test\n", "create", "--username", name, "--email", name+"@forgenet.test")
+		require.Equal(t, 0, code, out)
+	}
+
+	// Le serveur garde un administrateur actif : bob est admin aussi, donc
+	// admin peut être suspendu, mais pas les deux.
+	out, code := run("", "suspend", "--username", "admin")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "Compte admin suspendu")
+	assert.Contains(t, out, "forgenet user resume --username admin")
+
+	out, code = run("", "suspend", "--username", "bob")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "dernier administrateur actif")
+
+	out, code = run("", "login-link", "--username", "admin")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "suspendu")
+
+	out, code = run("", "resume", "--username", "admin")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "réactivé")
+
+	out, code = run("bobb\n", "delete", "--username", "bob")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "rien n'est supprimé")
+
+	out, code = run("bob\n", "delete", "--username", "bob")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "Compte bob supprimé")
+
+	out, code = run("", "suspend", "--username", "personne")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "aucun compte")
+
+	db, err := sqlite.Open(context.Background(), config.DatabaseConfig{Path: dbPath, BusyTimeout: time.Second})
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	_, err = db.Users().GetUserByUsername(context.Background(), "bob")
+	require.ErrorIs(t, err, store.ErrNotFound)
+	admin, err := db.Users().GetUserByUsername(context.Background(), "admin")
+	require.NoError(t, err)
+	assert.False(t, admin.Suspended())
+}

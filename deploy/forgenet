@@ -60,6 +60,14 @@ Usage : forgenet COMMANDE [options]
                           Refait un lien de première connexion (24 heures,
                           usage unique) : affiché, ou envoyé à l'adresse du
                           compte avec --send si un relais SMTP est réglé.
+  user suspend --username NOM
+                          Suspend un compte : il ne peut plus se connecter,
+                          ses sessions, jetons et liens sont fermés.
+  user resume --username NOM
+                          Réactive un compte suspendu.
+  user delete --username NOM
+                          Supprime un compte, après avoir retapé son nom ; le
+                          journal d'audit garde ses entrées.
   help                    Cette aide.
 
 Le dossier d'installation est /opt/forgenet, ou celui choisi à l'installation ;
@@ -310,7 +318,7 @@ cmd_restore() {
 }
 
 cmd_user() {
-	[ $# -gt 0 ] || die "usage : forgenet user create --username NOM --email ADRESSE [--role admin|member] | forgenet user set-password --username NOM | forgenet user login-link --username NOM [--send]"
+	[ $# -gt 0 ] || die "usage : forgenet user create --username NOM --email ADRESSE [--role admin|member] | forgenet user set-password --username NOM | forgenet user login-link --username NOM [--send] | forgenet user suspend|resume|delete --username NOM"
 	need_docker
 	need_server
 	# -t seulement dans un terminal : le mot de passe est alors saisi masqué ;

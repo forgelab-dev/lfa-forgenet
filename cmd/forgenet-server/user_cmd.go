@@ -35,11 +35,17 @@ import (
 // par un lien, et « user login-link » fait ce lien de première connexion :
 // affiché, ou envoyé à l'adresse du compte avec --send (ADR-0014). C'est ce
 // qu'install.sh fait sans terminal, au lieu d'écrire un mot de passe en clair.
+//
+// « user suspend », « resume » et « delete » (#103) sont les gestes de la page
+// Équipe, pour qui n'a plus d'administrateur pour les faire : le serveur garde
+// toujours un administrateur actif. « delete » fait retaper le nom du compte.
 var errUserUsage = errors.New("usage :\n" +
 	"  forgenet-server user create --username NOM --email ADRESSE [--role admin|member] [--no-password] [--config FICHIER]\n" +
 	"  forgenet-server user set-password --username NOM [--config FICHIER]\n" +
 	"  forgenet-server user login-link --username NOM [--send] [--config FICHIER]\n" +
-	"(mot de passe sur l'entrée standard)")
+	"  forgenet-server user suspend|resume --username NOM [--config FICHIER]\n" +
+	"  forgenet-server user delete --username NOM [--config FICHIER]\n" +
+	"(mot de passe, et nom retapé pour delete, sur l'entrée standard)")
 
 // runUser traite la sous-commande « user ».
 func runUser(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) error {
@@ -53,6 +59,8 @@ func runUser(ctx context.Context, args []string, stdin io.Reader, stdout io.Writ
 		return runUserSetPassword(ctx, args[1:], stdin, stdout)
 	case "login-link":
 		return runUserLoginLink(ctx, args[1:], stdout)
+	case "suspend", "resume", "delete":
+		return runUserAccountAction(ctx, args[0], args[1:], stdin, stdout)
 	default:
 		return errUserUsage
 	}
@@ -179,6 +187,9 @@ func runUserLoginLink(ctx context.Context, args []string, stdout io.Writer) erro
 			return err
 		}
 		token, _, err := authService.CreateAccessLink(ctx, user.ID, store.PurposeFirstLogin, "system:cli")
+		if errors.Is(err, auth.ErrAccountSuspended) {
+			return fmt.Errorf("le compte %s est suspendu : réactivez-le d'abord (forgenet user resume --username %s)", user.Username, user.Username)
+		}
 		if err != nil {
 			return err
 		}
@@ -198,6 +209,84 @@ func runUserLoginLink(ctx context.Context, args []string, stdout io.Writer) erro
 		_, err = fmt.Fprintf(stdout, "Lien de première connexion envoyé à l'adresse du compte %s (valable 24 heures).\n", user.Username)
 		return err
 	})
+}
+
+// runUserAccountAction suspend, réactive ou supprime un compte. Sur la
+// machine du serveur, aucun compte n'agit : seul le dernier administrateur
+// actif est protégé.
+func runUserAccountAction(ctx context.Context, action string, args []string, stdin io.Reader, stdout io.Writer) error {
+	flags := flag.NewFlagSet("forgenet-server user "+action, flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	var configPath, username string
+	flags.StringVar(&configPath, "config", "", "Chemin vers le fichier de configuration (YAML)")
+	flags.StringVar(&username, "username", "", "Nom d'utilisateur")
+	if err := flags.Parse(args); err != nil {
+		return fmt.Errorf("%w ; %w", err, errUserUsage)
+	}
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return fmt.Errorf("--username est obligatoire ; %w", errUserUsage)
+	}
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return err
+	}
+
+	return withAuth(ctx, cfg, func(authService auth.Service, db store.Store) error {
+		user, err := db.Users().GetUserByUsername(ctx, username)
+		if errors.Is(err, store.ErrNotFound) {
+			return fmt.Errorf("aucun compte ne s'appelle %q", username)
+		}
+		if err != nil {
+			return err
+		}
+
+		var msg string
+		switch action {
+		case "suspend":
+			var closed int64
+			if _, closed, err = authService.SuspendAccount(ctx, "", user.ID); err == nil {
+				msg = fmt.Sprintf("Compte %s suspendu ; %d session(s) et jeton(s) fermé(s). Pour le rouvrir : forgenet user resume --username %s\n",
+					user.Username, closed, user.Username)
+			}
+		case "resume":
+			if _, err = authService.ResumeAccount(ctx, "", user.ID); err == nil {
+				msg = fmt.Sprintf("Compte %s réactivé : il peut de nouveau se connecter.\n", user.Username)
+			}
+		case "delete":
+			if err = confirmUsername(stdin, stdout, user.Username); err != nil {
+				return err
+			}
+			if _, err = authService.DeleteAccount(ctx, "", user.ID); err == nil {
+				msg = fmt.Sprintf("Compte %s supprimé. Le journal d'audit garde ses entrées.\n", user.Username)
+			}
+		}
+		if errors.Is(err, store.ErrLastAdmin) {
+			return fmt.Errorf("%s n'est pas touché : %w", user.Username, err)
+		}
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprint(stdout, msg)
+		return err
+	})
+}
+
+// confirmUsername fait retaper le nom du compte avant une suppression. Une
+// entrée redirigée en donne la première ligne : « echo NOM | … » vaut
+// confirmation, en connaissance de cause.
+func confirmUsername(stdin io.Reader, stdout io.Writer, username string) error {
+	_, _ = fmt.Fprintf(stdout, "La suppression de %s est définitive. Tapez son nom pour confirmer : ", username)
+	line, err := bufio.NewReader(stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return fmt.Errorf("lecture de la confirmation : %w", err)
+	}
+	_, _ = fmt.Fprintln(stdout)
+	if strings.TrimSpace(line) != username {
+		return errors.New("nom différent : rien n'est supprimé")
+	}
+	return nil
 }
 
 // withAuth ouvre la base et le service d'authentification le temps de fn.
