@@ -138,6 +138,7 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 - [ ] Rôles prédéfinis (Owner, Admin, Développeur, Lecture seule) `🔓 CE` — *v0.1.0, en partie : deux rôles, administrateur et membre (consultation)*
 - [ ] RBAC granulaire par projet/service `🔓 CE`
 - [x] Invitations par email `🔓 CE` — *v0.10.0 : page Équipe ; lien de 7 jours par e-mail, ou montré une fois à l'administrateur sans relais SMTP*
+- [x] Suspendre, fermer les sessions ou supprimer un compte `🔓 CE` — *#103 : page Équipe et `forgenet user suspend|resume|delete` ; la suspension ferme sessions, jetons d'API et liens ; suppression après avoir retapé le nom ; le serveur garde toujours un administrateur actif*
 - [ ] Journal d'activité par membre `🔓 CE` — *v0.1.0, en partie : journal d'audit enregistré côté serveur, pas encore d'écran*
 - [ ] SSO/SAML `🏢 EE`
 - [ ] **Mode multi-tenant / marque blanche** : un intégrateur/MSP héberge ForgeNet et revend des instances à ses propres clients sous sa marque `🏢 EE`

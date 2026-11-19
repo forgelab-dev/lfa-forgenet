@@ -43,7 +43,7 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 - **Monitoring**: CPU, memory, disk and network for the server and each container, live, with the last hour; clean reconnection on a slow or dropped connection.
 - **Containers**: list, inspect, start, stop, restart.
 - **Updates**: a new version is announced in the dashboard and installs in one click, with a backup of the database and configuration, a health check and an automatic rollback to the previous version on failure; `install.sh --restore` puts a backup back.
-- **Team**: invite a member from the dashboard, with their role; they choose their own password through a link valid for 7 days, sent by email or passed on by the admin.
+- **Team**: invite a member from the dashboard, with their role; they choose their own password through a link valid for 7 days, sent by email or passed on by the admin. An account can be suspended (its sessions and tokens are closed at once), reactivated or deleted; its sessions can also be closed without suspending it, when a device is lost.
 - **Accounts and security**: admin and member roles, permissions checked on every call, rate-limited sign-in, audit log.
 - **API**: gRPC contract ([`api/proto`](api/proto)), also served over Connect and gRPC-Web, with generated TypeScript and Dart clients.
 
@@ -121,6 +121,8 @@ It installs Docker if missing (official repository, verified key), writes `/opt/
 | `forgenet user create --username NAME --email ADDRESS` | create an account (password prompted) |
 | `forgenet user set-password --username NAME` | replace a lost password; closes the account's sessions |
 | `forgenet user login-link --username NAME [--send]` | make a new first-login link (24 hours, single use): printed, or sent to the account's address with `--send` |
+| `forgenet user suspend\|resume --username NAME` | suspend an account (sessions, tokens and links closed) or reactivate it |
+| `forgenet user delete --username NAME` | delete an account, after typing its name again; the audit log keeps its entries |
 
 `forgenet help` gives the details (messages are in French). Commands marked `sudo` need root; the others also work for a member of the `docker` group. An update made from the dashboard leaves the command as it is: `forgenet version` says so, and `sudo forgenet update` brings it up to date. On an installation older than 0.5.0, run the new version's `install.sh` once (`sudo bash install.sh`), which adds it. Not to be confused with `forgenet-cli`, the remote API client planned for scripts and CI. The reasoning is in [ADR-0013](docs/decisions/0013-commande-forgenet-sur-le-serveur.md) (in French).
 
