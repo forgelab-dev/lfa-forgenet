@@ -295,3 +295,16 @@ func TestAuthService_PasswordResetRejectsAnEmptyLogin(t *testing.T) {
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 	assert.Empty(t, outbox.Messages())
 }
+
+func TestAuthService_PasswordResetIgnoresASuspendedAccount(t *testing.T) {
+	ts, client, outbox := startResetServer(t, "")
+	ctx := context.Background()
+	membre, err := ts.store.Users().GetUserByUsername(ctx, "membre")
+	require.NoError(t, err)
+	_, err = ts.store.Users().SuspendUser(ctx, membre.ID, time.Now())
+	require.NoError(t, err)
+
+	_, err = client.RequestPasswordReset(ctx, &forgenetv1.RequestPasswordResetRequest{Login: "membre"})
+	require.NoError(t, err, "même réponse qu'un compte inconnu")
+	assert.Empty(t, outbox.Messages(), "un compte suspendu ne reçoit pas de lien")
+}

@@ -103,6 +103,11 @@ func (s *AuthServiceServer) buildPasswordReset(ctx context.Context, r *passwordR
 	if err != nil {
 		return nil, "", err
 	}
+	// Un compte suspendu ne reçoit pas de lien : rien ne part, et la réponse
+	// reste celle d'une adresse inconnue.
+	if user.Suspended() {
+		return nil, user.ID, nil
+	}
 	if r.perAccount.blocked(user.ID) {
 		s.logger.Warn().Str("user_id", user.ID).Msg("mot de passe oublié : demandes trop nombreuses, celle-ci est ignorée")
 		return nil, user.ID, nil

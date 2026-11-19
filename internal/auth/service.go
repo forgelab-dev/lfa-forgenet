@@ -30,12 +30,18 @@ var (
 	// ErrLinkInvalid est retourné pour un lien inconnu, expiré, déjà utilisé
 	// ou remplacé par un plus récent : la réponse ne dit pas lequel.
 	ErrLinkInvalid = errors.New("ce lien n'est plus valable : il a déjà servi, a expiré ou a été remplacé par un plus récent")
+	// ErrSelfAction est retourné quand un administrateur vise son propre
+	// compte pour le suspendre ou le supprimer.
+	ErrSelfAction = errors.New("vous ne pouvez pas suspendre ni supprimer votre propre compte")
+	// ErrAccountSuspended est retourné quand un lien est demandé pour un
+	// compte suspendu.
+	ErrAccountSuspended = errors.New("ce compte est suspendu")
 )
 
 // UnusablePassword est l'empreinte d'un compte qui n'a pas encore choisi son
-// mot de passe : aucune saisie ne lui correspond (ce n'est pas une empreinte
-// bcrypt). Le compte s'ouvre par un lien à usage unique (ADR-0014).
-const UnusablePassword = "!"
+// mot de passe (store.UnusablePasswordHash) : le store en a besoin pour
+// reconnaître un administrateur actif.
+const UnusablePassword = store.UnusablePasswordHash
 
 // HasPassword dit si le compte a choisi son mot de passe. Sans lui, il ne
 // s'ouvre que par un lien à usage unique.
@@ -91,6 +97,24 @@ type Service interface {
 	// LookupAccount trouve un compte par son nom ou son adresse, comme Login ;
 	// store.ErrNotFound s'il n'existe pas.
 	LookupAccount(ctx context.Context, usernameOrEmail string) (*store.User, error)
+
+	// Les actions suivantes sont faites par actorID, un administrateur, ou
+	// par la machine du serveur quand actorID est vide (commande
+	// « forgenet user »). Un administrateur ne peut ni se suspendre ni se
+	// supprimer (ErrSelfAction), et le serveur garde toujours un
+	// administrateur actif (store.ErrLastAdmin).
+
+	// SuspendAccount suspend le compte et ferme ses sessions, jetons et liens.
+	// Renvoie le compte à jour et le nombre de sessions fermées.
+	SuspendAccount(ctx context.Context, actorID, userID string) (*store.User, int64, error)
+	// ResumeAccount réactive un compte suspendu.
+	ResumeAccount(ctx context.Context, actorID, userID string) (*store.User, error)
+	// CloseSessions ferme les sessions et jetons du compte sans le suspendre,
+	// sauf keepSessionID (la session de qui agit sur son propre compte).
+	CloseSessions(ctx context.Context, actorID, userID, keepSessionID string) (int64, error)
+	// DeleteAccount supprime le compte ; le journal d'audit garde ses entrées.
+	// Renvoie le compte tel qu'il était.
+	DeleteAccount(ctx context.Context, actorID, userID string) (*store.User, error)
 }
 
 type authService struct {
@@ -208,6 +232,13 @@ func (s *authService) Login(ctx context.Context, usernameOrEmail, password strin
 		s.audit(ctx, user.ID, "auth.login_failed", "user:"+user.ID, map[string]any{"reason": "mot de passe incorrect"})
 		return nil, ErrInvalidCredentials
 	}
+	// Le mot de passe est vérifié avant : un compte suspendu reçoit, dans le
+	// même temps, le refus d'un mauvais mot de passe, sans apprendre qu'il
+	// existe ni que son mot de passe est juste.
+	if user.Suspended() {
+		s.audit(ctx, user.ID, "auth.login_failed", "user:"+user.ID, map[string]any{"reason": "compte suspendu"})
+		return nil, ErrInvalidCredentials
+	}
 	return s.openSession(ctx, user)
 }
 
@@ -320,6 +351,11 @@ func (s *authService) claimsForSession(ctx context.Context, session *store.Sessi
 	if err != nil {
 		return nil, lookupError(err, "utilisateur")
 	}
+	// La suspension ferme déjà les sessions ; ce garde couvre un jeton créé
+	// entre la lecture et la suspension.
+	if user.Suspended() {
+		return nil, ErrInvalidToken
+	}
 
 	// last_used_at est indicatif : son écriture ne doit pas ralentir l'appel.
 	bgCtx := context.WithoutCancel(ctx)
@@ -386,6 +422,13 @@ func (s *authService) CreateAccessLink(ctx context.Context, userID string, purpo
 	if !purpose.IsValid() {
 		return "", nil, fmt.Errorf("usage de lien inconnu : %q", purpose)
 	}
+	user, err := s.store.Users().GetUserByID(ctx, userID)
+	if err != nil {
+		return "", nil, err
+	}
+	if user.Suspended() {
+		return "", nil, ErrAccountSuspended
+	}
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", nil, fmt.Errorf("génération aléatoire : %w", err)
@@ -426,6 +469,9 @@ func (s *authService) InspectAccessLink(ctx context.Context, token string) (*sto
 	}
 	if err != nil {
 		return nil, nil, err
+	}
+	if user.Suspended() {
+		return nil, nil, ErrLinkInvalid
 	}
 	return link, user, nil
 }
@@ -468,6 +514,60 @@ func (s *authService) setPassword(ctx context.Context, user *store.User, next, k
 		return 0, err
 	}
 	return s.store.Users().SetPassword(ctx, user.ID, hash, keepSessionID)
+}
+
+func (s *authService) SuspendAccount(ctx context.Context, actorID, userID string) (*store.User, int64, error) {
+	if actorID != "" && actorID == userID {
+		return nil, 0, ErrSelfAction
+	}
+	revoked, err := s.store.Users().SuspendUser(ctx, userID, time.Now().UTC())
+	if err != nil {
+		return nil, 0, err
+	}
+	user, err := s.store.Users().GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, 0, err
+	}
+	s.audit(ctx, actorID, "user.suspend", "user:"+userID, map[string]any{"username": user.Username, "revoked_sessions": revoked})
+	return user, revoked, nil
+}
+
+func (s *authService) ResumeAccount(ctx context.Context, actorID, userID string) (*store.User, error) {
+	if err := s.store.Users().ResumeUser(ctx, userID); err != nil {
+		return nil, err
+	}
+	user, err := s.store.Users().GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	s.audit(ctx, actorID, "user.resume", "user:"+userID, map[string]any{"username": user.Username})
+	return user, nil
+}
+
+func (s *authService) CloseSessions(ctx context.Context, actorID, userID, keepSessionID string) (int64, error) {
+	revoked, err := s.store.Users().RevokeUserSessions(ctx, userID, keepSessionID)
+	if err != nil {
+		return 0, err
+	}
+	s.audit(ctx, actorID, "user.sessions_close", "user:"+userID, map[string]any{"revoked_sessions": revoked})
+	return revoked, nil
+}
+
+func (s *authService) DeleteAccount(ctx context.Context, actorID, userID string) (*store.User, error) {
+	if actorID != "" && actorID == userID {
+		return nil, ErrSelfAction
+	}
+	user, err := s.store.Users().GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.store.Users().DeleteUser(ctx, userID); err != nil {
+		return nil, err
+	}
+	// Le compte n'existe plus : son nom reste au journal pour lire les
+	// entrées qu'il laisse.
+	s.audit(ctx, actorID, "user.delete", "user:"+userID, map[string]any{"username": user.Username, "role": string(user.Role)})
+	return user, nil
 }
 
 func (s *authService) LookupAccount(ctx context.Context, usernameOrEmail string) (*store.User, error) {
