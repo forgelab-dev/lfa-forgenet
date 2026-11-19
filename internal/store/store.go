@@ -16,7 +16,15 @@ var (
 	ErrConflict = errors.New("conflit d'unicité sur la ressource")
 	// ErrInvalidTransition est retourné quand la machine à états d'un déploiement interdit le changement demandé.
 	ErrInvalidTransition = errors.New("transition d'état interdite")
+	// ErrLastAdmin est retourné quand une suspension ou une suppression
+	// laisserait le serveur sans administrateur actif.
+	ErrLastAdmin = errors.New("c'est le dernier administrateur actif : le serveur doit en garder un")
 )
+
+// UnusablePasswordHash est l'empreinte d'un compte qui n'a pas encore choisi
+// son mot de passe : aucune saisie ne lui correspond (ce n'est pas une
+// empreinte bcrypt). Le compte s'ouvre par un lien à usage unique (ADR-0014).
+const UnusablePasswordHash = "!"
 
 // Role définit les permissions RBAC d'un utilisateur ou d'un token.
 type Role string
@@ -62,6 +70,14 @@ type User struct {
 	Role         Role      `json:"role"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
+	// SuspendedAt date la suspension du compte ; nil s'il est actif. Un compte
+	// suspendu ne se connecte plus, et aucun de ses jetons n'est accepté.
+	SuspendedAt *time.Time `json:"suspended_at,omitempty"`
+}
+
+// Suspended dit si le compte est suspendu.
+func (u *User) Suspended() bool {
+	return u.SuspendedAt != nil
 }
 
 // Session représente une session active ou un token API persistant.
@@ -275,6 +291,21 @@ type UserStore interface {
 	// inutilisés. Renvoie le nombre de sessions révoquées, ou ErrNotFound si
 	// le compte n'existe pas.
 	SetPassword(ctx context.Context, userID, passwordHash, keepSessionID string) (int64, error)
+	// SuspendUser suspend le compte à la date at et ferme, dans la même
+	// transaction, toutes ses sessions et tous ses jetons, et annule ses liens
+	// à usage unique inutilisés. Un compte déjà suspendu garde sa date.
+	// Renvoie le nombre de sessions fermées ; ErrNotFound si le compte
+	// n'existe pas ; ErrLastAdmin si c'est le dernier administrateur actif.
+	SuspendUser(ctx context.Context, id string, at time.Time) (int64, error)
+	// ResumeUser réactive un compte suspendu ; ErrNotFound s'il n'existe pas.
+	ResumeUser(ctx context.Context, id string) error
+	// RevokeUserSessions ferme les sessions et les jetons du compte, sauf
+	// keepSessionID (vide : tous). Renvoie le nombre de sessions fermées ;
+	// ErrNotFound si le compte n'existe pas.
+	RevokeUserSessions(ctx context.Context, userID, keepSessionID string) (int64, error)
+	// DeleteUser supprime le compte, ses sessions, jetons et liens. Le journal
+	// d'audit garde ses entrées. ErrNotFound si le compte n'existe pas ;
+	// ErrLastAdmin si c'est le dernier administrateur actif.
 	DeleteUser(ctx context.Context, id string) error
 	CountUsers(ctx context.Context) (int64, error)
 }

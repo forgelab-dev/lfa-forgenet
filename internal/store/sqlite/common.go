@@ -30,6 +30,14 @@ func formatTime(t time.Time) string {
 	return t.UTC().Format(timeLayout)
 }
 
+// nullableTime écrit NULL pour une date absente.
+func nullableTime(t *time.Time) any {
+	if t == nil {
+		return nil
+	}
+	return formatTime(*t)
+}
+
 // isConstraintError reconnaît une violation d'unicité par son code SQLite, et
 // non par le texte du message, qui peut changer d'une version à l'autre.
 func isConstraintError(err error) bool {
