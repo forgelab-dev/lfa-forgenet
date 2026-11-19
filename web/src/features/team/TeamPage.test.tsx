@@ -37,16 +37,42 @@ const initialMembers = [
     email: 'eloi@exemple.org',
     status: MemberStatus.INVITATION_EXPIRED,
   }),
+  member({ id: 'u4', username: 'dan', email: 'dan@exemple.org' }),
+  member({
+    id: 'u5',
+    username: 'zoe',
+    email: 'zoe@exemple.org',
+    status: MemberStatus.SUSPENDED,
+    suspendedAt: timestampFromDate(new Date('2026-11-19T10:00:00Z')),
+  }),
 ];
 
 interface Options {
   role?: UserRole;
   mailEnabled?: boolean;
   inviteError?: ConnectError;
+  accountError?: ConnectError;
 }
 
-function renderTeam({ role = UserRole.ADMIN, mailEnabled = false, inviteError }: Options = {}) {
-  const calls = { list: 0, invites: [] as InviteMemberRequest[], renewed: [] as string[] };
+function renderTeam({
+  role = UserRole.ADMIN,
+  mailEnabled = false,
+  inviteError,
+  accountError,
+}: Options = {}) {
+  const calls = {
+    list: 0,
+    invites: [] as InviteMemberRequest[],
+    renewed: [] as string[],
+    actions: [] as string[],
+  };
+  const byId = (id: string) => initialMembers.find((m) => m.id === id)!;
+  const act = (name: string, id: string) => {
+    calls.actions.push(`${name}:${id}`);
+    if (accountError) {
+      throw accountError;
+    }
+  };
   const invited = (m: Member) => ({
     member: m,
     emailed: mailEnabled,
@@ -85,6 +111,25 @@ function renderTeam({ role = UserRole.ADMIN, mailEnabled = false, inviteError }:
               ),
             };
           },
+          suspendMember: (req) => {
+            act('suspend', req.userId);
+            return {
+              member: { ...byId(req.userId), status: MemberStatus.SUSPENDED },
+              closedSessions: 2n,
+            };
+          },
+          resumeMember: (req) => {
+            act('resume', req.userId);
+            return { member: { ...byId(req.userId), status: MemberStatus.ACTIVE } };
+          },
+          closeMemberSessions: (req) => {
+            act('sessions', req.userId);
+            return { closedSessions: 1n };
+          },
+          deleteMember: (req) => {
+            act(`delete(${req.confirmUsername})`, req.userId);
+            return {};
+          },
           renewInvitation: (req) => {
             calls.renewed.push(req.userId);
             const before = initialMembers.find((m) => m.id === req.userId)!;
@@ -110,9 +155,11 @@ function renderTeam({ role = UserRole.ADMIN, mailEnabled = false, inviteError }:
   return calls;
 }
 
+// Le nom revient dans la confirmation d'une action : le premier est celui de
+// la ligne.
 const row = (username: string) =>
   within(screen.getByRole('list', { name: 'Comptes du serveur' }))
-    .getByText(username)
+    .getAllByText(username)[0]
     .closest('li')!;
 
 async function fillInvite(username: string, email: string) {
@@ -136,13 +183,19 @@ describe('TeamPage', () => {
 
   it('montre chaque compte et où il en est', async () => {
     renderTeam();
-    expect(await screen.findByRole('heading', { name: /3 comptes/ })).toHaveTextContent(
-      '2 attendent leur mot de passe'
+    expect(await screen.findByRole('heading', { name: /5 comptes/ })).toHaveTextContent(
+      '2 attendent leur mot de passe · 1 suspendu'
     );
     expect(within(row('ana')).getByText('(vous)')).toBeInTheDocument();
     expect(within(row('ana')).getByText('Administrateur')).toBeInTheDocument();
     expect(within(row('ana')).getByText('Actif')).toBeInTheDocument();
-    expect(within(row('ana')).queryByRole('button')).not.toBeInTheDocument();
+    // Sur son propre compte : ni suspendre ni supprimer.
+    expect(
+      within(row('ana'))
+        .getAllByRole('button')
+        .map((b) => b.textContent)
+    ).toEqual(['Fermer mes autres sessions']);
+    expect(within(row('zoe')).getByText(/Suspendu depuis le/)).toBeInTheDocument();
     expect(within(row('bio')).getByText(/Invité, lien valable jusqu’au/)).toBeInTheDocument();
     expect(within(row('eloi')).getByText('Invitation expirée')).toBeInTheDocument();
     expect(
@@ -222,8 +275,99 @@ describe('TeamPage', () => {
     ).toBeInTheDocument();
     expect(calls.renewed).toEqual(['u3']);
     expect(within(row('eloi')).getByText(/Invité, lien valable jusqu’au/)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /3 comptes/ })).toHaveTextContent(
+    expect(screen.getByRole('heading', { name: /5 comptes/ })).toHaveTextContent(
       '2 attendent leur mot de passe'
     );
+  });
+
+  it('ferme ses autres sessions en gardant la sienne', async () => {
+    const calls = renderTeam();
+    fireEvent.click(await screen.findByRole('button', { name: 'Fermer mes autres sessions' }));
+    expect(
+      await within(row('ana')).findByText('Une session fermée ; la vôtre reste ouverte.')
+    ).toBeInTheDocument();
+    expect(calls.actions).toEqual(['sessions:u1']);
+  });
+
+  it('suspend un compte après confirmation', async () => {
+    const calls = renderTeam();
+    fireEvent.click(await screen.findByRole('button', { name: 'Suspendre dan' }));
+    const confirm = screen.getByRole('group', { name: 'Suspendre dan' });
+    expect(within(confirm).getByText(/vous pourrez le réactiver/)).toBeInTheDocument();
+    expect(calls.actions).toEqual([]);
+
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Suspendre dan' }));
+    expect(
+      await within(row('dan')).findByText('dan est suspendu ; 2 sessions fermées.')
+    ).toBeInTheDocument();
+    expect(within(row('dan')).getByText('Suspendu')).toBeInTheDocument();
+    expect(within(row('dan')).getByRole('button', { name: 'Réactiver dan' })).toBeInTheDocument();
+    expect(calls.actions).toEqual(['suspend:u4']);
+  });
+
+  it('réactive un compte suspendu', async () => {
+    const calls = renderTeam();
+    fireEvent.click(await screen.findByRole('button', { name: 'Réactiver zoe' }));
+    expect(
+      await within(row('zoe')).findByText('zoe peut de nouveau se connecter.')
+    ).toBeInTheDocument();
+    expect(within(row('zoe')).getByText('Actif')).toBeInTheDocument();
+    expect(calls.actions).toEqual(['resume:u5']);
+  });
+
+  it('supprime un compte une fois son nom retapé', async () => {
+    const calls = renderTeam();
+    fireEvent.click(await screen.findByRole('button', { name: 'Supprimer dan' }));
+    const confirm = screen.getByRole('group', { name: 'Supprimer dan' });
+    const submit = within(confirm).getByRole('button', { name: 'Supprimer dan' });
+    expect(submit).toBeDisabled();
+
+    fireEvent.change(within(confirm).getByLabelText(/pour confirmer/), {
+      target: { value: 'da' },
+    });
+    expect(submit).toBeDisabled();
+    fireEvent.change(within(confirm).getByLabelText(/pour confirmer/), {
+      target: { value: 'dan' },
+    });
+    fireEvent.click(submit);
+
+    expect(
+      await screen.findByText('Le compte dan est supprimé. Le journal d’audit garde ses entrées.')
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'Comptes du serveur' })).queryByText('dan')
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /4 comptes/ })).toBeInTheDocument();
+    expect(calls.actions).toEqual(['delete(dan):u4']);
+  });
+
+  it('annule une invitation en attente', async () => {
+    renderTeam();
+    fireEvent.click(await screen.findByRole('button', { name: 'Annuler l’invitation de bio' }));
+    const confirm = screen.getByRole('group', { name: 'Supprimer bio' });
+    fireEvent.change(within(confirm).getByLabelText(/pour confirmer/), {
+      target: { value: 'bio' },
+    });
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Annuler l’invitation' }));
+    expect(
+      await screen.findByText('L’invitation de bio est annulée : son lien ne vaut plus.')
+    ).toBeInTheDocument();
+  });
+
+  it('montre le refus du serveur dans la confirmation', async () => {
+    renderTeam({
+      accountError: new ConnectError(
+        'c’est le dernier administrateur actif : nommez-en un autre avant',
+        Code.FailedPrecondition
+      ),
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Suspendre dan' }));
+    const confirm = screen.getByRole('group', { name: 'Suspendre dan' });
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Suspendre dan' }));
+    expect(await within(confirm).findByRole('alert')).toHaveTextContent(
+      /dernier administrateur actif/
+    );
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Garder le compte' }));
+    expect(screen.queryByRole('group', { name: 'Suspendre dan' })).not.toBeInTheDocument();
   });
 });

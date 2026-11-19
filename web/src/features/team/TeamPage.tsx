@@ -1,12 +1,16 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 import {
+  Ban,
   Check,
   CircleCheck,
   Clock,
   Copy,
   LoaderCircle,
+  LogOut,
   MailCheck,
+  RotateCcw,
   ShieldAlert,
+  Trash2,
   TriangleAlert,
   UserPlus,
 } from 'lucide-react';
@@ -64,6 +68,7 @@ function Team({ currentUserId }: { currentUserId: string }) {
   // recharger : un compte nouveau s'ajoute en bas, un compte réinvité change
   // d'état sur place.
   const [updates, setUpdates] = useState<Member[]>([]);
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set());
   const members = useMemo(() => {
     if (request.status !== 'success') {
       return [];
@@ -72,9 +77,18 @@ function Team({ currentUserId }: { currentUserId: string }) {
     for (const m of updates) {
       byId.set(m.id, m);
     }
-    return [...byId.values()];
-  }, [request, updates]);
+    return [...byId.values()].filter((m) => !removed.has(m.id));
+  }, [request, updates, removed]);
   const update = useCallback((m: Member) => setUpdates((all) => [...all, m]), []);
+  const [notice, setNotice] = useState<string>();
+  const remove = useCallback((m: Member) => {
+    setRemoved((all) => new Set(all).add(m.id));
+    setNotice(
+      m.status === MemberStatus.ACTIVE || m.status === MemberStatus.SUSPENDED
+        ? `Le compte ${m.username} est supprimé. Le journal d’audit garde ses entrées.`
+        : `L’invitation de ${m.username} est annulée : son lien ne vaut plus.`
+    );
+  }, []);
 
   if (request.status === 'loading') {
     return <TeamSkeleton />;
@@ -83,7 +97,10 @@ function Team({ currentUserId }: { currentUserId: string }) {
     return <RequestError error={request.error} onRetry={retry} />;
   }
   const mailEnabled = request.data.mailEnabled;
-  const waiting = members.filter((m) => m.status !== MemberStatus.ACTIVE).length;
+  const waiting = members.filter(
+    (m) => m.status === MemberStatus.INVITED || m.status === MemberStatus.INVITATION_EXPIRED
+  ).length;
+  const suspended = members.filter((m) => m.status === MemberStatus.SUSPENDED).length;
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
@@ -99,7 +116,19 @@ function Team({ currentUserId }: { currentUserId: string }) {
                 : `${waiting} attendent leur mot de passe`}
             </span>
           )}
+          {suspended > 0 && (
+            <span className="font-normal text-iron-300">
+              {' '}
+              · {suspended === 1 ? '1 suspendu' : `${suspended} suspendus`}
+            </span>
+          )}
         </h2>
+        <p
+          role="status"
+          className="empty:hidden mt-3 rounded-md border border-ok-400/40 px-3 py-2 text-sm text-iron-100"
+        >
+          {notice}
+        </p>
         <ul
           aria-label="Comptes du serveur"
           className="mt-4 divide-y divide-iron-800 overflow-hidden rounded-lg border border-iron-800"
@@ -111,6 +140,7 @@ function Team({ currentUserId }: { currentUserId: string }) {
               self={m.id === currentUserId}
               mailEnabled={mailEnabled}
               onUpdated={update}
+              onRemoved={remove}
             />
           ))}
         </ul>
@@ -127,11 +157,13 @@ function MemberRow({
   self,
   mailEnabled,
   onUpdated,
+  onRemoved,
 }: {
   member: Member;
   self: boolean;
   mailEnabled: boolean;
   onUpdated: (m: Member) => void;
+  onRemoved: (m: Member) => void;
 }) {
   const api = useApi();
   const [pending, setPending] = useState(false);
@@ -155,7 +187,8 @@ function MemberRow({
     }
   }
 
-  const waiting = member.status !== MemberStatus.ACTIVE;
+  const waiting =
+    member.status === MemberStatus.INVITED || member.status === MemberStatus.INVITATION_EXPIRED;
   return (
     <li className="px-4 py-4 transition-colors hover:bg-iron-900/60">
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
@@ -191,7 +224,267 @@ function MemberRow({
         </p>
       )}
       {outcome && <InvitationOutcome result={outcome} onDismiss={() => setOutcome(undefined)} />}
+      <MemberActions member={member} self={self} onUpdated={onUpdated} onRemoved={onRemoved} />
     </li>
+  );
+}
+
+type Confirming = 'suspend' | 'delete';
+
+function plural(n: bigint, one: string, many: string) {
+  return n === 1n ? one : `${n} ${many}`;
+}
+
+/**
+ * Les gestes d'un administrateur sur un compte (#103) : fermer ses sessions,
+ * le suspendre ou le réactiver, le supprimer. Sur son propre compte, seules
+ * ses autres sessions se ferment : le serveur refuse le reste.
+ */
+function MemberActions({
+  member,
+  self,
+  onUpdated,
+  onRemoved,
+}: {
+  member: Member;
+  self: boolean;
+  onUpdated: (m: Member) => void;
+  onRemoved: (m: Member) => void;
+}) {
+  const api = useApi();
+  const [confirming, setConfirming] = useState<Confirming>();
+  const [typed, setTyped] = useState('');
+  const [pending, setPending] = useState<'sessions' | 'resume' | Confirming>();
+  const [error, setError] = useState<string>();
+  const [done, setDone] = useState<string>();
+  const ids = { typed: useId(), error: useId() };
+
+  const suspended = member.status === MemberStatus.SUSPENDED;
+  const active = member.status === MemberStatus.ACTIVE;
+  const invitation = !active && !suspended;
+
+  async function run(kind: NonNullable<typeof pending>, action: () => Promise<string>) {
+    setPending(kind);
+    setError(undefined);
+    setDone(undefined);
+    try {
+      setDone(await action());
+      setConfirming(undefined);
+      setTyped('');
+    } catch (err) {
+      setError(describeError(err));
+    } finally {
+      setPending(undefined);
+    }
+  }
+
+  const closeSessions = () =>
+    run('sessions', async () => {
+      const res = await api.team.closeMemberSessions({ userId: member.id });
+      const n = res.closedSessions;
+      if (n === 0n) {
+        return self ? 'Aucune autre session n’était ouverte.' : 'Aucune session n’était ouverte.';
+      }
+      return `${plural(n, 'Une session fermée', 'sessions fermées')}${self ? ' ; la vôtre reste ouverte.' : ' : il devra se reconnecter.'}`;
+    });
+
+  const suspend = () =>
+    run('suspend', async () => {
+      const res = await api.team.suspendMember({ userId: member.id });
+      if (res.member) {
+        onUpdated(res.member);
+      }
+      const n = res.closedSessions;
+      return n === 0n
+        ? `${member.username} est suspendu.`
+        : `${member.username} est suspendu ; ${plural(n, 'une session fermée', 'sessions fermées')}.`;
+    });
+
+  const resume = () =>
+    run('resume', async () => {
+      const res = await api.team.resumeMember({ userId: member.id });
+      if (res.member) {
+        onUpdated(res.member);
+      }
+      return res.member?.status === MemberStatus.ACTIVE
+        ? `${member.username} peut de nouveau se connecter.`
+        : `${member.username} est réactivé ; son invitation est à renvoyer.`;
+    });
+
+  const remove = () =>
+    run('delete', async () => {
+      await api.team.deleteMember({ userId: member.id, confirmUsername: typed.trim() });
+      onRemoved(member);
+      return '';
+    });
+
+  function cancel() {
+    setConfirming(undefined);
+    setTyped('');
+    setError(undefined);
+  }
+
+  const busy = pending !== undefined;
+  return (
+    <>
+      <p
+        role="status"
+        className="empty:hidden mt-3 rounded-md border border-ok-400/40 px-3 py-2 text-sm text-iron-100"
+      >
+        {done}
+      </p>
+      {error && !confirming && (
+        <p role="alert" className="mt-3 text-sm text-danger-400">
+          {error}
+        </p>
+      )}
+      {!confirming ? (
+        <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-iron-800 pt-3">
+          {active && (
+            <Button
+              variant="quiet"
+              onClick={() => void closeSessions()}
+              disabled={busy}
+              aria-label={
+                self ? 'Fermer mes autres sessions' : `Fermer les sessions de ${member.username}`
+              }
+            >
+              {pending === 'sessions' ? (
+                <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+              ) : (
+                <LogOut aria-hidden="true" className="size-4" />
+              )}
+              {self ? 'Fermer mes autres sessions' : 'Fermer les sessions'}
+            </Button>
+          )}
+          {!self && suspended && (
+            <Button
+              variant="quiet"
+              onClick={() => void resume()}
+              disabled={busy}
+              aria-label={`Réactiver ${member.username}`}
+            >
+              {pending === 'resume' ? (
+                <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+              ) : (
+                <RotateCcw aria-hidden="true" className="size-4" />
+              )}
+              Réactiver
+            </Button>
+          )}
+          {!self && !suspended && (
+            <Button
+              variant="quiet"
+              onClick={() => {
+                setConfirming('suspend');
+                setDone(undefined);
+                setError(undefined);
+              }}
+              disabled={busy}
+              aria-label={`Suspendre ${member.username}`}
+            >
+              <Ban aria-hidden="true" className="size-4" />
+              Suspendre
+            </Button>
+          )}
+          {!self && (
+            <Button
+              variant="quiet"
+              onClick={() => {
+                setConfirming('delete');
+                setDone(undefined);
+                setError(undefined);
+              }}
+              disabled={busy}
+              aria-label={`${invitation ? 'Annuler l’invitation de' : 'Supprimer'} ${member.username}`}
+            >
+              <Trash2 aria-hidden="true" className="size-4" />
+              {invitation ? 'Annuler l’invitation' : 'Supprimer'}
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div
+          role="group"
+          aria-label={
+            confirming === 'suspend'
+              ? `Suspendre ${member.username}`
+              : `Supprimer ${member.username}`
+          }
+          aria-describedby={error ? ids.error : undefined}
+          className="mt-3 rounded-md border border-danger-400/40 bg-danger-950 px-3 py-3"
+        >
+          {confirming === 'suspend' ? (
+            <p className="text-sm text-iron-100">
+              Suspendre <span className="font-semibold">{member.username}</span> ? Il ne peut plus
+              se connecter, et ses sessions, jetons d’API et liens en cours sont fermés tout de
+              suite. Son compte et son historique restent : vous pourrez le réactiver.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-iron-100">
+                {invitation ? (
+                  <>
+                    Annuler l’invitation de <span className="font-semibold">{member.username}</span>{' '}
+                    ? Le compte, qui n’a pas encore servi, est supprimé et son lien ne vaut plus.
+                  </>
+                ) : (
+                  <>
+                    Supprimer <span className="font-semibold">{member.username}</span> ? Le compte,
+                    ses sessions et ses jetons d’API sont effacés. C’est <strong>définitif</strong>{' '}
+                    ; le journal d’audit garde ses entrées.
+                  </>
+                )}
+              </p>
+              <div className="mt-3">
+                <label htmlFor={ids.typed} className="text-sm text-iron-100">
+                  Tapez <span className="font-mono font-semibold">{member.username}</span> pour
+                  confirmer
+                </label>
+                <input
+                  id={ids.typed}
+                  value={typed}
+                  onChange={(e) => setTyped(e.target.value)}
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  className={`${fieldClass} border-iron-700 font-mono`}
+                />
+              </div>
+            </>
+          )}
+          {error && (
+            <p id={ids.error} role="alert" className="mt-2 text-sm text-danger-400">
+              {error}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-3">
+            {confirming === 'suspend' ? (
+              <Button variant="danger" onClick={() => void suspend()} disabled={busy}>
+                {busy && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
+                {busy ? 'Suspension…' : `Suspendre ${member.username}`}
+              </Button>
+            ) : (
+              <Button
+                variant="danger"
+                onClick={() => void remove()}
+                disabled={busy || typed.trim() !== member.username}
+              >
+                {busy && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
+                {busy
+                  ? 'Suppression…'
+                  : invitation
+                    ? 'Annuler l’invitation'
+                    : `Supprimer ${member.username}`}
+              </Button>
+            )}
+            <Button variant="quiet" onClick={cancel} disabled={busy}>
+              Garder le compte
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -202,6 +495,14 @@ function StatusBadge({ member }: { member: Member }) {
         <span className="inline-flex items-center gap-1.5 text-iron-300">
           <CircleCheck aria-hidden="true" className="size-3.5 text-ok-400" />
           Actif
+        </span>
+      );
+    case MemberStatus.SUSPENDED:
+      return (
+        <span className="inline-flex items-center gap-1.5 text-iron-100">
+          <Ban aria-hidden="true" className="size-3.5 text-danger-400" />
+          Suspendu
+          {member.suspendedAt && <> depuis le {until.format(timestampDate(member.suspendedAt))}</>}
         </span>
       );
     case MemberStatus.INVITED:
