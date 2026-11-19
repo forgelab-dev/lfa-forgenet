@@ -43,7 +43,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 - **Surveillance** : processeur, mémoire, disque et réseau du serveur et de chaque conteneur, en direct, avec la dernière heure ; reconnexion propre sur une connexion lente ou coupée.
 - **Conteneurs** : lister, consulter, démarrer, arrêter, redémarrer.
 - **Mises à jour** : une nouvelle version est annoncée dans le dashboard et s'installe en un clic, avec sauvegarde de la base et de la configuration, contrôle de santé et retour automatique à la version précédente en cas d'échec ; `install.sh --restore` remet une sauvegarde.
-- **Équipe** : inviter un membre depuis le dashboard, avec son rôle ; il choisit lui-même son mot de passe par un lien valable 7 jours, envoyé par e-mail ou transmis par l'administrateur.
+- **Équipe** : inviter un membre depuis le dashboard, avec son rôle ; il choisit lui-même son mot de passe par un lien valable 7 jours, envoyé par e-mail ou transmis par l'administrateur. Un compte se suspend (ses sessions et jetons sont fermés aussitôt), se réactive ou se supprime ; ses sessions se ferment aussi sans le suspendre, en cas d'appareil perdu.
 - **Comptes et sécurité** : rôles administrateur et membre, droits vérifiés à chaque appel, tentatives de connexion limitées, journal d'audit.
 - **API** : contrat gRPC ([`api/proto`](api/proto)), servi aussi en Connect et gRPC-Web, avec des clients générés en TypeScript et en Dart.
 
@@ -122,6 +122,8 @@ Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écri
 | `forgenet user create --username NOM --email ADRESSE` | créer un compte (mot de passe demandé) |
 | `forgenet user set-password --username NOM` | remplacer un mot de passe perdu ; ferme les sessions du compte |
 | `forgenet user login-link --username NOM [--send]` | refaire un lien de première connexion (24 heures, usage unique) : affiché, ou envoyé à l'adresse du compte avec `--send` |
+| `forgenet user suspend\|resume --username NOM` | suspendre un compte (sessions, jetons et liens fermés) ou le réactiver |
+| `forgenet user delete --username NOM` | supprimer un compte, après avoir retapé son nom ; le journal d'audit garde ses entrées |
 
 `forgenet help` donne le détail. Les commandes marquées `sudo` demandent root, les autres marchent aussi pour un membre du groupe `docker`. Une mise à jour faite depuis le dashboard ne touche pas à la commande : `forgenet version` le signale, et `sudo forgenet update` la remet à niveau. Sur une installation antérieure à la 0.5.0, lancez une fois le `install.sh` de la nouvelle version (`sudo bash install.sh`), qui l'ajoute. À ne pas confondre avec `forgenet-cli`, le client d'API à distance prévu pour les scripts et la CI. Le choix est expliqué dans l'[ADR-0013](docs/decisions/0013-commande-forgenet-sur-le-serveur.md).
 
