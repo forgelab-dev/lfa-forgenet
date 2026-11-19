@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	userColumns = `id, username, email, password_hash, role, created_at, updated_at`
+	userColumns = `id, username, email, password_hash, role, created_at, updated_at, suspended_at`
 	selectUser  = `SELECT ` + userColumns + ` FROM users`
 )
 
@@ -32,8 +32,9 @@ func (s *usersStore) CreateUser(ctx context.Context, u *store.User) error {
 	}
 
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO users (`+userColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO users (`+userColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		u.ID, u.Username, u.Email, u.PasswordHash, string(u.Role), formatTime(u.CreatedAt), formatTime(u.UpdatedAt),
+		nullableTime(u.SuspendedAt),
 	)
 	if err != nil {
 		return wrapWriteError(err, "insertion de l'utilisateur")
@@ -103,14 +104,9 @@ func setPasswordTx(ctx context.Context, tx *sql.Tx, userID, passwordHash, keepSe
 
 	// L'ancien mot de passe a pu fuiter : toute session ouverte avec lui, et
 	// tout jeton créé par qui le détenait, est fermé avec lui.
-	res, err = tx.ExecContext(ctx, `UPDATE sessions SET revoked = 1 WHERE user_id = ? AND id <> ? AND revoked = 0`,
-		userID, keepSessionID)
+	revoked, err := revokeSessionsTx(ctx, tx, userID, keepSessionID)
 	if err != nil {
-		return 0, fmt.Errorf("révocation des sessions : %w", err)
-	}
-	revoked, err := res.RowsAffected()
-	if err != nil {
-		return 0, fmt.Errorf("révocation des sessions : %w", err)
+		return 0, err
 	}
 	// Un lien encore en attente (mot de passe oublié demandé par un tiers,
 	// par exemple) ne doit pas survivre au mot de passe qu'il remplacerait.
@@ -120,8 +116,115 @@ func setPasswordTx(ctx context.Context, tx *sql.Tx, userID, passwordHash, keepSe
 	return revoked, nil
 }
 
+func (s *usersStore) SuspendUser(ctx context.Context, id string, at time.Time) (int64, error) {
+	var revoked int64
+	err := s.guardedWrite(ctx, "suspension du compte", id, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE users SET suspended_at = COALESCE(suspended_at, ?), updated_at = ? WHERE id = ?`,
+			formatTime(at), formatTime(time.Now()), id); err != nil {
+			return err
+		}
+		var err error
+		if revoked, err = revokeSessionsTx(ctx, tx, id, ""); err != nil {
+			return err
+		}
+		// Un lien en attente (invitation, mot de passe oublié) rouvrirait le
+		// compte : il part avec la suspension.
+		_, err = tx.ExecContext(ctx, `DELETE FROM action_tokens WHERE user_id = ? AND used_at IS NULL`, id)
+		return err
+	})
+	return revoked, err
+}
+
+func (s *usersStore) ResumeUser(ctx context.Context, id string) error {
+	return execOne(ctx, s.db, "réactivation du compte",
+		`UPDATE users SET suspended_at = NULL, updated_at = ? WHERE id = ?`, formatTime(time.Now()), id)
+}
+
+func (s *usersStore) RevokeUserSessions(ctx context.Context, userID, keepSessionID string) (int64, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("fermeture des sessions : %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var exists int
+	if err := tx.QueryRowContext(ctx, `SELECT 1 FROM users WHERE id = ?`, userID).Scan(&exists); err != nil {
+		return 0, wrapReadError(err, "fermeture des sessions")
+	}
+	revoked, err := revokeSessionsTx(ctx, tx, userID, keepSessionID)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("fermeture des sessions : %w", err)
+	}
+	return revoked, nil
+}
+
+// DeleteUser supprime le compte ; ses sessions, jetons et liens partent avec
+// lui par ON DELETE CASCADE. audit_logs n'a pas de clé étrangère : le journal
+// garde ses entrées.
 func (s *usersStore) DeleteUser(ctx context.Context, id string) error {
-	return execOne(ctx, s.db, "suppression de l'utilisateur", `DELETE FROM users WHERE id = ?`, id)
+	return s.guardedWrite(ctx, "suppression de l'utilisateur", id, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, `DELETE FROM users WHERE id = ?`, id)
+		return err
+	})
+}
+
+// activeAdmin désigne un administrateur qui peut se connecter : ni suspendu,
+// ni en attente de son mot de passe.
+const activeAdmin = `role = 'admin' AND suspended_at IS NULL AND password_hash <> '` + store.UnusablePasswordHash + `'`
+
+// guardedWrite exécute write dans une transaction qui refuse de retirer le
+// dernier administrateur actif. La lecture du compte précède l'écriture dans
+// la même transaction : en mode WAL, si un autre écrivain a validé entre les
+// deux, SQLite refuse l'écriture (SQLITE_BUSY_SNAPSHOT) au lieu de laisser
+// deux suspensions croisées retirer les deux derniers administrateurs.
+func (s *usersStore) guardedWrite(ctx context.Context, action, id string, write func(*sql.Tx) error) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("%s : %w", action, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var isActiveAdmin bool
+	err = tx.QueryRowContext(ctx, `SELECT `+activeAdmin+` FROM users WHERE id = ?`, id).Scan(&isActiveAdmin)
+	if err != nil {
+		return wrapReadError(err, action)
+	}
+	if isActiveAdmin {
+		var others int
+		if err := tx.QueryRowContext(ctx,
+			`SELECT COUNT(*) FROM users WHERE `+activeAdmin+` AND id <> ?`, id).Scan(&others); err != nil {
+			return fmt.Errorf("%s : %w", action, err)
+		}
+		if others == 0 {
+			return store.ErrLastAdmin
+		}
+	}
+	if err := write(tx); err != nil {
+		return fmt.Errorf("%s : %w", action, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("%s : %w", action, err)
+	}
+	return nil
+}
+
+// revokeSessionsTx ferme dans tx les sessions et jetons du compte, sauf
+// keepSessionID, et renvoie leur nombre.
+func revokeSessionsTx(ctx context.Context, tx *sql.Tx, userID, keepSessionID string) (int64, error) {
+	res, err := tx.ExecContext(ctx, `UPDATE sessions SET revoked = 1 WHERE user_id = ? AND id <> ? AND revoked = 0`,
+		userID, keepSessionID)
+	if err != nil {
+		return 0, fmt.Errorf("révocation des sessions : %w", err)
+	}
+	revoked, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("révocation des sessions : %w", err)
+	}
+	return revoked, nil
 }
 
 func (s *usersStore) CountUsers(ctx context.Context) (int64, error) {
@@ -134,12 +237,16 @@ func (s *usersStore) CountUsers(ctx context.Context) (int64, error) {
 
 func scanUser(row scanner) (*store.User, error) {
 	var (
-		u    store.User
-		role string
+		u         store.User
+		role      string
+		suspended sql.NullTime
 	)
-	if err := row.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &role, &u.CreatedAt, &u.UpdatedAt); err != nil {
+	if err := row.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &role, &u.CreatedAt, &u.UpdatedAt, &suspended); err != nil {
 		return nil, wrapReadError(err, "lecture de l'utilisateur")
 	}
 	u.Role = store.Role(role)
+	if suspended.Valid {
+		u.SuspendedAt = &suspended.Time
+	}
 	return &u, nil
 }
