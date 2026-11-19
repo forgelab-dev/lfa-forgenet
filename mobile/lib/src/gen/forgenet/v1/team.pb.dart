@@ -12,6 +12,7 @@
 
 import 'dart:core' as $core;
 
+import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as $1;
@@ -34,6 +35,7 @@ class Member extends $pb.GeneratedMessage {
     MemberStatus? status,
     $1.Timestamp? invitationExpiresAt,
     $1.Timestamp? createdAt,
+    $1.Timestamp? suspendedAt,
   }) {
     final result = Member._();
     if (id != null) result.id = id;
@@ -44,6 +46,7 @@ class Member extends $pb.GeneratedMessage {
     if (invitationExpiresAt != null)
       result.invitationExpiresAt = invitationExpiresAt;
     if (createdAt != null) result.createdAt = createdAt;
+    if (suspendedAt != null) result.suspendedAt = suspendedAt;
     return result;
   }
 
@@ -70,6 +73,8 @@ class Member extends $pb.GeneratedMessage {
     ..aOM<$1.Timestamp>(6, _omitFieldNames ? '' : 'invitationExpiresAt',
         subBuilder: $1.Timestamp.$_createMessage)
     ..aOM<$1.Timestamp>(7, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $1.Timestamp.$_createMessage)
+    ..aOM<$1.Timestamp>(8, _omitFieldNames ? '' : 'suspendedAt',
         subBuilder: $1.Timestamp.$_createMessage)
     ..hasRequiredFields = false;
 
@@ -160,6 +165,18 @@ class Member extends $pb.GeneratedMessage {
   void clearCreatedAt() => $_clearField(7);
   @$pb.TagNumber(7)
   $1.Timestamp ensureCreatedAt() => $_ensure(6);
+
+  /// Date de la suspension ; absente hors MEMBER_STATUS_SUSPENDED.
+  @$pb.TagNumber(8)
+  $1.Timestamp get suspendedAt => $_getN(7);
+  @$pb.TagNumber(8)
+  set suspendedAt($1.Timestamp value) => $_setField(8, value);
+  @$pb.TagNumber(8)
+  $core.bool hasSuspendedAt() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearSuspendedAt() => $_clearField(8);
+  @$pb.TagNumber(8)
+  $1.Timestamp ensureSuspendedAt() => $_ensure(7);
 }
 
 class ListMembersRequest extends $pb.GeneratedMessage {
@@ -637,6 +654,498 @@ class RenewInvitationResponse extends $pb.GeneratedMessage {
   void clearResult() => $_clearField(1);
   @$pb.TagNumber(1)
   InvitationResult ensureResult() => $_ensure(0);
+}
+
+class SuspendMemberRequest extends $pb.GeneratedMessage {
+  factory SuspendMemberRequest({
+    $core.String? userId,
+  }) {
+    final result = SuspendMemberRequest._();
+    if (userId != null) result.userId = userId;
+    return result;
+  }
+
+  SuspendMemberRequest._();
+
+  factory SuspendMemberRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SuspendMemberRequest()..mergeFromBuffer(data, registry);
+  factory SuspendMemberRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SuspendMemberRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SuspendMemberRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: SuspendMemberRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SuspendMemberRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SuspendMemberRequest copyWith(void Function(SuspendMemberRequest) updates) =>
+      super.copyWith((message) => updates(message as SuspendMemberRequest))
+          as SuspendMemberRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SuspendMemberRequest() / SuspendMemberRequest.new instead')
+  static SuspendMemberRequest create() => SuspendMemberRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SuspendMemberRequest._();
+  @$core.override
+  SuspendMemberRequest createEmptyInstance() => SuspendMemberRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SuspendMemberRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SuspendMemberRequest>(
+          SuspendMemberRequest.$_createMessage);
+  static SuspendMemberRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get userId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set userId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUserId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUserId() => $_clearField(1);
+}
+
+class SuspendMemberResponse extends $pb.GeneratedMessage {
+  factory SuspendMemberResponse({
+    Member? member,
+    $fixnum.Int64? closedSessions,
+  }) {
+    final result = SuspendMemberResponse._();
+    if (member != null) result.member = member;
+    if (closedSessions != null) result.closedSessions = closedSessions;
+    return result;
+  }
+
+  SuspendMemberResponse._();
+
+  factory SuspendMemberResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SuspendMemberResponse()..mergeFromBuffer(data, registry);
+  factory SuspendMemberResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SuspendMemberResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SuspendMemberResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: SuspendMemberResponse.$_createMessage)
+    ..aOM<Member>(1, _omitFieldNames ? '' : 'member',
+        subBuilder: Member.$_createMessage)
+    ..aInt64(2, _omitFieldNames ? '' : 'closedSessions')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SuspendMemberResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SuspendMemberResponse copyWith(
+          void Function(SuspendMemberResponse) updates) =>
+      super.copyWith((message) => updates(message as SuspendMemberResponse))
+          as SuspendMemberResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SuspendMemberResponse() / SuspendMemberResponse.new instead')
+  static SuspendMemberResponse create() => SuspendMemberResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SuspendMemberResponse._();
+  @$core.override
+  SuspendMemberResponse createEmptyInstance() => SuspendMemberResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SuspendMemberResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SuspendMemberResponse>(
+          SuspendMemberResponse.$_createMessage);
+  static SuspendMemberResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Member get member => $_getN(0);
+  @$pb.TagNumber(1)
+  set member(Member value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMember() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMember() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Member ensureMember() => $_ensure(0);
+
+  /// Nombre de sessions et de jetons d'API fermés.
+  @$pb.TagNumber(2)
+  $fixnum.Int64 get closedSessions => $_getI64(1);
+  @$pb.TagNumber(2)
+  set closedSessions($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasClosedSessions() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearClosedSessions() => $_clearField(2);
+}
+
+class ResumeMemberRequest extends $pb.GeneratedMessage {
+  factory ResumeMemberRequest({
+    $core.String? userId,
+  }) {
+    final result = ResumeMemberRequest._();
+    if (userId != null) result.userId = userId;
+    return result;
+  }
+
+  ResumeMemberRequest._();
+
+  factory ResumeMemberRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ResumeMemberRequest()..mergeFromBuffer(data, registry);
+  factory ResumeMemberRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ResumeMemberRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ResumeMemberRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: ResumeMemberRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ResumeMemberRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ResumeMemberRequest copyWith(void Function(ResumeMemberRequest) updates) =>
+      super.copyWith((message) => updates(message as ResumeMemberRequest))
+          as ResumeMemberRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use ResumeMemberRequest() / ResumeMemberRequest.new instead')
+  static ResumeMemberRequest create() => ResumeMemberRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ResumeMemberRequest._();
+  @$core.override
+  ResumeMemberRequest createEmptyInstance() => ResumeMemberRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ResumeMemberRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ResumeMemberRequest>(
+          ResumeMemberRequest.$_createMessage);
+  static ResumeMemberRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get userId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set userId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUserId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUserId() => $_clearField(1);
+}
+
+class ResumeMemberResponse extends $pb.GeneratedMessage {
+  factory ResumeMemberResponse({
+    Member? member,
+  }) {
+    final result = ResumeMemberResponse._();
+    if (member != null) result.member = member;
+    return result;
+  }
+
+  ResumeMemberResponse._();
+
+  factory ResumeMemberResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ResumeMemberResponse()..mergeFromBuffer(data, registry);
+  factory ResumeMemberResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ResumeMemberResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ResumeMemberResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: ResumeMemberResponse.$_createMessage)
+    ..aOM<Member>(1, _omitFieldNames ? '' : 'member',
+        subBuilder: Member.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ResumeMemberResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ResumeMemberResponse copyWith(void Function(ResumeMemberResponse) updates) =>
+      super.copyWith((message) => updates(message as ResumeMemberResponse))
+          as ResumeMemberResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ResumeMemberResponse() / ResumeMemberResponse.new instead')
+  static ResumeMemberResponse create() => ResumeMemberResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ResumeMemberResponse._();
+  @$core.override
+  ResumeMemberResponse createEmptyInstance() => ResumeMemberResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ResumeMemberResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ResumeMemberResponse>(
+          ResumeMemberResponse.$_createMessage);
+  static ResumeMemberResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Member get member => $_getN(0);
+  @$pb.TagNumber(1)
+  set member(Member value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMember() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMember() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Member ensureMember() => $_ensure(0);
+}
+
+class CloseMemberSessionsRequest extends $pb.GeneratedMessage {
+  factory CloseMemberSessionsRequest({
+    $core.String? userId,
+  }) {
+    final result = CloseMemberSessionsRequest._();
+    if (userId != null) result.userId = userId;
+    return result;
+  }
+
+  CloseMemberSessionsRequest._();
+
+  factory CloseMemberSessionsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CloseMemberSessionsRequest()..mergeFromBuffer(data, registry);
+  factory CloseMemberSessionsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CloseMemberSessionsRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CloseMemberSessionsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: CloseMemberSessionsRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CloseMemberSessionsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CloseMemberSessionsRequest copyWith(
+          void Function(CloseMemberSessionsRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as CloseMemberSessionsRequest))
+          as CloseMemberSessionsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CloseMemberSessionsRequest() / CloseMemberSessionsRequest.new instead')
+  static CloseMemberSessionsRequest create() => CloseMemberSessionsRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      CloseMemberSessionsRequest._();
+  @$core.override
+  CloseMemberSessionsRequest createEmptyInstance() =>
+      CloseMemberSessionsRequest._();
+  @$core.pragma('dart2js:noInline')
+  static CloseMemberSessionsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CloseMemberSessionsRequest>(
+          CloseMemberSessionsRequest.$_createMessage);
+  static CloseMemberSessionsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get userId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set userId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUserId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUserId() => $_clearField(1);
+}
+
+class CloseMemberSessionsResponse extends $pb.GeneratedMessage {
+  factory CloseMemberSessionsResponse({
+    $fixnum.Int64? closedSessions,
+  }) {
+    final result = CloseMemberSessionsResponse._();
+    if (closedSessions != null) result.closedSessions = closedSessions;
+    return result;
+  }
+
+  CloseMemberSessionsResponse._();
+
+  factory CloseMemberSessionsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CloseMemberSessionsResponse()..mergeFromBuffer(data, registry);
+  factory CloseMemberSessionsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CloseMemberSessionsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CloseMemberSessionsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: CloseMemberSessionsResponse.$_createMessage)
+    ..aInt64(1, _omitFieldNames ? '' : 'closedSessions')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CloseMemberSessionsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CloseMemberSessionsResponse copyWith(
+          void Function(CloseMemberSessionsResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as CloseMemberSessionsResponse))
+          as CloseMemberSessionsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CloseMemberSessionsResponse() / CloseMemberSessionsResponse.new instead')
+  static CloseMemberSessionsResponse create() =>
+      CloseMemberSessionsResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      CloseMemberSessionsResponse._();
+  @$core.override
+  CloseMemberSessionsResponse createEmptyInstance() =>
+      CloseMemberSessionsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static CloseMemberSessionsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CloseMemberSessionsResponse>(
+          CloseMemberSessionsResponse.$_createMessage);
+  static CloseMemberSessionsResponse? _defaultInstance;
+
+  /// Nombre de sessions et de jetons d'API fermés.
+  @$pb.TagNumber(1)
+  $fixnum.Int64 get closedSessions => $_getI64(0);
+  @$pb.TagNumber(1)
+  set closedSessions($fixnum.Int64 value) => $_setInt64(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasClosedSessions() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearClosedSessions() => $_clearField(1);
+}
+
+class DeleteMemberRequest extends $pb.GeneratedMessage {
+  factory DeleteMemberRequest({
+    $core.String? userId,
+    $core.String? confirmUsername,
+  }) {
+    final result = DeleteMemberRequest._();
+    if (userId != null) result.userId = userId;
+    if (confirmUsername != null) result.confirmUsername = confirmUsername;
+    return result;
+  }
+
+  DeleteMemberRequest._();
+
+  factory DeleteMemberRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DeleteMemberRequest()..mergeFromBuffer(data, registry);
+  factory DeleteMemberRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DeleteMemberRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteMemberRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: DeleteMemberRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..aOS(2, _omitFieldNames ? '' : 'confirmUsername')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteMemberRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteMemberRequest copyWith(void Function(DeleteMemberRequest) updates) =>
+      super.copyWith((message) => updates(message as DeleteMemberRequest))
+          as DeleteMemberRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use DeleteMemberRequest() / DeleteMemberRequest.new instead')
+  static DeleteMemberRequest create() => DeleteMemberRequest._();
+  static $pb.GeneratedMessage $_createMessage() => DeleteMemberRequest._();
+  @$core.override
+  DeleteMemberRequest createEmptyInstance() => DeleteMemberRequest._();
+  @$core.pragma('dart2js:noInline')
+  static DeleteMemberRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteMemberRequest>(
+          DeleteMemberRequest.$_createMessage);
+  static DeleteMemberRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get userId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set userId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUserId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUserId() => $_clearField(1);
+
+  /// Le nom du compte, retapé pour confirmer : une suppression ne part pas
+  /// d'un clic ou d'un identifiant mal recopié.
+  @$pb.TagNumber(2)
+  $core.String get confirmUsername => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set confirmUsername($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasConfirmUsername() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearConfirmUsername() => $_clearField(2);
+}
+
+class DeleteMemberResponse extends $pb.GeneratedMessage {
+  factory DeleteMemberResponse() => DeleteMemberResponse._();
+
+  DeleteMemberResponse._();
+
+  factory DeleteMemberResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DeleteMemberResponse()..mergeFromBuffer(data, registry);
+  factory DeleteMemberResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DeleteMemberResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteMemberResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: DeleteMemberResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteMemberResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteMemberResponse copyWith(void Function(DeleteMemberResponse) updates) =>
+      super.copyWith((message) => updates(message as DeleteMemberResponse))
+          as DeleteMemberResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use DeleteMemberResponse() / DeleteMemberResponse.new instead')
+  static DeleteMemberResponse create() => DeleteMemberResponse._();
+  static $pb.GeneratedMessage $_createMessage() => DeleteMemberResponse._();
+  @$core.override
+  DeleteMemberResponse createEmptyInstance() => DeleteMemberResponse._();
+  @$core.pragma('dart2js:noInline')
+  static DeleteMemberResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteMemberResponse>(
+          DeleteMemberResponse.$_createMessage);
+  static DeleteMemberResponse? _defaultInstance;
 }
 
 const $core.bool _omitFieldNames =

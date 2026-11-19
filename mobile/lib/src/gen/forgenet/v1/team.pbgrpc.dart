@@ -61,6 +61,48 @@ class TeamServiceClient extends $grpc.Client {
     return $createUnaryCall(_$renewInvitation, request, options: options);
   }
 
+  /// SuspendMember empêche le compte de se connecter et ferme tout de suite ses
+  /// sessions, jetons d'API et liens à usage unique. Réversible : le compte et
+  /// son historique restent. Son propre compte, ou le dernier administrateur
+  /// actif : FAILED_PRECONDITION. Compte inconnu : NOT_FOUND.
+  $grpc.ResponseFuture<$0.SuspendMemberResponse> suspendMember(
+    $0.SuspendMemberRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$suspendMember, request, options: options);
+  }
+
+  /// ResumeMember réactive un compte suspendu ; ses sessions fermées le
+  /// restent. Compte inconnu : NOT_FOUND.
+  $grpc.ResponseFuture<$0.ResumeMemberResponse> resumeMember(
+    $0.ResumeMemberRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$resumeMember, request, options: options);
+  }
+
+  /// CloseMemberSessions ferme les sessions et jetons d'API du compte sans le
+  /// suspendre (appareil perdu). Sur son propre compte, la session qui fait
+  /// l'appel reste ouverte. Compte inconnu : NOT_FOUND.
+  $grpc.ResponseFuture<$0.CloseMemberSessionsResponse> closeMemberSessions(
+    $0.CloseMemberSessionsRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$closeMemberSessions, request, options: options);
+  }
+
+  /// DeleteMember supprime le compte, définitivement ; une invitation en
+  /// attente est ainsi annulée. Le journal d'audit garde ses entrées. Nom de
+  /// confirmation différent : INVALID_ARGUMENT. Son propre compte, ou le
+  /// dernier administrateur actif : FAILED_PRECONDITION. Compte inconnu :
+  /// NOT_FOUND.
+  $grpc.ResponseFuture<$0.DeleteMemberResponse> deleteMember(
+    $0.DeleteMemberRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$deleteMember, request, options: options);
+  }
+
   // method descriptors
 
   static final _$listMembers =
@@ -78,6 +120,26 @@ class TeamServiceClient extends $grpc.Client {
           '/forgenet.v1.TeamService/RenewInvitation',
           ($0.RenewInvitationRequest value) => value.writeToBuffer(),
           $0.RenewInvitationResponse.fromBuffer);
+  static final _$suspendMember =
+      $grpc.ClientMethod<$0.SuspendMemberRequest, $0.SuspendMemberResponse>(
+          '/forgenet.v1.TeamService/SuspendMember',
+          ($0.SuspendMemberRequest value) => value.writeToBuffer(),
+          $0.SuspendMemberResponse.fromBuffer);
+  static final _$resumeMember =
+      $grpc.ClientMethod<$0.ResumeMemberRequest, $0.ResumeMemberResponse>(
+          '/forgenet.v1.TeamService/ResumeMember',
+          ($0.ResumeMemberRequest value) => value.writeToBuffer(),
+          $0.ResumeMemberResponse.fromBuffer);
+  static final _$closeMemberSessions = $grpc.ClientMethod<
+          $0.CloseMemberSessionsRequest, $0.CloseMemberSessionsResponse>(
+      '/forgenet.v1.TeamService/CloseMemberSessions',
+      ($0.CloseMemberSessionsRequest value) => value.writeToBuffer(),
+      $0.CloseMemberSessionsResponse.fromBuffer);
+  static final _$deleteMember =
+      $grpc.ClientMethod<$0.DeleteMemberRequest, $0.DeleteMemberResponse>(
+          '/forgenet.v1.TeamService/DeleteMember',
+          ($0.DeleteMemberRequest value) => value.writeToBuffer(),
+          $0.DeleteMemberResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('forgenet.v1.TeamService')
@@ -112,6 +174,42 @@ abstract class TeamServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.RenewInvitationRequest.fromBuffer(value),
         ($0.RenewInvitationResponse value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.SuspendMemberRequest, $0.SuspendMemberResponse>(
+            'SuspendMember',
+            suspendMember_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.SuspendMemberRequest.fromBuffer(value),
+            ($0.SuspendMemberResponse value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.ResumeMemberRequest, $0.ResumeMemberResponse>(
+            'ResumeMember',
+            resumeMember_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.ResumeMemberRequest.fromBuffer(value),
+            ($0.ResumeMemberResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.CloseMemberSessionsRequest,
+            $0.CloseMemberSessionsResponse>(
+        'CloseMemberSessions',
+        closeMemberSessions_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.CloseMemberSessionsRequest.fromBuffer(value),
+        ($0.CloseMemberSessionsResponse value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.DeleteMemberRequest, $0.DeleteMemberResponse>(
+            'DeleteMember',
+            deleteMember_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.DeleteMemberRequest.fromBuffer(value),
+            ($0.DeleteMemberResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.ListMembersResponse> listMembers_Pre($grpc.ServiceCall $call,
@@ -139,4 +237,40 @@ abstract class TeamServiceBase extends $grpc.Service {
 
   $async.Future<$0.RenewInvitationResponse> renewInvitation(
       $grpc.ServiceCall call, $0.RenewInvitationRequest request);
+
+  $async.Future<$0.SuspendMemberResponse> suspendMember_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.SuspendMemberRequest> $request) async {
+    return suspendMember($call, await $request);
+  }
+
+  $async.Future<$0.SuspendMemberResponse> suspendMember(
+      $grpc.ServiceCall call, $0.SuspendMemberRequest request);
+
+  $async.Future<$0.ResumeMemberResponse> resumeMember_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.ResumeMemberRequest> $request) async {
+    return resumeMember($call, await $request);
+  }
+
+  $async.Future<$0.ResumeMemberResponse> resumeMember(
+      $grpc.ServiceCall call, $0.ResumeMemberRequest request);
+
+  $async.Future<$0.CloseMemberSessionsResponse> closeMemberSessions_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.CloseMemberSessionsRequest> $request) async {
+    return closeMemberSessions($call, await $request);
+  }
+
+  $async.Future<$0.CloseMemberSessionsResponse> closeMemberSessions(
+      $grpc.ServiceCall call, $0.CloseMemberSessionsRequest request);
+
+  $async.Future<$0.DeleteMemberResponse> deleteMember_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.DeleteMemberRequest> $request) async {
+    return deleteMember($call, await $request);
+  }
+
+  $async.Future<$0.DeleteMemberResponse> deleteMember(
+      $grpc.ServiceCall call, $0.DeleteMemberRequest request);
 }
