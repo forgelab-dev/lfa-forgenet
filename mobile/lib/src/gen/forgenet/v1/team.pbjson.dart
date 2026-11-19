@@ -23,6 +23,7 @@ const MemberStatus$json = {
     {'1': 'MEMBER_STATUS_ACTIVE', '2': 1},
     {'1': 'MEMBER_STATUS_INVITED', '2': 2},
     {'1': 'MEMBER_STATUS_INVITATION_EXPIRED', '2': 3},
+    {'1': 'MEMBER_STATUS_SUSPENDED', '2': 4},
   ],
 };
 
@@ -30,7 +31,7 @@ const MemberStatus$json = {
 final $typed_data.Uint8List memberStatusDescriptor = $convert.base64Decode(
     'CgxNZW1iZXJTdGF0dXMSHQoZTUVNQkVSX1NUQVRVU19VTlNQRUNJRklFRBAAEhgKFE1FTUJFUl'
     '9TVEFUVVNfQUNUSVZFEAESGQoVTUVNQkVSX1NUQVRVU19JTlZJVEVEEAISJAogTUVNQkVSX1NU'
-    'QVRVU19JTlZJVEFUSU9OX0VYUElSRUQQAw==');
+    'QVRVU19JTlZJVEFUSU9OX0VYUElSRUQQAxIbChdNRU1CRVJfU1RBVFVTX1NVU1BFTkRFRBAE');
 
 @$core.Deprecated('Use memberDescriptor instead')
 const Member$json = {
@@ -71,6 +72,14 @@ const Member$json = {
       '6': '.google.protobuf.Timestamp',
       '10': 'createdAt'
     },
+    {
+      '1': 'suspended_at',
+      '3': 8,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'suspendedAt'
+    },
   ],
 };
 
@@ -81,7 +90,8 @@ final $typed_data.Uint8List memberDescriptor = $convert.base64Decode(
     'UgRyb2xlEjEKBnN0YXR1cxgFIAEoDjIZLmZvcmdlbmV0LnYxLk1lbWJlclN0YXR1c1IGc3RhdH'
     'VzEk4KFWludml0YXRpb25fZXhwaXJlc19hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1l'
     'c3RhbXBSE2ludml0YXRpb25FeHBpcmVzQXQSOQoKY3JlYXRlZF9hdBgHIAEoCzIaLmdvb2dsZS'
-    '5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdA==');
+    '5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI9CgxzdXNwZW5kZWRfYXQYCCABKAsyGi5n'
+    'b29nbGUucHJvdG9idWYuVGltZXN0YW1wUgtzdXNwZW5kZWRBdA==');
 
 @$core.Deprecated('Use listMembersRequestDescriptor instead')
 const ListMembersRequest$json = {
@@ -214,3 +224,120 @@ final $typed_data.Uint8List renewInvitationResponseDescriptor =
     $convert.base64Decode(
         'ChdSZW5ld0ludml0YXRpb25SZXNwb25zZRI1CgZyZXN1bHQYASABKAsyHS5mb3JnZW5ldC52MS'
         '5JbnZpdGF0aW9uUmVzdWx0UgZyZXN1bHQ=');
+
+@$core.Deprecated('Use suspendMemberRequestDescriptor instead')
+const SuspendMemberRequest$json = {
+  '1': 'SuspendMemberRequest',
+  '2': [
+    {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
+  ],
+};
+
+/// Descriptor for `SuspendMemberRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List suspendMemberRequestDescriptor =
+    $convert.base64Decode(
+        'ChRTdXNwZW5kTWVtYmVyUmVxdWVzdBIXCgd1c2VyX2lkGAEgASgJUgZ1c2VySWQ=');
+
+@$core.Deprecated('Use suspendMemberResponseDescriptor instead')
+const SuspendMemberResponse$json = {
+  '1': 'SuspendMemberResponse',
+  '2': [
+    {
+      '1': 'member',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.forgenet.v1.Member',
+      '10': 'member'
+    },
+    {'1': 'closed_sessions', '3': 2, '4': 1, '5': 3, '10': 'closedSessions'},
+  ],
+};
+
+/// Descriptor for `SuspendMemberResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List suspendMemberResponseDescriptor = $convert.base64Decode(
+    'ChVTdXNwZW5kTWVtYmVyUmVzcG9uc2USKwoGbWVtYmVyGAEgASgLMhMuZm9yZ2VuZXQudjEuTW'
+    'VtYmVyUgZtZW1iZXISJwoPY2xvc2VkX3Nlc3Npb25zGAIgASgDUg5jbG9zZWRTZXNzaW9ucw==');
+
+@$core.Deprecated('Use resumeMemberRequestDescriptor instead')
+const ResumeMemberRequest$json = {
+  '1': 'ResumeMemberRequest',
+  '2': [
+    {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
+  ],
+};
+
+/// Descriptor for `ResumeMemberRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List resumeMemberRequestDescriptor =
+    $convert.base64Decode(
+        'ChNSZXN1bWVNZW1iZXJSZXF1ZXN0EhcKB3VzZXJfaWQYASABKAlSBnVzZXJJZA==');
+
+@$core.Deprecated('Use resumeMemberResponseDescriptor instead')
+const ResumeMemberResponse$json = {
+  '1': 'ResumeMemberResponse',
+  '2': [
+    {
+      '1': 'member',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.forgenet.v1.Member',
+      '10': 'member'
+    },
+  ],
+};
+
+/// Descriptor for `ResumeMemberResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List resumeMemberResponseDescriptor = $convert.base64Decode(
+    'ChRSZXN1bWVNZW1iZXJSZXNwb25zZRIrCgZtZW1iZXIYASABKAsyEy5mb3JnZW5ldC52MS5NZW'
+    '1iZXJSBm1lbWJlcg==');
+
+@$core.Deprecated('Use closeMemberSessionsRequestDescriptor instead')
+const CloseMemberSessionsRequest$json = {
+  '1': 'CloseMemberSessionsRequest',
+  '2': [
+    {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
+  ],
+};
+
+/// Descriptor for `CloseMemberSessionsRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List closeMemberSessionsRequestDescriptor =
+    $convert.base64Decode(
+        'ChpDbG9zZU1lbWJlclNlc3Npb25zUmVxdWVzdBIXCgd1c2VyX2lkGAEgASgJUgZ1c2VySWQ=');
+
+@$core.Deprecated('Use closeMemberSessionsResponseDescriptor instead')
+const CloseMemberSessionsResponse$json = {
+  '1': 'CloseMemberSessionsResponse',
+  '2': [
+    {'1': 'closed_sessions', '3': 1, '4': 1, '5': 3, '10': 'closedSessions'},
+  ],
+};
+
+/// Descriptor for `CloseMemberSessionsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List closeMemberSessionsResponseDescriptor =
+    $convert.base64Decode(
+        'ChtDbG9zZU1lbWJlclNlc3Npb25zUmVzcG9uc2USJwoPY2xvc2VkX3Nlc3Npb25zGAEgASgDUg'
+        '5jbG9zZWRTZXNzaW9ucw==');
+
+@$core.Deprecated('Use deleteMemberRequestDescriptor instead')
+const DeleteMemberRequest$json = {
+  '1': 'DeleteMemberRequest',
+  '2': [
+    {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
+    {'1': 'confirm_username', '3': 2, '4': 1, '5': 9, '10': 'confirmUsername'},
+  ],
+};
+
+/// Descriptor for `DeleteMemberRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteMemberRequestDescriptor = $convert.base64Decode(
+    'ChNEZWxldGVNZW1iZXJSZXF1ZXN0EhcKB3VzZXJfaWQYASABKAlSBnVzZXJJZBIpChBjb25maX'
+    'JtX3VzZXJuYW1lGAIgASgJUg9jb25maXJtVXNlcm5hbWU=');
+
+@$core.Deprecated('Use deleteMemberResponseDescriptor instead')
+const DeleteMemberResponse$json = {
+  '1': 'DeleteMemberResponse',
+};
+
+/// Descriptor for `DeleteMemberResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteMemberResponseDescriptor =
+    $convert.base64Decode('ChREZWxldGVNZW1iZXJSZXNwb25zZQ==');

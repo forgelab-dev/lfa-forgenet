@@ -19,6 +19,9 @@ enum MemberStatus {
   // Le compte attend son mot de passe, mais aucune invitation valable ne
   // court : elle a expiré, ou le compte a été créé sans elle.
   MEMBER_STATUS_INVITATION_EXPIRED = 3;
+  // Le compte est suspendu : il ne peut plus se connecter, et aucun de ses
+  // jetons n'est accepté. Un administrateur peut le réactiver.
+  MEMBER_STATUS_SUSPENDED = 4;
 }
 
 // --- MODELS ---
@@ -34,6 +37,8 @@ message Member {
   // Fin de validité de l'invitation en cours ; absente hors MEMBER_STATUS_INVITED.
   google.protobuf.Timestamp invitation_expires_at = 6;
   google.protobuf.Timestamp created_at = 7;
+  // Date de la suspension ; absente hors MEMBER_STATUS_SUSPENDED.
+  google.protobuf.Timestamp suspended_at = 8;
 }
 
 // --- REQUEST / RESPONSE MESSAGES ---
@@ -80,6 +85,42 @@ message RenewInvitationResponse {
   InvitationResult result = 1;
 }
 
+message SuspendMemberRequest {
+  string user_id = 1;
+}
+
+message SuspendMemberResponse {
+  Member member = 1;
+  // Nombre de sessions et de jetons d'API fermés.
+  int64 closed_sessions = 2;
+}
+
+message ResumeMemberRequest {
+  string user_id = 1;
+}
+
+message ResumeMemberResponse {
+  Member member = 1;
+}
+
+message CloseMemberSessionsRequest {
+  string user_id = 1;
+}
+
+message CloseMemberSessionsResponse {
+  // Nombre de sessions et de jetons d'API fermés.
+  int64 closed_sessions = 1;
+}
+
+message DeleteMemberRequest {
+  string user_id = 1;
+  // Le nom du compte, retapé pour confirmer : une suppression ne part pas
+  // d'un clic ou d'un identifiant mal recopié.
+  string confirm_username = 2;
+}
+
+message DeleteMemberResponse {}
+
 // --- SERVICE ---
 
 // TeamService gère les membres du serveur et leurs invitations (ADR-0014).
@@ -96,4 +137,26 @@ service TeamService {
   // mot de passe ; le nouveau lien annule l'ancien. Compte déjà actif :
   // FAILED_PRECONDITION. Compte inconnu : NOT_FOUND.
   rpc RenewInvitation(RenewInvitationRequest) returns (RenewInvitationResponse);
+
+  // SuspendMember empêche le compte de se connecter et ferme tout de suite ses
+  // sessions, jetons d'API et liens à usage unique. Réversible : le compte et
+  // son historique restent. Son propre compte, ou le dernier administrateur
+  // actif : FAILED_PRECONDITION. Compte inconnu : NOT_FOUND.
+  rpc SuspendMember(SuspendMemberRequest) returns (SuspendMemberResponse);
+
+  // ResumeMember réactive un compte suspendu ; ses sessions fermées le
+  // restent. Compte inconnu : NOT_FOUND.
+  rpc ResumeMember(ResumeMemberRequest) returns (ResumeMemberResponse);
+
+  // CloseMemberSessions ferme les sessions et jetons d'API du compte sans le
+  // suspendre (appareil perdu). Sur son propre compte, la session qui fait
+  // l'appel reste ouverte. Compte inconnu : NOT_FOUND.
+  rpc CloseMemberSessions(CloseMemberSessionsRequest) returns (CloseMemberSessionsResponse);
+
+  // DeleteMember supprime le compte, définitivement ; une invitation en
+  // attente est ainsi annulée. Le journal d'audit garde ses entrées. Nom de
+  // confirmation différent : INVALID_ARGUMENT. Son propre compte, ou le
+  // dernier administrateur actif : FAILED_PRECONDITION. Compte inconnu :
+  // NOT_FOUND.
+  rpc DeleteMember(DeleteMemberRequest) returns (DeleteMemberResponse);
 }

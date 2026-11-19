@@ -32,15 +32,21 @@ class MemberStatus extends $pb.ProtobufEnum {
   static const MemberStatus MEMBER_STATUS_INVITATION_EXPIRED = MemberStatus._(
       3, _omitEnumNames ? '' : 'MEMBER_STATUS_INVITATION_EXPIRED');
 
+  /// Le compte est suspendu : il ne peut plus se connecter, et aucun de ses
+  /// jetons n'est accepté. Un administrateur peut le réactiver.
+  static const MemberStatus MEMBER_STATUS_SUSPENDED =
+      MemberStatus._(4, _omitEnumNames ? '' : 'MEMBER_STATUS_SUSPENDED');
+
   static const $core.List<MemberStatus> values = <MemberStatus>[
     MEMBER_STATUS_UNSPECIFIED,
     MEMBER_STATUS_ACTIVE,
     MEMBER_STATUS_INVITED,
     MEMBER_STATUS_INVITATION_EXPIRED,
+    MEMBER_STATUS_SUSPENDED,
   ];
 
   static final $core.List<MemberStatus?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static MemberStatus? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

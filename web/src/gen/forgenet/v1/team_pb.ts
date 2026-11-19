@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file forgenet/v1/team.proto.
  */
 export const file_forgenet_v1_team: GenFile = /*@__PURE__*/
-  fileDesc("ChZmb3JnZW5ldC92MS90ZWFtLnByb3RvEgtmb3JnZW5ldC52MSLwAQoGTWVtYmVyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZRIpCgZzdGF0dXMYBSABKA4yGS5mb3JnZW5ldC52MS5NZW1iZXJTdGF0dXMSOQoVaW52aXRhdGlvbl9leHBpcmVzX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpjcmVhdGVkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIUChJMaXN0TWVtYmVyc1JlcXVlc3QiUQoTTGlzdE1lbWJlcnNSZXNwb25zZRIkCgdtZW1iZXJzGAEgAygLMhMuZm9yZ2VuZXQudjEuTWVtYmVyEhQKDG1haWxfZW5hYmxlZBgCIAEoCCJbChNJbnZpdGVNZW1iZXJSZXF1ZXN0EhAKCHVzZXJuYW1lGAEgASgJEg0KBWVtYWlsGAIgASgJEiMKBHJvbGUYAyABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZSJ5ChBJbnZpdGF0aW9uUmVzdWx0EiMKBm1lbWJlchgBIAEoCzITLmZvcmdlbmV0LnYxLk1lbWJlchIPCgdlbWFpbGVkGAIgASgIEhYKDmludml0YXRpb25fdXJsGAMgASgJEhcKD2xvY2FsX2Rhc2hib2FyZBgEIAEoCCJFChRJbnZpdGVNZW1iZXJSZXNwb25zZRItCgZyZXN1bHQYASABKAsyHS5mb3JnZW5ldC52MS5JbnZpdGF0aW9uUmVzdWx0IikKFlJlbmV3SW52aXRhdGlvblJlcXVlc3QSDwoHdXNlcl9pZBgBIAEoCSJIChdSZW5ld0ludml0YXRpb25SZXNwb25zZRItCgZyZXN1bHQYASABKAsyHS5mb3JnZW5ldC52MS5JbnZpdGF0aW9uUmVzdWx0KogBCgxNZW1iZXJTdGF0dXMSHQoZTUVNQkVSX1NUQVRVU19VTlNQRUNJRklFRBAAEhgKFE1FTUJFUl9TVEFUVVNfQUNUSVZFEAESGQoVTUVNQkVSX1NUQVRVU19JTlZJVEVEEAISJAogTUVNQkVSX1NUQVRVU19JTlZJVEFUSU9OX0VYUElSRUQQAzKSAgoLVGVhbVNlcnZpY2USUAoLTGlzdE1lbWJlcnMSHy5mb3JnZW5ldC52MS5MaXN0TWVtYmVyc1JlcXVlc3QaIC5mb3JnZW5ldC52MS5MaXN0TWVtYmVyc1Jlc3BvbnNlElMKDEludml0ZU1lbWJlchIgLmZvcmdlbmV0LnYxLkludml0ZU1lbWJlclJlcXVlc3QaIS5mb3JnZW5ldC52MS5JbnZpdGVNZW1iZXJSZXNwb25zZRJcCg9SZW5ld0ludml0YXRpb24SIy5mb3JnZW5ldC52MS5SZW5ld0ludml0YXRpb25SZXF1ZXN0GiQuZm9yZ2VuZXQudjEuUmVuZXdJbnZpdGF0aW9uUmVzcG9uc2VCRVpDZ2l0aHViLmNvbS9mb3JnZWxhYi1kZXYvbGZhLWZvcmdlbmV0L3BrZy9nZW4vZm9yZ2VuZXQvdjE7Zm9yZ2VuZXR2MWIGcHJvdG8z", [file_forgenet_v1_auth, file_google_protobuf_timestamp]);
+  fileDesc("ChZmb3JnZW5ldC92MS90ZWFtLnByb3RvEgtmb3JnZW5ldC52MSKiAgoGTWVtYmVyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZRIpCgZzdGF0dXMYBSABKA4yGS5mb3JnZW5ldC52MS5NZW1iZXJTdGF0dXMSOQoVaW52aXRhdGlvbl9leHBpcmVzX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpjcmVhdGVkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxzdXNwZW5kZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhQKEkxpc3RNZW1iZXJzUmVxdWVzdCJRChNMaXN0TWVtYmVyc1Jlc3BvbnNlEiQKB21lbWJlcnMYASADKAsyEy5mb3JnZW5ldC52MS5NZW1iZXISFAoMbWFpbF9lbmFibGVkGAIgASgIIlsKE0ludml0ZU1lbWJlclJlcXVlc3QSEAoIdXNlcm5hbWUYASABKAkSDQoFZW1haWwYAiABKAkSIwoEcm9sZRgDIAEoDjIVLmZvcmdlbmV0LnYxLlVzZXJSb2xlInkKEEludml0YXRpb25SZXN1bHQSIwoGbWVtYmVyGAEgASgLMhMuZm9yZ2VuZXQudjEuTWVtYmVyEg8KB2VtYWlsZWQYAiABKAgSFgoOaW52aXRhdGlvbl91cmwYAyABKAkSFwoPbG9jYWxfZGFzaGJvYXJkGAQgASgIIkUKFEludml0ZU1lbWJlclJlc3BvbnNlEi0KBnJlc3VsdBgBIAEoCzIdLmZvcmdlbmV0LnYxLkludml0YXRpb25SZXN1bHQiKQoWUmVuZXdJbnZpdGF0aW9uUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJIkgKF1JlbmV3SW52aXRhdGlvblJlc3BvbnNlEi0KBnJlc3VsdBgBIAEoCzIdLmZvcmdlbmV0LnYxLkludml0YXRpb25SZXN1bHQiJwoUU3VzcGVuZE1lbWJlclJlcXVlc3QSDwoHdXNlcl9pZBgBIAEoCSJVChVTdXNwZW5kTWVtYmVyUmVzcG9uc2USIwoGbWVtYmVyGAEgASgLMhMuZm9yZ2VuZXQudjEuTWVtYmVyEhcKD2Nsb3NlZF9zZXNzaW9ucxgCIAEoAyImChNSZXN1bWVNZW1iZXJSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiOwoUUmVzdW1lTWVtYmVyUmVzcG9uc2USIwoGbWVtYmVyGAEgASgLMhMuZm9yZ2VuZXQudjEuTWVtYmVyIi0KGkNsb3NlTWVtYmVyU2Vzc2lvbnNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiNgobQ2xvc2VNZW1iZXJTZXNzaW9uc1Jlc3BvbnNlEhcKD2Nsb3NlZF9zZXNzaW9ucxgBIAEoAyJAChNEZWxldGVNZW1iZXJSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSGAoQY29uZmlybV91c2VybmFtZRgCIAEoCSIWChREZWxldGVNZW1iZXJSZXNwb25zZSqlAQoMTWVtYmVyU3RhdHVzEh0KGU1FTUJFUl9TVEFUVVNfVU5TUEVDSUZJRUQQABIYChRNRU1CRVJfU1RBVFVTX0FDVElWRRABEhkKFU1FTUJFUl9TVEFUVVNfSU5WSVRFRBACEiQKIE1FTUJFUl9TVEFUVVNfSU5WSVRBVElPTl9FWFBJUkVEEAMSGwoXTUVNQkVSX1NUQVRVU19TVVNQRU5ERUQQBDL+BAoLVGVhbVNlcnZpY2USUAoLTGlzdE1lbWJlcnMSHy5mb3JnZW5ldC52MS5MaXN0TWVtYmVyc1JlcXVlc3QaIC5mb3JnZW5ldC52MS5MaXN0TWVtYmVyc1Jlc3BvbnNlElMKDEludml0ZU1lbWJlchIgLmZvcmdlbmV0LnYxLkludml0ZU1lbWJlclJlcXVlc3QaIS5mb3JnZW5ldC52MS5JbnZpdGVNZW1iZXJSZXNwb25zZRJcCg9SZW5ld0ludml0YXRpb24SIy5mb3JnZW5ldC52MS5SZW5ld0ludml0YXRpb25SZXF1ZXN0GiQuZm9yZ2VuZXQudjEuUmVuZXdJbnZpdGF0aW9uUmVzcG9uc2USVgoNU3VzcGVuZE1lbWJlchIhLmZvcmdlbmV0LnYxLlN1c3BlbmRNZW1iZXJSZXF1ZXN0GiIuZm9yZ2VuZXQudjEuU3VzcGVuZE1lbWJlclJlc3BvbnNlElMKDFJlc3VtZU1lbWJlchIgLmZvcmdlbmV0LnYxLlJlc3VtZU1lbWJlclJlcXVlc3QaIS5mb3JnZW5ldC52MS5SZXN1bWVNZW1iZXJSZXNwb25zZRJoChNDbG9zZU1lbWJlclNlc3Npb25zEicuZm9yZ2VuZXQudjEuQ2xvc2VNZW1iZXJTZXNzaW9uc1JlcXVlc3QaKC5mb3JnZW5ldC52MS5DbG9zZU1lbWJlclNlc3Npb25zUmVzcG9uc2USUwoMRGVsZXRlTWVtYmVyEiAuZm9yZ2VuZXQudjEuRGVsZXRlTWVtYmVyUmVxdWVzdBohLmZvcmdlbmV0LnYxLkRlbGV0ZU1lbWJlclJlc3BvbnNlQkVaQ2dpdGh1Yi5jb20vZm9yZ2VsYWItZGV2L2xmYS1mb3JnZW5ldC9wa2cvZ2VuL2ZvcmdlbmV0L3YxO2ZvcmdlbmV0djFiBnByb3RvMw", [file_forgenet_v1_auth, file_google_protobuf_timestamp]);
 
 /**
  * Member est un compte du serveur, vu par un administrateur. Le mot de passe
@@ -59,6 +59,13 @@ export type Member = Message<"forgenet.v1.Member"> & {
    * @generated from field: google.protobuf.Timestamp created_at = 7;
    */
   createdAt?: Timestamp | undefined;
+
+  /**
+   * Date de la suspension ; absente hors MEMBER_STATUS_SUSPENDED.
+   *
+   * @generated from field: google.protobuf.Timestamp suspended_at = 8;
+   */
+  suspendedAt?: Timestamp | undefined;
 };
 
 /**
@@ -231,6 +238,155 @@ export const RenewInvitationResponseSchema: GenMessage<RenewInvitationResponse> 
   messageDesc(file_forgenet_v1_team, 7);
 
 /**
+ * @generated from message forgenet.v1.SuspendMemberRequest
+ */
+export type SuspendMemberRequest = Message<"forgenet.v1.SuspendMemberRequest"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+};
+
+/**
+ * Describes the message forgenet.v1.SuspendMemberRequest.
+ * Use `create(SuspendMemberRequestSchema)` to create a new message.
+ */
+export const SuspendMemberRequestSchema: GenMessage<SuspendMemberRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_team, 8);
+
+/**
+ * @generated from message forgenet.v1.SuspendMemberResponse
+ */
+export type SuspendMemberResponse = Message<"forgenet.v1.SuspendMemberResponse"> & {
+  /**
+   * @generated from field: forgenet.v1.Member member = 1;
+   */
+  member?: Member | undefined;
+
+  /**
+   * Nombre de sessions et de jetons d'API fermés.
+   *
+   * @generated from field: int64 closed_sessions = 2;
+   */
+  closedSessions: bigint;
+};
+
+/**
+ * Describes the message forgenet.v1.SuspendMemberResponse.
+ * Use `create(SuspendMemberResponseSchema)` to create a new message.
+ */
+export const SuspendMemberResponseSchema: GenMessage<SuspendMemberResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_team, 9);
+
+/**
+ * @generated from message forgenet.v1.ResumeMemberRequest
+ */
+export type ResumeMemberRequest = Message<"forgenet.v1.ResumeMemberRequest"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+};
+
+/**
+ * Describes the message forgenet.v1.ResumeMemberRequest.
+ * Use `create(ResumeMemberRequestSchema)` to create a new message.
+ */
+export const ResumeMemberRequestSchema: GenMessage<ResumeMemberRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_team, 10);
+
+/**
+ * @generated from message forgenet.v1.ResumeMemberResponse
+ */
+export type ResumeMemberResponse = Message<"forgenet.v1.ResumeMemberResponse"> & {
+  /**
+   * @generated from field: forgenet.v1.Member member = 1;
+   */
+  member?: Member | undefined;
+};
+
+/**
+ * Describes the message forgenet.v1.ResumeMemberResponse.
+ * Use `create(ResumeMemberResponseSchema)` to create a new message.
+ */
+export const ResumeMemberResponseSchema: GenMessage<ResumeMemberResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_team, 11);
+
+/**
+ * @generated from message forgenet.v1.CloseMemberSessionsRequest
+ */
+export type CloseMemberSessionsRequest = Message<"forgenet.v1.CloseMemberSessionsRequest"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+};
+
+/**
+ * Describes the message forgenet.v1.CloseMemberSessionsRequest.
+ * Use `create(CloseMemberSessionsRequestSchema)` to create a new message.
+ */
+export const CloseMemberSessionsRequestSchema: GenMessage<CloseMemberSessionsRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_team, 12);
+
+/**
+ * @generated from message forgenet.v1.CloseMemberSessionsResponse
+ */
+export type CloseMemberSessionsResponse = Message<"forgenet.v1.CloseMemberSessionsResponse"> & {
+  /**
+   * Nombre de sessions et de jetons d'API fermés.
+   *
+   * @generated from field: int64 closed_sessions = 1;
+   */
+  closedSessions: bigint;
+};
+
+/**
+ * Describes the message forgenet.v1.CloseMemberSessionsResponse.
+ * Use `create(CloseMemberSessionsResponseSchema)` to create a new message.
+ */
+export const CloseMemberSessionsResponseSchema: GenMessage<CloseMemberSessionsResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_team, 13);
+
+/**
+ * @generated from message forgenet.v1.DeleteMemberRequest
+ */
+export type DeleteMemberRequest = Message<"forgenet.v1.DeleteMemberRequest"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+
+  /**
+   * Le nom du compte, retapé pour confirmer : une suppression ne part pas
+   * d'un clic ou d'un identifiant mal recopié.
+   *
+   * @generated from field: string confirm_username = 2;
+   */
+  confirmUsername: string;
+};
+
+/**
+ * Describes the message forgenet.v1.DeleteMemberRequest.
+ * Use `create(DeleteMemberRequestSchema)` to create a new message.
+ */
+export const DeleteMemberRequestSchema: GenMessage<DeleteMemberRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_team, 14);
+
+/**
+ * @generated from message forgenet.v1.DeleteMemberResponse
+ */
+export type DeleteMemberResponse = Message<"forgenet.v1.DeleteMemberResponse"> & {
+};
+
+/**
+ * Describes the message forgenet.v1.DeleteMemberResponse.
+ * Use `create(DeleteMemberResponseSchema)` to create a new message.
+ */
+export const DeleteMemberResponseSchema: GenMessage<DeleteMemberResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_team, 15);
+
+/**
  * MemberStatus dit où en est un compte (ADR-0014).
  *
  * @generated from enum forgenet.v1.MemberStatus
@@ -262,6 +418,14 @@ export enum MemberStatus {
    * @generated from enum value: MEMBER_STATUS_INVITATION_EXPIRED = 3;
    */
   INVITATION_EXPIRED = 3,
+
+  /**
+   * Le compte est suspendu : il ne peut plus se connecter, et aucun de ses
+   * jetons n'est accepté. Un administrateur peut le réactiver.
+   *
+   * @generated from enum value: MEMBER_STATUS_SUSPENDED = 4;
+   */
+  SUSPENDED = 4,
 }
 
 /**
@@ -308,6 +472,56 @@ export const TeamService: GenService<{
     methodKind: "unary";
     input: typeof RenewInvitationRequestSchema;
     output: typeof RenewInvitationResponseSchema;
+  },
+  /**
+   * SuspendMember empêche le compte de se connecter et ferme tout de suite ses
+   * sessions, jetons d'API et liens à usage unique. Réversible : le compte et
+   * son historique restent. Son propre compte, ou le dernier administrateur
+   * actif : FAILED_PRECONDITION. Compte inconnu : NOT_FOUND.
+   *
+   * @generated from rpc forgenet.v1.TeamService.SuspendMember
+   */
+  suspendMember: {
+    methodKind: "unary";
+    input: typeof SuspendMemberRequestSchema;
+    output: typeof SuspendMemberResponseSchema;
+  },
+  /**
+   * ResumeMember réactive un compte suspendu ; ses sessions fermées le
+   * restent. Compte inconnu : NOT_FOUND.
+   *
+   * @generated from rpc forgenet.v1.TeamService.ResumeMember
+   */
+  resumeMember: {
+    methodKind: "unary";
+    input: typeof ResumeMemberRequestSchema;
+    output: typeof ResumeMemberResponseSchema;
+  },
+  /**
+   * CloseMemberSessions ferme les sessions et jetons d'API du compte sans le
+   * suspendre (appareil perdu). Sur son propre compte, la session qui fait
+   * l'appel reste ouverte. Compte inconnu : NOT_FOUND.
+   *
+   * @generated from rpc forgenet.v1.TeamService.CloseMemberSessions
+   */
+  closeMemberSessions: {
+    methodKind: "unary";
+    input: typeof CloseMemberSessionsRequestSchema;
+    output: typeof CloseMemberSessionsResponseSchema;
+  },
+  /**
+   * DeleteMember supprime le compte, définitivement ; une invitation en
+   * attente est ainsi annulée. Le journal d'audit garde ses entrées. Nom de
+   * confirmation différent : INVALID_ARGUMENT. Son propre compte, ou le
+   * dernier administrateur actif : FAILED_PRECONDITION. Compte inconnu :
+   * NOT_FOUND.
+   *
+   * @generated from rpc forgenet.v1.TeamService.DeleteMember
+   */
+  deleteMember: {
+    methodKind: "unary";
+    input: typeof DeleteMemberRequestSchema;
+    output: typeof DeleteMemberResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_forgenet_v1_team, 0);

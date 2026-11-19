@@ -140,6 +140,8 @@ func (s *TeamServiceServer) RenewInvitation(ctx context.Context, req *forgenetv1
 		return nil, status.Error(codes.NotFound, "ce compte n'existe plus")
 	case err != nil:
 		return nil, s.unavailable(err, "lecture du compte impossible")
+	case user.Suspended():
+		return nil, status.Error(codes.FailedPrecondition, "ce compte est suspendu : réactivez-le avant de renvoyer son invitation")
 	case auth.HasPassword(user):
 		return nil, status.Error(codes.FailedPrecondition, "ce compte a déjà choisi son mot de passe : il n'a plus besoin d'invitation")
 	}
@@ -187,6 +189,86 @@ func (s *TeamServiceServer) invite(ctx context.Context, claims *auth.Claims, use
 	return result, nil
 }
 
+// SuspendMember suspend un compte et ferme ses sessions, jetons et liens.
+func (s *TeamServiceServer) SuspendMember(ctx context.Context, req *forgenetv1.SuspendMemberRequest) (*forgenetv1.SuspendMemberResponse, error) {
+	claims, ok := auth.UserFromContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "authentification requise")
+	}
+	user, closed, err := s.deps.Auth.SuspendAccount(ctx, claims.UserID, req.GetUserId())
+	if err != nil {
+		return nil, s.accountError(err, "suspension du compte impossible")
+	}
+	return &forgenetv1.SuspendMemberResponse{Member: toMember(user, time.Time{}, false), ClosedSessions: closed}, nil
+}
+
+// ResumeMember réactive un compte suspendu.
+func (s *TeamServiceServer) ResumeMember(ctx context.Context, req *forgenetv1.ResumeMemberRequest) (*forgenetv1.ResumeMemberResponse, error) {
+	claims, ok := auth.UserFromContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "authentification requise")
+	}
+	user, err := s.deps.Auth.ResumeAccount(ctx, claims.UserID, req.GetUserId())
+	if err != nil {
+		return nil, s.accountError(err, "réactivation du compte impossible")
+	}
+	// Un compte invité réactivé n'a plus de lien (la suspension l'a annulé) :
+	// il apparaît « invitation expirée », à renvoyer.
+	return &forgenetv1.ResumeMemberResponse{Member: toMember(user, time.Time{}, false)}, nil
+}
+
+// CloseMemberSessions ferme les sessions et jetons d'un compte, sans le
+// suspendre. Sur son propre compte, la session de l'appel reste ouverte.
+func (s *TeamServiceServer) CloseMemberSessions(ctx context.Context, req *forgenetv1.CloseMemberSessionsRequest) (*forgenetv1.CloseMemberSessionsResponse, error) {
+	claims, ok := auth.UserFromContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "authentification requise")
+	}
+	keep := ""
+	if req.GetUserId() == claims.UserID {
+		keep = claims.SessionID
+	}
+	closed, err := s.deps.Auth.CloseSessions(ctx, claims.UserID, req.GetUserId(), keep)
+	if err != nil {
+		return nil, s.accountError(err, "fermeture des sessions impossible")
+	}
+	return &forgenetv1.CloseMemberSessionsResponse{ClosedSessions: closed}, nil
+}
+
+// DeleteMember supprime un compte après confirmation par son nom.
+func (s *TeamServiceServer) DeleteMember(ctx context.Context, req *forgenetv1.DeleteMemberRequest) (*forgenetv1.DeleteMemberResponse, error) {
+	claims, ok := auth.UserFromContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "authentification requise")
+	}
+	user, err := s.deps.Users.GetUserByID(ctx, req.GetUserId())
+	if err != nil {
+		return nil, s.accountError(err, "lecture du compte impossible")
+	}
+	// La confirmation est vérifiée ici, pas seulement dans le navigateur : un
+	// appel direct à l'API doit aussi retaper le nom.
+	if strings.TrimSpace(req.GetConfirmUsername()) != user.Username {
+		return nil, status.Error(codes.InvalidArgument, "tapez exactement le nom du compte pour confirmer la suppression")
+	}
+	if _, err := s.deps.Auth.DeleteAccount(ctx, claims.UserID, user.ID); err != nil {
+		return nil, s.accountError(err, "suppression du compte impossible")
+	}
+	return &forgenetv1.DeleteMemberResponse{}, nil
+}
+
+// accountError traduit les refus d'une action sur un compte.
+func (s *TeamServiceServer) accountError(err error, logMsg string) error {
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		return status.Error(codes.NotFound, "ce compte n'existe plus")
+	case errors.Is(err, auth.ErrSelfAction):
+		return status.Error(codes.FailedPrecondition, "vous ne pouvez pas suspendre ni supprimer votre propre compte : un autre administrateur doit le faire")
+	case errors.Is(err, store.ErrLastAdmin):
+		return status.Error(codes.FailedPrecondition, "c'est le dernier administrateur actif : nommez-en un autre avant")
+	}
+	return s.unavailable(err, logMsg)
+}
+
 func (s *TeamServiceServer) unavailable(err error, logMsg string) error {
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return status.FromContextError(err).Err()
@@ -201,6 +283,9 @@ func toMember(u *store.User, invitationExpires time.Time, invited bool) *forgene
 		CreatedAt: timestamppb.New(u.CreatedAt),
 	}
 	switch {
+	case u.Suspended():
+		m.Status = forgenetv1.MemberStatus_MEMBER_STATUS_SUSPENDED
+		m.SuspendedAt = timestamppb.New(*u.SuspendedAt)
 	case auth.HasPassword(u):
 		m.Status = forgenetv1.MemberStatus_MEMBER_STATUS_ACTIVE
 	case invited:

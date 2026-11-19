@@ -19,9 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TeamService_ListMembers_FullMethodName     = "/forgenet.v1.TeamService/ListMembers"
-	TeamService_InviteMember_FullMethodName    = "/forgenet.v1.TeamService/InviteMember"
-	TeamService_RenewInvitation_FullMethodName = "/forgenet.v1.TeamService/RenewInvitation"
+	TeamService_ListMembers_FullMethodName         = "/forgenet.v1.TeamService/ListMembers"
+	TeamService_InviteMember_FullMethodName        = "/forgenet.v1.TeamService/InviteMember"
+	TeamService_RenewInvitation_FullMethodName     = "/forgenet.v1.TeamService/RenewInvitation"
+	TeamService_SuspendMember_FullMethodName       = "/forgenet.v1.TeamService/SuspendMember"
+	TeamService_ResumeMember_FullMethodName        = "/forgenet.v1.TeamService/ResumeMember"
+	TeamService_CloseMemberSessions_FullMethodName = "/forgenet.v1.TeamService/CloseMemberSessions"
+	TeamService_DeleteMember_FullMethodName        = "/forgenet.v1.TeamService/DeleteMember"
 )
 
 // TeamServiceClient is the client API for TeamService service.
@@ -40,6 +44,24 @@ type TeamServiceClient interface {
 	// mot de passe ; le nouveau lien annule l'ancien. Compte déjà actif :
 	// FAILED_PRECONDITION. Compte inconnu : NOT_FOUND.
 	RenewInvitation(ctx context.Context, in *RenewInvitationRequest, opts ...grpc.CallOption) (*RenewInvitationResponse, error)
+	// SuspendMember empêche le compte de se connecter et ferme tout de suite ses
+	// sessions, jetons d'API et liens à usage unique. Réversible : le compte et
+	// son historique restent. Son propre compte, ou le dernier administrateur
+	// actif : FAILED_PRECONDITION. Compte inconnu : NOT_FOUND.
+	SuspendMember(ctx context.Context, in *SuspendMemberRequest, opts ...grpc.CallOption) (*SuspendMemberResponse, error)
+	// ResumeMember réactive un compte suspendu ; ses sessions fermées le
+	// restent. Compte inconnu : NOT_FOUND.
+	ResumeMember(ctx context.Context, in *ResumeMemberRequest, opts ...grpc.CallOption) (*ResumeMemberResponse, error)
+	// CloseMemberSessions ferme les sessions et jetons d'API du compte sans le
+	// suspendre (appareil perdu). Sur son propre compte, la session qui fait
+	// l'appel reste ouverte. Compte inconnu : NOT_FOUND.
+	CloseMemberSessions(ctx context.Context, in *CloseMemberSessionsRequest, opts ...grpc.CallOption) (*CloseMemberSessionsResponse, error)
+	// DeleteMember supprime le compte, définitivement ; une invitation en
+	// attente est ainsi annulée. Le journal d'audit garde ses entrées. Nom de
+	// confirmation différent : INVALID_ARGUMENT. Son propre compte, ou le
+	// dernier administrateur actif : FAILED_PRECONDITION. Compte inconnu :
+	// NOT_FOUND.
+	DeleteMember(ctx context.Context, in *DeleteMemberRequest, opts ...grpc.CallOption) (*DeleteMemberResponse, error)
 }
 
 type teamServiceClient struct {
@@ -80,6 +102,46 @@ func (c *teamServiceClient) RenewInvitation(ctx context.Context, in *RenewInvita
 	return out, nil
 }
 
+func (c *teamServiceClient) SuspendMember(ctx context.Context, in *SuspendMemberRequest, opts ...grpc.CallOption) (*SuspendMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SuspendMemberResponse)
+	err := c.cc.Invoke(ctx, TeamService_SuspendMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *teamServiceClient) ResumeMember(ctx context.Context, in *ResumeMemberRequest, opts ...grpc.CallOption) (*ResumeMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResumeMemberResponse)
+	err := c.cc.Invoke(ctx, TeamService_ResumeMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *teamServiceClient) CloseMemberSessions(ctx context.Context, in *CloseMemberSessionsRequest, opts ...grpc.CallOption) (*CloseMemberSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CloseMemberSessionsResponse)
+	err := c.cc.Invoke(ctx, TeamService_CloseMemberSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *teamServiceClient) DeleteMember(ctx context.Context, in *DeleteMemberRequest, opts ...grpc.CallOption) (*DeleteMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteMemberResponse)
+	err := c.cc.Invoke(ctx, TeamService_DeleteMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TeamServiceServer is the server API for TeamService service.
 // All implementations must embed UnimplementedTeamServiceServer
 // for forward compatibility.
@@ -96,6 +158,24 @@ type TeamServiceServer interface {
 	// mot de passe ; le nouveau lien annule l'ancien. Compte déjà actif :
 	// FAILED_PRECONDITION. Compte inconnu : NOT_FOUND.
 	RenewInvitation(context.Context, *RenewInvitationRequest) (*RenewInvitationResponse, error)
+	// SuspendMember empêche le compte de se connecter et ferme tout de suite ses
+	// sessions, jetons d'API et liens à usage unique. Réversible : le compte et
+	// son historique restent. Son propre compte, ou le dernier administrateur
+	// actif : FAILED_PRECONDITION. Compte inconnu : NOT_FOUND.
+	SuspendMember(context.Context, *SuspendMemberRequest) (*SuspendMemberResponse, error)
+	// ResumeMember réactive un compte suspendu ; ses sessions fermées le
+	// restent. Compte inconnu : NOT_FOUND.
+	ResumeMember(context.Context, *ResumeMemberRequest) (*ResumeMemberResponse, error)
+	// CloseMemberSessions ferme les sessions et jetons d'API du compte sans le
+	// suspendre (appareil perdu). Sur son propre compte, la session qui fait
+	// l'appel reste ouverte. Compte inconnu : NOT_FOUND.
+	CloseMemberSessions(context.Context, *CloseMemberSessionsRequest) (*CloseMemberSessionsResponse, error)
+	// DeleteMember supprime le compte, définitivement ; une invitation en
+	// attente est ainsi annulée. Le journal d'audit garde ses entrées. Nom de
+	// confirmation différent : INVALID_ARGUMENT. Son propre compte, ou le
+	// dernier administrateur actif : FAILED_PRECONDITION. Compte inconnu :
+	// NOT_FOUND.
+	DeleteMember(context.Context, *DeleteMemberRequest) (*DeleteMemberResponse, error)
 	mustEmbedUnimplementedTeamServiceServer()
 }
 
@@ -114,6 +194,18 @@ func (UnimplementedTeamServiceServer) InviteMember(context.Context, *InviteMembe
 }
 func (UnimplementedTeamServiceServer) RenewInvitation(context.Context, *RenewInvitationRequest) (*RenewInvitationResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RenewInvitation not implemented")
+}
+func (UnimplementedTeamServiceServer) SuspendMember(context.Context, *SuspendMemberRequest) (*SuspendMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SuspendMember not implemented")
+}
+func (UnimplementedTeamServiceServer) ResumeMember(context.Context, *ResumeMemberRequest) (*ResumeMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResumeMember not implemented")
+}
+func (UnimplementedTeamServiceServer) CloseMemberSessions(context.Context, *CloseMemberSessionsRequest) (*CloseMemberSessionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CloseMemberSessions not implemented")
+}
+func (UnimplementedTeamServiceServer) DeleteMember(context.Context, *DeleteMemberRequest) (*DeleteMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteMember not implemented")
 }
 func (UnimplementedTeamServiceServer) mustEmbedUnimplementedTeamServiceServer() {}
 func (UnimplementedTeamServiceServer) testEmbeddedByValue()                     {}
@@ -190,6 +282,78 @@ func _TeamService_RenewInvitation_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TeamService_SuspendMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SuspendMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TeamServiceServer).SuspendMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TeamService_SuspendMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TeamServiceServer).SuspendMember(ctx, req.(*SuspendMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TeamService_ResumeMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResumeMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TeamServiceServer).ResumeMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TeamService_ResumeMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TeamServiceServer).ResumeMember(ctx, req.(*ResumeMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TeamService_CloseMemberSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CloseMemberSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TeamServiceServer).CloseMemberSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TeamService_CloseMemberSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TeamServiceServer).CloseMemberSessions(ctx, req.(*CloseMemberSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TeamService_DeleteMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TeamServiceServer).DeleteMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TeamService_DeleteMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TeamServiceServer).DeleteMember(ctx, req.(*DeleteMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TeamService_ServiceDesc is the grpc.ServiceDesc for TeamService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -208,6 +372,22 @@ var TeamService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RenewInvitation",
 			Handler:    _TeamService_RenewInvitation_Handler,
+		},
+		{
+			MethodName: "SuspendMember",
+			Handler:    _TeamService_SuspendMember_Handler,
+		},
+		{
+			MethodName: "ResumeMember",
+			Handler:    _TeamService_ResumeMember_Handler,
+		},
+		{
+			MethodName: "CloseMemberSessions",
+			Handler:    _TeamService_CloseMemberSessions_Handler,
+		},
+		{
+			MethodName: "DeleteMember",
+			Handler:    _TeamService_DeleteMember_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

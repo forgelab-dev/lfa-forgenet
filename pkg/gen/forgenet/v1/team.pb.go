@@ -34,6 +34,9 @@ const (
 	// Le compte attend son mot de passe, mais aucune invitation valable ne
 	// court : elle a expiré, ou le compte a été créé sans elle.
 	MemberStatus_MEMBER_STATUS_INVITATION_EXPIRED MemberStatus = 3
+	// Le compte est suspendu : il ne peut plus se connecter, et aucun de ses
+	// jetons n'est accepté. Un administrateur peut le réactiver.
+	MemberStatus_MEMBER_STATUS_SUSPENDED MemberStatus = 4
 )
 
 // Enum value maps for MemberStatus.
@@ -43,12 +46,14 @@ var (
 		1: "MEMBER_STATUS_ACTIVE",
 		2: "MEMBER_STATUS_INVITED",
 		3: "MEMBER_STATUS_INVITATION_EXPIRED",
+		4: "MEMBER_STATUS_SUSPENDED",
 	}
 	MemberStatus_value = map[string]int32{
 		"MEMBER_STATUS_UNSPECIFIED":        0,
 		"MEMBER_STATUS_ACTIVE":             1,
 		"MEMBER_STATUS_INVITED":            2,
 		"MEMBER_STATUS_INVITATION_EXPIRED": 3,
+		"MEMBER_STATUS_SUSPENDED":          4,
 	}
 )
 
@@ -91,8 +96,10 @@ type Member struct {
 	// Fin de validité de l'invitation en cours ; absente hors MEMBER_STATUS_INVITED.
 	InvitationExpiresAt *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=invitation_expires_at,json=invitationExpiresAt,proto3" json:"invitation_expires_at,omitempty"`
 	CreatedAt           *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Date de la suspension ; absente hors MEMBER_STATUS_SUSPENDED.
+	SuspendedAt   *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=suspended_at,json=suspendedAt,proto3" json:"suspended_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Member) Reset() {
@@ -170,6 +177,13 @@ func (x *Member) GetInvitationExpiresAt() *timestamppb.Timestamp {
 func (x *Member) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *Member) GetSuspendedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.SuspendedAt
 	}
 	return nil
 }
@@ -532,11 +546,375 @@ func (x *RenewInvitationResponse) GetResult() *InvitationResult {
 	return nil
 }
 
+type SuspendMemberRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SuspendMemberRequest) Reset() {
+	*x = SuspendMemberRequest{}
+	mi := &file_forgenet_v1_team_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SuspendMemberRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SuspendMemberRequest) ProtoMessage() {}
+
+func (x *SuspendMemberRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_team_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SuspendMemberRequest.ProtoReflect.Descriptor instead.
+func (*SuspendMemberRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_team_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SuspendMemberRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type SuspendMemberResponse struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Member *Member                `protobuf:"bytes,1,opt,name=member,proto3" json:"member,omitempty"`
+	// Nombre de sessions et de jetons d'API fermés.
+	ClosedSessions int64 `protobuf:"varint,2,opt,name=closed_sessions,json=closedSessions,proto3" json:"closed_sessions,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SuspendMemberResponse) Reset() {
+	*x = SuspendMemberResponse{}
+	mi := &file_forgenet_v1_team_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SuspendMemberResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SuspendMemberResponse) ProtoMessage() {}
+
+func (x *SuspendMemberResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_team_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SuspendMemberResponse.ProtoReflect.Descriptor instead.
+func (*SuspendMemberResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_team_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SuspendMemberResponse) GetMember() *Member {
+	if x != nil {
+		return x.Member
+	}
+	return nil
+}
+
+func (x *SuspendMemberResponse) GetClosedSessions() int64 {
+	if x != nil {
+		return x.ClosedSessions
+	}
+	return 0
+}
+
+type ResumeMemberRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResumeMemberRequest) Reset() {
+	*x = ResumeMemberRequest{}
+	mi := &file_forgenet_v1_team_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResumeMemberRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResumeMemberRequest) ProtoMessage() {}
+
+func (x *ResumeMemberRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_team_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResumeMemberRequest.ProtoReflect.Descriptor instead.
+func (*ResumeMemberRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_team_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ResumeMemberRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type ResumeMemberResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Member        *Member                `protobuf:"bytes,1,opt,name=member,proto3" json:"member,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResumeMemberResponse) Reset() {
+	*x = ResumeMemberResponse{}
+	mi := &file_forgenet_v1_team_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResumeMemberResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResumeMemberResponse) ProtoMessage() {}
+
+func (x *ResumeMemberResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_team_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResumeMemberResponse.ProtoReflect.Descriptor instead.
+func (*ResumeMemberResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_team_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ResumeMemberResponse) GetMember() *Member {
+	if x != nil {
+		return x.Member
+	}
+	return nil
+}
+
+type CloseMemberSessionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CloseMemberSessionsRequest) Reset() {
+	*x = CloseMemberSessionsRequest{}
+	mi := &file_forgenet_v1_team_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CloseMemberSessionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CloseMemberSessionsRequest) ProtoMessage() {}
+
+func (x *CloseMemberSessionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_team_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CloseMemberSessionsRequest.ProtoReflect.Descriptor instead.
+func (*CloseMemberSessionsRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_team_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *CloseMemberSessionsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type CloseMemberSessionsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Nombre de sessions et de jetons d'API fermés.
+	ClosedSessions int64 `protobuf:"varint,1,opt,name=closed_sessions,json=closedSessions,proto3" json:"closed_sessions,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CloseMemberSessionsResponse) Reset() {
+	*x = CloseMemberSessionsResponse{}
+	mi := &file_forgenet_v1_team_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CloseMemberSessionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CloseMemberSessionsResponse) ProtoMessage() {}
+
+func (x *CloseMemberSessionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_team_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CloseMemberSessionsResponse.ProtoReflect.Descriptor instead.
+func (*CloseMemberSessionsResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_team_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *CloseMemberSessionsResponse) GetClosedSessions() int64 {
+	if x != nil {
+		return x.ClosedSessions
+	}
+	return 0
+}
+
+type DeleteMemberRequest struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	UserId string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// Le nom du compte, retapé pour confirmer : une suppression ne part pas
+	// d'un clic ou d'un identifiant mal recopié.
+	ConfirmUsername string `protobuf:"bytes,2,opt,name=confirm_username,json=confirmUsername,proto3" json:"confirm_username,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *DeleteMemberRequest) Reset() {
+	*x = DeleteMemberRequest{}
+	mi := &file_forgenet_v1_team_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteMemberRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteMemberRequest) ProtoMessage() {}
+
+func (x *DeleteMemberRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_team_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteMemberRequest.ProtoReflect.Descriptor instead.
+func (*DeleteMemberRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_team_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *DeleteMemberRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *DeleteMemberRequest) GetConfirmUsername() string {
+	if x != nil {
+		return x.ConfirmUsername
+	}
+	return ""
+}
+
+type DeleteMemberResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteMemberResponse) Reset() {
+	*x = DeleteMemberResponse{}
+	mi := &file_forgenet_v1_team_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteMemberResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteMemberResponse) ProtoMessage() {}
+
+func (x *DeleteMemberResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_team_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteMemberResponse.ProtoReflect.Descriptor instead.
+func (*DeleteMemberResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_team_proto_rawDescGZIP(), []int{15}
+}
+
 var File_forgenet_v1_team_proto protoreflect.FileDescriptor
 
 const file_forgenet_v1_team_proto_rawDesc = "" +
 	"\n" +
-	"\x16forgenet/v1/team.proto\x12\vforgenet.v1\x1a\x16forgenet/v1/auth.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb3\x02\n" +
+	"\x16forgenet/v1/team.proto\x12\vforgenet.v1\x1a\x16forgenet/v1/auth.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf2\x02\n" +
 	"\x06Member\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
@@ -545,7 +923,8 @@ const file_forgenet_v1_team_proto_rawDesc = "" +
 	"\x06status\x18\x05 \x01(\x0e2\x19.forgenet.v1.MemberStatusR\x06status\x12N\n" +
 	"\x15invitation_expires_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x13invitationExpiresAt\x129\n" +
 	"\n" +
-	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\x14\n" +
+	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12=\n" +
+	"\fsuspended_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\vsuspendedAt\"\x14\n" +
 	"\x12ListMembersRequest\"g\n" +
 	"\x13ListMembersResponse\x12-\n" +
 	"\amembers\x18\x01 \x03(\v2\x13.forgenet.v1.MemberR\amembers\x12!\n" +
@@ -564,16 +943,38 @@ const file_forgenet_v1_team_proto_rawDesc = "" +
 	"\x16RenewInvitationRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"P\n" +
 	"\x17RenewInvitationResponse\x125\n" +
-	"\x06result\x18\x01 \x01(\v2\x1d.forgenet.v1.InvitationResultR\x06result*\x88\x01\n" +
+	"\x06result\x18\x01 \x01(\v2\x1d.forgenet.v1.InvitationResultR\x06result\"/\n" +
+	"\x14SuspendMemberRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"m\n" +
+	"\x15SuspendMemberResponse\x12+\n" +
+	"\x06member\x18\x01 \x01(\v2\x13.forgenet.v1.MemberR\x06member\x12'\n" +
+	"\x0fclosed_sessions\x18\x02 \x01(\x03R\x0eclosedSessions\".\n" +
+	"\x13ResumeMemberRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"C\n" +
+	"\x14ResumeMemberResponse\x12+\n" +
+	"\x06member\x18\x01 \x01(\v2\x13.forgenet.v1.MemberR\x06member\"5\n" +
+	"\x1aCloseMemberSessionsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"F\n" +
+	"\x1bCloseMemberSessionsResponse\x12'\n" +
+	"\x0fclosed_sessions\x18\x01 \x01(\x03R\x0eclosedSessions\"Y\n" +
+	"\x13DeleteMemberRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12)\n" +
+	"\x10confirm_username\x18\x02 \x01(\tR\x0fconfirmUsername\"\x16\n" +
+	"\x14DeleteMemberResponse*\xa5\x01\n" +
 	"\fMemberStatus\x12\x1d\n" +
 	"\x19MEMBER_STATUS_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14MEMBER_STATUS_ACTIVE\x10\x01\x12\x19\n" +
 	"\x15MEMBER_STATUS_INVITED\x10\x02\x12$\n" +
-	" MEMBER_STATUS_INVITATION_EXPIRED\x10\x032\x92\x02\n" +
+	" MEMBER_STATUS_INVITATION_EXPIRED\x10\x03\x12\x1b\n" +
+	"\x17MEMBER_STATUS_SUSPENDED\x10\x042\xfe\x04\n" +
 	"\vTeamService\x12P\n" +
 	"\vListMembers\x12\x1f.forgenet.v1.ListMembersRequest\x1a .forgenet.v1.ListMembersResponse\x12S\n" +
 	"\fInviteMember\x12 .forgenet.v1.InviteMemberRequest\x1a!.forgenet.v1.InviteMemberResponse\x12\\\n" +
-	"\x0fRenewInvitation\x12#.forgenet.v1.RenewInvitationRequest\x1a$.forgenet.v1.RenewInvitationResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
+	"\x0fRenewInvitation\x12#.forgenet.v1.RenewInvitationRequest\x1a$.forgenet.v1.RenewInvitationResponse\x12V\n" +
+	"\rSuspendMember\x12!.forgenet.v1.SuspendMemberRequest\x1a\".forgenet.v1.SuspendMemberResponse\x12S\n" +
+	"\fResumeMember\x12 .forgenet.v1.ResumeMemberRequest\x1a!.forgenet.v1.ResumeMemberResponse\x12h\n" +
+	"\x13CloseMemberSessions\x12'.forgenet.v1.CloseMemberSessionsRequest\x1a(.forgenet.v1.CloseMemberSessionsResponse\x12S\n" +
+	"\fDeleteMember\x12 .forgenet.v1.DeleteMemberRequest\x1a!.forgenet.v1.DeleteMemberResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
 
 var (
 	file_forgenet_v1_team_proto_rawDescOnce sync.Once
@@ -588,41 +989,60 @@ func file_forgenet_v1_team_proto_rawDescGZIP() []byte {
 }
 
 var file_forgenet_v1_team_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_forgenet_v1_team_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_forgenet_v1_team_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_forgenet_v1_team_proto_goTypes = []any{
-	(MemberStatus)(0),               // 0: forgenet.v1.MemberStatus
-	(*Member)(nil),                  // 1: forgenet.v1.Member
-	(*ListMembersRequest)(nil),      // 2: forgenet.v1.ListMembersRequest
-	(*ListMembersResponse)(nil),     // 3: forgenet.v1.ListMembersResponse
-	(*InviteMemberRequest)(nil),     // 4: forgenet.v1.InviteMemberRequest
-	(*InvitationResult)(nil),        // 5: forgenet.v1.InvitationResult
-	(*InviteMemberResponse)(nil),    // 6: forgenet.v1.InviteMemberResponse
-	(*RenewInvitationRequest)(nil),  // 7: forgenet.v1.RenewInvitationRequest
-	(*RenewInvitationResponse)(nil), // 8: forgenet.v1.RenewInvitationResponse
-	(UserRole)(0),                   // 9: forgenet.v1.UserRole
-	(*timestamppb.Timestamp)(nil),   // 10: google.protobuf.Timestamp
+	(MemberStatus)(0),                   // 0: forgenet.v1.MemberStatus
+	(*Member)(nil),                      // 1: forgenet.v1.Member
+	(*ListMembersRequest)(nil),          // 2: forgenet.v1.ListMembersRequest
+	(*ListMembersResponse)(nil),         // 3: forgenet.v1.ListMembersResponse
+	(*InviteMemberRequest)(nil),         // 4: forgenet.v1.InviteMemberRequest
+	(*InvitationResult)(nil),            // 5: forgenet.v1.InvitationResult
+	(*InviteMemberResponse)(nil),        // 6: forgenet.v1.InviteMemberResponse
+	(*RenewInvitationRequest)(nil),      // 7: forgenet.v1.RenewInvitationRequest
+	(*RenewInvitationResponse)(nil),     // 8: forgenet.v1.RenewInvitationResponse
+	(*SuspendMemberRequest)(nil),        // 9: forgenet.v1.SuspendMemberRequest
+	(*SuspendMemberResponse)(nil),       // 10: forgenet.v1.SuspendMemberResponse
+	(*ResumeMemberRequest)(nil),         // 11: forgenet.v1.ResumeMemberRequest
+	(*ResumeMemberResponse)(nil),        // 12: forgenet.v1.ResumeMemberResponse
+	(*CloseMemberSessionsRequest)(nil),  // 13: forgenet.v1.CloseMemberSessionsRequest
+	(*CloseMemberSessionsResponse)(nil), // 14: forgenet.v1.CloseMemberSessionsResponse
+	(*DeleteMemberRequest)(nil),         // 15: forgenet.v1.DeleteMemberRequest
+	(*DeleteMemberResponse)(nil),        // 16: forgenet.v1.DeleteMemberResponse
+	(UserRole)(0),                       // 17: forgenet.v1.UserRole
+	(*timestamppb.Timestamp)(nil),       // 18: google.protobuf.Timestamp
 }
 var file_forgenet_v1_team_proto_depIdxs = []int32{
-	9,  // 0: forgenet.v1.Member.role:type_name -> forgenet.v1.UserRole
+	17, // 0: forgenet.v1.Member.role:type_name -> forgenet.v1.UserRole
 	0,  // 1: forgenet.v1.Member.status:type_name -> forgenet.v1.MemberStatus
-	10, // 2: forgenet.v1.Member.invitation_expires_at:type_name -> google.protobuf.Timestamp
-	10, // 3: forgenet.v1.Member.created_at:type_name -> google.protobuf.Timestamp
-	1,  // 4: forgenet.v1.ListMembersResponse.members:type_name -> forgenet.v1.Member
-	9,  // 5: forgenet.v1.InviteMemberRequest.role:type_name -> forgenet.v1.UserRole
-	1,  // 6: forgenet.v1.InvitationResult.member:type_name -> forgenet.v1.Member
-	5,  // 7: forgenet.v1.InviteMemberResponse.result:type_name -> forgenet.v1.InvitationResult
-	5,  // 8: forgenet.v1.RenewInvitationResponse.result:type_name -> forgenet.v1.InvitationResult
-	2,  // 9: forgenet.v1.TeamService.ListMembers:input_type -> forgenet.v1.ListMembersRequest
-	4,  // 10: forgenet.v1.TeamService.InviteMember:input_type -> forgenet.v1.InviteMemberRequest
-	7,  // 11: forgenet.v1.TeamService.RenewInvitation:input_type -> forgenet.v1.RenewInvitationRequest
-	3,  // 12: forgenet.v1.TeamService.ListMembers:output_type -> forgenet.v1.ListMembersResponse
-	6,  // 13: forgenet.v1.TeamService.InviteMember:output_type -> forgenet.v1.InviteMemberResponse
-	8,  // 14: forgenet.v1.TeamService.RenewInvitation:output_type -> forgenet.v1.RenewInvitationResponse
-	12, // [12:15] is the sub-list for method output_type
-	9,  // [9:12] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	18, // 2: forgenet.v1.Member.invitation_expires_at:type_name -> google.protobuf.Timestamp
+	18, // 3: forgenet.v1.Member.created_at:type_name -> google.protobuf.Timestamp
+	18, // 4: forgenet.v1.Member.suspended_at:type_name -> google.protobuf.Timestamp
+	1,  // 5: forgenet.v1.ListMembersResponse.members:type_name -> forgenet.v1.Member
+	17, // 6: forgenet.v1.InviteMemberRequest.role:type_name -> forgenet.v1.UserRole
+	1,  // 7: forgenet.v1.InvitationResult.member:type_name -> forgenet.v1.Member
+	5,  // 8: forgenet.v1.InviteMemberResponse.result:type_name -> forgenet.v1.InvitationResult
+	5,  // 9: forgenet.v1.RenewInvitationResponse.result:type_name -> forgenet.v1.InvitationResult
+	1,  // 10: forgenet.v1.SuspendMemberResponse.member:type_name -> forgenet.v1.Member
+	1,  // 11: forgenet.v1.ResumeMemberResponse.member:type_name -> forgenet.v1.Member
+	2,  // 12: forgenet.v1.TeamService.ListMembers:input_type -> forgenet.v1.ListMembersRequest
+	4,  // 13: forgenet.v1.TeamService.InviteMember:input_type -> forgenet.v1.InviteMemberRequest
+	7,  // 14: forgenet.v1.TeamService.RenewInvitation:input_type -> forgenet.v1.RenewInvitationRequest
+	9,  // 15: forgenet.v1.TeamService.SuspendMember:input_type -> forgenet.v1.SuspendMemberRequest
+	11, // 16: forgenet.v1.TeamService.ResumeMember:input_type -> forgenet.v1.ResumeMemberRequest
+	13, // 17: forgenet.v1.TeamService.CloseMemberSessions:input_type -> forgenet.v1.CloseMemberSessionsRequest
+	15, // 18: forgenet.v1.TeamService.DeleteMember:input_type -> forgenet.v1.DeleteMemberRequest
+	3,  // 19: forgenet.v1.TeamService.ListMembers:output_type -> forgenet.v1.ListMembersResponse
+	6,  // 20: forgenet.v1.TeamService.InviteMember:output_type -> forgenet.v1.InviteMemberResponse
+	8,  // 21: forgenet.v1.TeamService.RenewInvitation:output_type -> forgenet.v1.RenewInvitationResponse
+	10, // 22: forgenet.v1.TeamService.SuspendMember:output_type -> forgenet.v1.SuspendMemberResponse
+	12, // 23: forgenet.v1.TeamService.ResumeMember:output_type -> forgenet.v1.ResumeMemberResponse
+	14, // 24: forgenet.v1.TeamService.CloseMemberSessions:output_type -> forgenet.v1.CloseMemberSessionsResponse
+	16, // 25: forgenet.v1.TeamService.DeleteMember:output_type -> forgenet.v1.DeleteMemberResponse
+	19, // [19:26] is the sub-list for method output_type
+	12, // [12:19] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_forgenet_v1_team_proto_init() }
@@ -637,7 +1057,7 @@ func file_forgenet_v1_team_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forgenet_v1_team_proto_rawDesc), len(file_forgenet_v1_team_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
