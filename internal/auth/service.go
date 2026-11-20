@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	netmail "net/mail"
 	"strings"
 	"sync"
 	"time"
@@ -36,7 +37,46 @@ var (
 	// ErrAccountSuspended est retourné quand un lien est demandé pour un
 	// compte suspendu.
 	ErrAccountSuspended = errors.New("ce compte est suspendu")
+	// ErrInvalidEmail est retourné pour une adresse qui n'est pas une adresse
+	// nue (sans nom affiché ni retour à la ligne), ou trop longue.
+	ErrInvalidEmail = errors.New("l'adresse e-mail n'est pas valide")
+	// ErrSameEmail est retourné quand la nouvelle adresse est déjà celle du
+	// compte.
+	ErrSameEmail = errors.New("c'est déjà l'adresse de ce compte")
 )
+
+// maxEmailLength est la longueur maximale d'une adresse (RFC 5321).
+const maxEmailLength = 254
+
+// NormalizeEmail met l'adresse en minuscules, sans espaces autour, et la
+// refuse (ErrInvalidEmail) si ce n'est pas une adresse nue : elle part telle
+// quelle dans l'en-tête To des e-mails, sans nom affiché ni retour à la ligne.
+func NormalizeEmail(email string) (string, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" || len(email) > maxEmailLength || strings.ContainsAny(email, "\r\n") {
+		return "", ErrInvalidEmail
+	}
+	addr, err := netmail.ParseAddress(email)
+	if err != nil || addr.Address != email || addr.Name != "" {
+		return "", ErrInvalidEmail
+	}
+	return email, nil
+}
+
+// EmailChange décrit un changement d'adresse fait : l'appelant en a besoin
+// pour prévenir l'ancienne adresse et refaire une invitation annulée.
+type EmailChange struct {
+	// User est le compte à jour.
+	User *store.User
+	// OldEmail est l'adresse remplacée. Elle ne va jamais au journal.
+	OldEmail string
+	// HadPassword dit si le compte avait déjà choisi son mot de passe : sinon,
+	// l'ancienne adresse n'a jamais servi qu'à recevoir l'invitation.
+	HadPassword bool
+	// CancelledLinks compte les liens à usage unique annulés (partis vers
+	// l'ancienne adresse).
+	CancelledLinks int64
+}
 
 // UnusablePassword est l'empreinte d'un compte qui n'a pas encore choisi son
 // mot de passe (store.UnusablePasswordHash) : le store en a besoin pour
@@ -97,6 +137,14 @@ type Service interface {
 	// LookupAccount trouve un compte par son nom ou son adresse, comme Login ;
 	// store.ErrNotFound s'il n'existe pas.
 	LookupAccount(ctx context.Context, usernameOrEmail string) (*store.User, error)
+	// ChangeOwnEmail change l'adresse du compte connecté après vérification
+	// de son mot de passe : une session volée ne doit pas suffire à détourner
+	// le « mot de passe oublié ». Les liens en attente sont annulés.
+	ChangeOwnEmail(ctx context.Context, userID, currentPassword, newEmail string) (*EmailChange, error)
+	// SetAccountEmail change l'adresse d'un compte sans son mot de passe, par
+	// un administrateur (actorID) ou sur la machine du serveur (actorID vide).
+	// Les liens en attente sont annulés.
+	SetAccountEmail(ctx context.Context, actorID, userID, newEmail string) (*EmailChange, error)
 
 	// Les actions suivantes sont faites par actorID, un administrateur, ou
 	// par la machine du serveur quand actorID est vide (commande
@@ -568,6 +616,59 @@ func (s *authService) DeleteAccount(ctx context.Context, actorID, userID string)
 	// entrées qu'il laisse.
 	s.audit(ctx, actorID, "user.delete", "user:"+userID, map[string]any{"username": user.Username, "role": string(user.Role)})
 	return user, nil
+}
+
+func (s *authService) ChangeOwnEmail(ctx context.Context, userID, currentPassword, newEmail string) (*EmailChange, error) {
+	user, err := s.store.Users().GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	// Un compte sans mot de passe ne se connecte pas : il n'arrive pas ici.
+	if CheckPassword(user.PasswordHash, currentPassword) != nil {
+		s.audit(ctx, user.ID, "user.email_change_failed", "user:"+user.ID, map[string]any{"reason": "mot de passe actuel incorrect"})
+		return nil, ErrWrongCurrentPassword
+	}
+	return s.setEmail(ctx, user.ID, user, newEmail, "self")
+}
+
+func (s *authService) SetAccountEmail(ctx context.Context, actorID, userID, newEmail string) (*EmailChange, error) {
+	user, err := s.store.Users().GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	by := "admin"
+	switch actorID {
+	case "":
+		by = "server"
+	case userID:
+		by = "self"
+	}
+	return s.setEmail(ctx, actorID, user, newEmail, by)
+}
+
+// setEmail change l'adresse de user. by dit qui agit (self, admin ou server),
+// pour le journal ; les adresses n'y figurent jamais : il est lu par tous les
+// administrateurs et conservé.
+func (s *authService) setEmail(ctx context.Context, actorID string, user *store.User, newEmail, by string) (*EmailChange, error) {
+	email, err := NormalizeEmail(newEmail)
+	if err != nil {
+		return nil, err
+	}
+	if email == user.Email {
+		return nil, ErrSameEmail
+	}
+	cancelled, err := s.store.Users().SetEmail(ctx, user.ID, email)
+	if err != nil {
+		return nil, err
+	}
+	change := &EmailChange{OldEmail: user.Email, HadPassword: HasPassword(user), CancelledLinks: cancelled}
+	updated := *user
+	updated.Email = email
+	change.User = &updated
+	s.audit(ctx, actorID, "user.email_change", "user:"+user.ID, map[string]any{
+		"username": user.Username, "by": by, "cancelled_links": cancelled,
+	})
+	return change, nil
 }
 
 func (s *authService) LookupAccount(ctx context.Context, usernameOrEmail string) (*store.User, error) {
