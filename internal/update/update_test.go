@@ -208,6 +208,7 @@ func TestApplySucceeds(t *testing.T) {
 	assert.Contains(t, in.docker.env, "FORGENET_IMAGE_DIGEST="+digest)
 	assert.Contains(t, in.docker.env, "# commentaire gardé")
 	assert.Contains(t, in.docker.env, "FORGENET_JWT_SECRET=secret")
+	assert.Regexp(t, `(?m)^FORGENET_SECRET_KEY=[0-9a-f]{64}$`, in.docker.env, "la clé des secrets arrive avec la mise à jour")
 
 	saved, err := os.ReadFile(filepath.Join(st.Backup, "forgenet.db"))
 	require.NoError(t, err)
@@ -388,4 +389,16 @@ func TestApplyTakesOverAStaleLock(t *testing.T) {
 	st, err := in.engine.Apply(context.Background(), release(t, "0.2.0"))
 	require.NoError(t, err, "un verrou d'une heure vient d'une mise à jour interrompue")
 	assert.Equal(t, ResultSucceeded, st.Result)
+}
+
+func TestApplyKeepsTheSecretKey(t *testing.T) {
+	in := newInstall(t)
+	key := strings.Repeat("ab", 32)
+	require.NoError(t, os.WriteFile(in.docker.envPath, []byte("FORGENET_VERSION=0.1.1\nFORGENET_SECRET_KEY="+key+"\n"), 0o600))
+	in.docker.health = []string{"running healthy"}
+
+	_, err := in.engine.Apply(context.Background(), release(t, "0.2.0"))
+	require.NoError(t, err)
+	assert.Contains(t, in.docker.env, "FORGENET_SECRET_KEY="+key, "changer la clé rendrait le mot de passe du relais illisible")
+	assert.Equal(t, 1, strings.Count(in.docker.env, "FORGENET_SECRET_KEY="))
 }
