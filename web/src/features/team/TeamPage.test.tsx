@@ -410,9 +410,9 @@ describe('TeamPage', () => {
     fireEvent.click(within(row('dan')).getByRole('button', { name: 'Enregistrer l’adresse' }));
 
     expect(await within(row('dan')).findByText('dan@nouveau.org')).toBeInTheDocument();
-    expect(within(row('dan')).getByRole('status')).toHaveTextContent(
-      'Adresse de dan corrigée. Un avis part à l’ancienne adresse.'
-    );
+    expect(
+      within(row('dan')).getByText('Adresse de dan corrigée. Un avis part à l’ancienne adresse.')
+    ).toHaveAttribute('role', 'status');
     expect(calls.actions).toEqual(['email(Dan@Nouveau.org):u4']);
   });
 
