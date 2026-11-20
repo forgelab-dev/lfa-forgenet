@@ -91,7 +91,7 @@ func logRelay(logger zerolog.Logger, relay *mail.Relay) {
 		logger.Warn().Msg("réglages d'envoi du dashboard illisibles (FORGENET_SECRET_KEY changée ou absente) : ceux de .env s'appliquent ; ressaisissez le mot de passe du relais dans Réglages")
 	}
 	if !relay.Editable() {
-		logger.Info().Msg("pas de FORGENET_SECRET_KEY : le relais se règle par install.sh, pas depuis le dashboard")
+		logger.Info().Msg("pas de FORGENET_SECRET_KEY : le relais ne se règle pas depuis le dashboard ; la prochaine mise à jour crée la clé, ou relancez install.sh")
 	}
 	switch {
 	case cur.Enabled:

@@ -42,7 +42,12 @@ faire tourner. Cet ADR dit comment.
   écrits en hexadécimal dans `.env` (0600) par `install.sh`, comme le secret
   JWT. Un serveur déjà installé la reçoit à sa prochaine mise à jour : par
   `install.sh`, ou depuis le dashboard (ADR-0011), qui l'ajoute à `.env` s'il
-  n'en a pas.
+  n'en a pas. **Correction du 2026-11-20** : la mise à jour depuis le
+  dashboard est appliquée par l'image de la version *en place* ; celle qui
+  passe de 0.10 à 0.11 tourne donc sur la 0.10, qui ne connaît pas la clé.
+  Un serveur mis à jour ainsi arrive en 0.11.0 sans clé ; sa mise à jour
+  suivante (0.11.1), appliquée par la 0.11.0, l'ajoute. Relancer
+  `install.sh` sur le serveur la crée tout de suite.
 - Pas le secret JWT : on le change pour fermer toutes les sessions d'un coup,
   et ce geste ne doit pas faire perdre le mot de passe du relais.
 - La base et `.env` sont **sauvegardés ensemble** avant chaque mise à jour
