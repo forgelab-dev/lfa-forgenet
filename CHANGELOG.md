@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.11.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.10.0...v0.11.0) (2026-11-20)
+
+
+### Fonctionnalités
+
+* **auth:** changer l'adresse de son compte ou d'un autre compte ([de8bfd5](https://github.com/forgelab-dev/lfa-forgenet/commit/de8bfd507cba7dc10cb9f2957dad02792c40cc69)), closes [#100](https://github.com/forgelab-dev/lfa-forgenet/issues/100)
+* **auth:** suspendre, réactiver, fermer les sessions, supprimer un compte ([cb707ce](https://github.com/forgelab-dev/lfa-forgenet/commit/cb707ce6eb28eace9fe9795a3baaf44d602b8198)), closes [#103](https://github.com/forgelab-dev/lfa-forgenet/issues/103)
+* **cli:** forgenet user set-email ([aa31013](https://github.com/forgelab-dev/lfa-forgenet/commit/aa3101389f0c131259a00fba514546431b6fe0c8)), closes [#100](https://github.com/forgelab-dev/lfa-forgenet/issues/100)
+* **cli:** forgenet user suspend, resume et delete ([8d569ee](https://github.com/forgelab-dev/lfa-forgenet/commit/8d569ee4d1a03056315f4a3205e0a7906e6efa68)), closes [#103](https://github.com/forgelab-dev/lfa-forgenet/issues/103)
+* **cli:** forgenet-server mail reset, et user lit les réglages en base ([e32003e](https://github.com/forgelab-dev/lfa-forgenet/commit/e32003e654171cd7966d670beaf544520e81bb1b)), closes [#102](https://github.com/forgelab-dev/lfa-forgenet/issues/102)
+* **deploy:** clé des secrets, et --smtp-host qui l'emporte ([1f33bda](https://github.com/forgelab-dev/lfa-forgenet/commit/1f33bda700803a79a740ca4c1f321c14b86ef0bb)), closes [#102](https://github.com/forgelab-dev/lfa-forgenet/issues/102)
+* **grpc:** ChangeEmail et UpdateMemberEmail ([86fe572](https://github.com/forgelab-dev/lfa-forgenet/commit/86fe57260a3b875fe10fc5ddc1a1aefc97dc9b13)), closes [#100](https://github.com/forgelab-dev/lfa-forgenet/issues/100)
+* **grpc:** régler le relais SMTP depuis le dashboard ([0fd18dd](https://github.com/forgelab-dev/lfa-forgenet/commit/0fd18ddeac3e51369f6d7928f57953ee69b83312)), closes [#102](https://github.com/forgelab-dev/lfa-forgenet/issues/102)
+* **grpc:** TeamService, suspendre, réactiver, fermer les sessions, supprimer ([dfb9199](https://github.com/forgelab-dev/lfa-forgenet/commit/dfb9199431aaf8dd3fa10ba4f79a66a67c1e4bc2)), closes [#103](https://github.com/forgelab-dev/lfa-forgenet/issues/103)
+* **mail:** e-mails en deux versions, texte et HTML ([a59589b](https://github.com/forgelab-dev/lfa-forgenet/commit/a59589bc4f5c9b64c3a3077e04957854245dd91b)), closes [#101](https://github.com/forgelab-dev/lfa-forgenet/issues/101)
+* **mail:** relais réglable à chaud, base puis .env ([df5ed78](https://github.com/forgelab-dev/lfa-forgenet/commit/df5ed7848b7bccd5286168bbca7b5729d72693f3)), closes [#102](https://github.com/forgelab-dev/lfa-forgenet/issues/102)
+* **sealed:** chiffrer en base les secrets du dashboard ([32bf4e7](https://github.com/forgelab-dev/lfa-forgenet/commit/32bf4e7542026100b820fc8ce7f1d6f405b98049)), closes [#102](https://github.com/forgelab-dev/lfa-forgenet/issues/102)
+* **store:** changer l'adresse e-mail d'un compte ([354fc49](https://github.com/forgelab-dev/lfa-forgenet/commit/354fc498df8d2e7f55e430dd59b07edebe6f2554)), closes [#100](https://github.com/forgelab-dev/lfa-forgenet/issues/100)
+* **store:** réglages du relais SMTP en base ([9625e94](https://github.com/forgelab-dev/lfa-forgenet/commit/9625e94c3e946fb3da7693ecc063525b25476e52)), closes [#102](https://github.com/forgelab-dev/lfa-forgenet/issues/102)
+* **store:** suspendre et supprimer un compte sans perdre le dernier admin ([9df04c4](https://github.com/forgelab-dev/lfa-forgenet/commit/9df04c4e7db2db5997850ff8ad47432313a50d04)), closes [#103](https://github.com/forgelab-dev/lfa-forgenet/issues/103)
+* **web:** actions sur les comptes dans la page Équipe ([2f53095](https://github.com/forgelab-dev/lfa-forgenet/commit/2f53095b054f735928b0167729c07bf8d34fe4c7)), closes [#103](https://github.com/forgelab-dev/lfa-forgenet/issues/103)
+* **web:** changer d'adresse depuis les pages Compte et Équipe ([bdbb342](https://github.com/forgelab-dev/lfa-forgenet/commit/bdbb3429388afd2fdc99cbf8f2ff126d6c99138e)), closes [#100](https://github.com/forgelab-dev/lfa-forgenet/issues/100)
+* **web:** régler le relais SMTP depuis la page Réglages ([639e675](https://github.com/forgelab-dev/lfa-forgenet/commit/639e67589a01a3e47d40fb405506bd2b37aa32c4)), closes [#102](https://github.com/forgelab-dev/lfa-forgenet/issues/102)
+
+
+### Corrections
+
+* **cli:** login-link ne dit plus qu'un compte attend son mot de passe ([d250629](https://github.com/forgelab-dev/lfa-forgenet/commit/d2506294c0828179b38b06770397cfa75f13ef17)), closes [#100](https://github.com/forgelab-dev/lfa-forgenet/issues/100)
+
+
+### Refactorisation
+
+* **web:** « Changer » à côté de l'adresse dans la page Équipe ([d2d0cb0](https://github.com/forgelab-dev/lfa-forgenet/commit/d2d0cb0bacf47fca8f9d4102212fb51b777e02a3)), closes [#100](https://github.com/forgelab-dev/lfa-forgenet/issues/100)
+
 ## [0.10.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.9.0...v0.10.0) (2026-11-18)
 
 
