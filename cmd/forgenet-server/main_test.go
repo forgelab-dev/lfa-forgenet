@@ -599,3 +599,55 @@ smtp:
 	require.NoError(t, err)
 	assert.Equal(t, "admin", admin.Username)
 }
+
+// Les commandes du serveur lisent les réglages d'envoi du dashboard avant
+// ceux de .env, et « mail reset » rend la main à .env (ADR-0015).
+func TestMailReset_GivesTheServerSettingsBack(t *testing.T) {
+	relay := newPlainRelay(t)
+	dbPath := filepath.Join(t.TempDir(), "forgenet.db")
+	configFile := writeConfig(t, fmt.Sprintf(`database:
+  path: %q
+smtp:
+  host: 127.0.0.1
+  port: %d
+  tls: none
+  from: forgenet@exemple.org
+secrets:
+  key: %s
+`, dbPath, relay.port, strings.Repeat("5a", 32)))
+	run := func(args ...string) (string, int) {
+		cmd := exec.Command(binPath, append(args, "--config", configFile)...)
+		out, err := cmd.CombinedOutput()
+		return string(out), exitCode(t, err)
+	}
+	out, code := run("user", "create", "--username", "admin", "--email", "admin@forgenet.test", "--no-password")
+	require.Equal(t, 0, code, out)
+
+	// L'envoi a été coupé depuis le dashboard : il l'emporte sur .env.
+	db, err := sqlite.Open(context.Background(), config.DatabaseConfig{Path: dbPath, BusyTimeout: time.Second})
+	require.NoError(t, err)
+	require.NoError(t, db.MailSettings().SaveMailSettings(context.Background(), &store.MailSettings{
+		Disabled: true, Host: "127.0.0.1", Port: relay.port, TLS: "none", From: "forgenet@exemple.org",
+	}))
+	require.NoError(t, db.Close())
+
+	out, code = run("user", "login-link", "--username", "admin", "--send")
+	assert.Equal(t, 1, code, out)
+	assert.Contains(t, out, "pas configuré")
+
+	out, code = run("mail", "reset")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "effacés")
+
+	out, code = run("user", "login-link", "--username", "admin", "--send")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, relay.received(), "To: <admin@forgenet.test>", ".env s'applique de nouveau")
+
+	out, code = run("mail", "reset")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "Aucun réglage")
+
+	out, code = run("mail")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "forgenet-server mail reset")
+}
