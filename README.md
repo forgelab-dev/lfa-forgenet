@@ -121,6 +121,7 @@ Le script installe Docker s'il manque (dépôt officiel, clé vérifiée), écri
 | `sudo forgenet backups` · `sudo forgenet restore SAUVEGARDE` | lister les sauvegardes, revenir à l'une d'elles |
 | `forgenet user create --username NOM --email ADRESSE` | créer un compte (mot de passe demandé) |
 | `forgenet user set-password --username NOM` | remplacer un mot de passe perdu ; ferme les sessions du compte |
+| `forgenet user set-email --username NOM --email ADRESSE` | corriger l'adresse d'un compte ; ses liens en attente sont annulés, un avis part à l'ancienne adresse si un relais SMTP est réglé |
 | `forgenet user login-link --username NOM [--send]` | refaire un lien de première connexion (24 heures, usage unique) : affiché, ou envoyé à l'adresse du compte avec `--send` |
 | `forgenet user suspend\|resume --username NOM` | suspendre un compte (sessions, jetons et liens fermés) ou le réactiver |
 | `forgenet user delete --username NOM` | supprimer un compte, après avoir retapé son nom ; le journal d'audit garde ses entrées |

@@ -524,3 +524,78 @@ func TestUserSuspendResumeDelete_FromCommandLine(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, admin.Suspended())
 }
+
+func TestUserSetEmail_FromCommandLine(t *testing.T) {
+	relay := newPlainRelay(t)
+	dbPath := filepath.Join(t.TempDir(), "forgenet.db")
+	configFile := writeConfig(t, fmt.Sprintf(`database:
+  path: %q
+smtp:
+  host: 127.0.0.1
+  port: %d
+  tls: none
+  from: forgenet@exemple.org
+`, dbPath, relay.port))
+	run := func(stdin string, args ...string) (string, int) {
+		cmd := exec.Command(binPath, append([]string{"user"}, append(args, "--config", configFile)...)...)
+		cmd.Stdin = strings.NewReader(stdin)
+		out, err := cmd.CombinedOutput()
+		return string(out), exitCode(t, err)
+	}
+	out, code := run("motdepasse-de-test\n", "create", "--username", "admin", "--email", "admin@forgenet.test")
+	require.Equal(t, 0, code, out)
+	out, code = run("", "create", "--username", "bio", "--email", "bio@mal-saisie.test", "--role", "member", "--no-password")
+	require.Equal(t, 0, code, out)
+
+	out, code = run("", "set-email", "--username", "admin", "--email", "Admin@Nouveau.test")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "Adresse du compte admin changée")
+	assert.Contains(t, out, "avis est envoyé à l'ancienne adresse")
+	assert.NotContains(t, out, "admin@forgenet.test", "les adresses ne sont pas affichées : la sortie peut finir dans un journal")
+
+	data := relay.received()
+	assert.Contains(t, data, "To: <admin@forgenet.test>", "l'avis part à l'ancienne adresse")
+	_, body, ok := strings.Cut(data, "\r\n\r\n")
+	require.True(t, ok, data)
+	decoded, err := io.ReadAll(quotedprintable.NewReader(strings.NewReader(body)))
+	require.NoError(t, err)
+	assert.Contains(t, string(decoded), "a été changée sur le serveur")
+	assert.Contains(t, string(decoded), "a***@nouveau.test")
+
+	// Un compte qui attend son mot de passe : pas d'avis (l'ancienne adresse
+	// n'a jamais servi), mais son lien est annulé et la commande le dit.
+	out, code = run("", "set-email", "--username", "bio", "--email", "bio@bonne.test")
+	require.Equal(t, 0, code, out)
+	assert.NotContains(t, out, "avis est envoyé")
+	assert.Contains(t, out, "forgenet user login-link --username bio")
+
+	for _, c := range []struct{ email, want string }{
+		{"admin@nouveau.test", "déjà l'adresse"},
+		{"bio@bonne.test", "a déjà un compte"},
+		{"pas-une-adresse", "n'est pas valide"},
+	} {
+		out, code = run("", "set-email", "--username", "admin", "--email", c.email)
+		assert.Equal(t, 1, code, c.email)
+		assert.Contains(t, out, c.want, c.email)
+	}
+	out, code = run("", "set-email", "--username", "personne", "--email", "libre@forgenet.test")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "aucun compte")
+	out, code = run("", "set-email", "--username", "admin")
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "--email est obligatoire")
+
+	// #100 : login-link ne dit plus qu'un compte qui a son mot de passe
+	// l'attend encore.
+	out, code = run("", "login-link", "--username", "admin")
+	require.Equal(t, 0, code, out)
+	assert.Contains(t, out, "a déjà un mot de passe")
+	assert.NotContains(t, out, "attend son mot de passe")
+
+	db, err := sqlite.Open(context.Background(), config.DatabaseConfig{Path: dbPath, BusyTimeout: time.Second})
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	admin, err := db.Users().GetUserByEmail(context.Background(), "admin@nouveau.test")
+	require.NoError(t, err)
+	assert.Equal(t, "admin", admin.Username)
+}
