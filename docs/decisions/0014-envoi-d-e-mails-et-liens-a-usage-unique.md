@@ -76,7 +76,8 @@ Envoi : option 3. Réglages : option 2.
 
 - Texte brut UTF-8, en français comme le dashboard tant que la localisation
   (§2.9) n'existe pas. Pas de HTML : rien à assainir, et mieux reçu par les
-  filtres.
+  filtres. (Revu par l'ADR-0016, #101 : le texte brut reste, une version
+  HTML l'accompagne.)
 - Envoyés en tâche de fond, trois essais espacés, sauf l'e-mail d'essai, qui
   attend la réponse du relais. Le journal note le type de message, le compte
   concerné (son identifiant, pas son adresse) et l'issue ; jamais le lien, le
