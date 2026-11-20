@@ -146,6 +146,7 @@ Envoi : option 3. Réglages : option 2.
   encore ; `install.sh` ne le crée plus.
 - Changer de relais demande de relancer `install.sh` avec ses options, puis
   le serveur redémarre. Le régler depuis le dashboard, avec un secret chiffré
-  en base, reste possible plus tard sans changer les liens.
+  en base, reste possible plus tard sans changer les liens (fait par
+  l'ADR-0015, #102).
 - Testé contre un faux relais SMTP en Go dans les tests, puis sur un VPS avec
   un vrai relais, et sans relais.
