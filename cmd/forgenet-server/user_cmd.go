@@ -197,12 +197,12 @@ func runUserLoginLink(ctx context.Context, args []string, stdout io.Writer) erro
 		url := mail.AccessURL(mail.DashboardURL(cfg.Proxy.DashboardHost), token)
 
 		if !send {
-			_, err = fmt.Fprint(stdout, mail.FirstLoginText(user.Username, url, local))
+			_, err = fmt.Fprint(stdout, mail.FirstLoginText(user.Username, url, local, auth.HasPassword(user)))
 			return err
 		}
 		sendCtx, cancel := context.WithTimeout(ctx, mail.DefaultTimeout)
 		defer cancel()
-		if err := mail.NewSMTP(cfg.SMTP).Send(sendCtx, mail.FirstLoginMessage(user.Email, user.Username, url, local)); err != nil {
+		if err := mail.NewSMTP(cfg.SMTP).Send(sendCtx, mail.FirstLoginMessage(user.Email, user.Username, url, local, auth.HasPassword(user))); err != nil {
 			return fmt.Errorf("le relais n'a pas pris le lien : %w", err)
 		}
 		// L'adresse n'est pas répétée : cette sortie peut finir dans un journal.
