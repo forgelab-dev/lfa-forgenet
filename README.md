@@ -43,7 +43,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 - **Surveillance** : processeur, mémoire, disque et réseau du serveur et de chaque conteneur, en direct, avec la dernière heure ; reconnexion propre sur une connexion lente ou coupée.
 - **Conteneurs** : lister, consulter, démarrer, arrêter, redémarrer.
 - **Mises à jour** : une nouvelle version est annoncée dans le dashboard et s'installe en un clic, avec sauvegarde de la base et de la configuration, contrôle de santé et retour automatique à la version précédente en cas d'échec ; `install.sh --restore` remet une sauvegarde.
-- **Équipe** : inviter un membre depuis le dashboard, avec son rôle ; il choisit lui-même son mot de passe par un lien valable 7 jours, envoyé par e-mail ou transmis par l'administrateur. Un compte se suspend (ses sessions et jetons sont fermés aussitôt), se réactive ou se supprime ; ses sessions se ferment aussi sans le suspendre, en cas d'appareil perdu.
+- **Équipe** : inviter un membre depuis le dashboard, avec son rôle ; il choisit lui-même son mot de passe par un lien valable 7 jours, envoyé par e-mail ou transmis par l'administrateur. Un compte se suspend (ses sessions et jetons sont fermés aussitôt), se réactive ou se supprime ; ses sessions se ferment aussi sans le suspendre, en cas d'appareil perdu. Une adresse mal saisie se corrige : chacun change la sienne depuis « Mon compte », un administrateur celle d'un autre compte.
 - **Comptes et sécurité** : rôles administrateur et membre, droits vérifiés à chaque appel, tentatives de connexion limitées, journal d'audit.
 - **API** : contrat gRPC ([`api/proto`](api/proto)), servi aussi en Connect et gRPC-Web, avec des clients générés en TypeScript et en Dart.
 
