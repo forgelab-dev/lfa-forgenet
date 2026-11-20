@@ -1,12 +1,13 @@
-import { KeyRound, LoaderCircle, TerminalSquare } from 'lucide-react';
-import { useId, useState, type FormEvent } from 'react';
+import { KeyRound, LoaderCircle, Mail, TerminalSquare } from 'lucide-react';
+import { useId, useRef, useState, type FormEvent } from 'react';
 
 import { Button } from '../../components/ui/Button';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { fieldClass } from '../../components/ui/field';
 import { UserRole } from '../../gen/forgenet/v1/auth_pb';
 import { describeError } from '../../lib/api/errors';
-import { useApi, useCurrentUser } from '../auth/session';
+import { useApi, useCurrentUser, useSession } from '../auth/session';
+import { checkEmailForm, type EmailForm, type EmailProblems } from './email';
 import {
   checkPasswordForm,
   MIN_PASSWORD_CHARS,
@@ -27,7 +28,7 @@ export function AccountPage() {
     <>
       <PageHeader
         title="Mon compte"
-        description="Votre identité sur ce serveur, et le mot de passe qui la protège."
+        description="Votre identité sur ce serveur, son adresse e-mail et le mot de passe qui la protège."
       />
       <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
         <ChangePasswordForm />
@@ -42,6 +43,17 @@ export function AccountPage() {
 
 function Identity() {
   const user = useCurrentUser();
+  const [editing, setEditing] = useState(false);
+  const [changed, setChanged] = useState<string>();
+  const changeButton = useRef<HTMLButtonElement>(null);
+
+  const close = (message?: string) => {
+    setEditing(false);
+    setChanged(message);
+    // Le focus revient au bouton qui a ouvert le formulaire.
+    requestAnimationFrame(() => changeButton.current?.focus());
+  };
+
   return (
     <section
       aria-labelledby="account-identity"
@@ -52,10 +64,163 @@ function Identity() {
       </h2>
       <dl className="mt-3 divide-y divide-iron-800 text-sm">
         <Row label="Nom d’utilisateur" value={user.username} mono />
-        <Row label="Adresse e-mail" value={user.email} mono />
+        <div className="py-2.5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <dt className="text-xs text-iron-300">Adresse e-mail</dt>
+              <dd className="mt-0.5 break-all font-mono text-iron-100">{user.email || '—'}</dd>
+            </div>
+            {!editing && (
+              <button
+                ref={changeButton}
+                type="button"
+                aria-label="Changer d’adresse e-mail"
+                onClick={() => {
+                  setChanged(undefined);
+                  setEditing(true);
+                }}
+                className="-my-2 -mr-2 inline-flex min-h-11 shrink-0 items-center rounded-md px-2.5 text-sm font-medium text-gold-400 hover:text-gold-300 focus-visible:outline-2 focus-visible:outline-gold-400"
+              >
+                Changer
+              </button>
+            )}
+          </div>
+          {editing && <ChangeEmailForm onDone={close} onCancel={() => close()} />}
+          <p role="status" className="empty:hidden mt-2 text-xs text-ok-400">
+            {changed}
+          </p>
+        </div>
         <Row label="Rôle" value={roleLabel[user.role]} />
       </dl>
     </section>
+  );
+}
+
+const emptyEmailForm: EmailForm = { email: '', password: '' };
+
+/**
+ * Changement de sa propre adresse (#100). Le mot de passe est demandé : une
+ * session volée ne doit pas suffire à détourner le « mot de passe oublié ».
+ */
+function ChangeEmailForm({
+  onDone,
+  onCancel,
+}: {
+  onDone: (message: string) => void;
+  onCancel: () => void;
+}) {
+  const api = useApi();
+  const { updateUser } = useSession();
+  const user = useCurrentUser();
+  const [values, setValues] = useState<EmailForm>(emptyEmailForm);
+  const [problems, setProblems] = useState<EmailProblems>({});
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string>();
+  const ids = { email: useId(), password: useId(), note: useId(), error: useId() };
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const found = checkEmailForm(values, user.email);
+    setProblems(found);
+    setError(undefined);
+    if (Object.keys(found).length > 0) {
+      return;
+    }
+    setPending(true);
+    try {
+      const res = await api.auth.changeEmail({
+        currentPassword: values.password,
+        newEmail: values.email.trim(),
+      });
+      if (res.user) {
+        updateUser(res.user);
+      }
+      onDone('Adresse changée : les prochains e-mails du compte partiront à la nouvelle.');
+    } catch (err) {
+      setError(describeError(err));
+      setPending(false);
+    }
+  }
+
+  const field = (key: keyof EmailForm) => ({
+    id: ids[key],
+    name: key === 'email' ? 'new-email' : 'current-password',
+    value: values[key],
+    onChange: (e: { target: { value: string } }) => {
+      const value = e.target.value;
+      setValues((v) => ({ ...v, [key]: value }));
+    },
+    autoCapitalize: 'none',
+    spellCheck: false,
+    'aria-invalid': problems[key] ? true : undefined,
+    'aria-describedby': problems[key] ? `${ids[key]}-hint` : undefined,
+    className: `${fieldClass} ${problems[key] ? 'border-danger-400' : 'border-iron-700'}`,
+  });
+
+  const hint = (key: keyof EmailForm) =>
+    problems[key] && (
+      <p id={`${ids[key]}-hint`} className="mt-1.5 text-sm text-danger-400">
+        {problems[key]}
+      </p>
+    );
+
+  return (
+    <form
+      noValidate
+      onSubmit={submit}
+      aria-label="Changer d’adresse e-mail"
+      aria-describedby={error ? `${ids.note} ${ids.error}` : ids.note}
+      className="mt-3 rounded-md border border-iron-700 bg-iron-900 px-3.5 py-3.5"
+    >
+      <p id={ids.note} className="flex gap-2 text-xs text-iron-300">
+        <Mail aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-gold-400" />
+        <span>
+          Les liens en attente envoyés à l’ancienne adresse seront annulés, et un avis y partira si
+          le serveur envoie des e-mails.
+        </span>
+      </p>
+      <input
+        type="text"
+        name="username"
+        autoComplete="username"
+        value={user.username}
+        readOnly
+        hidden
+      />
+      <div className="mt-3">
+        <label htmlFor={ids.email} className="text-sm font-medium">
+          Nouvelle adresse e-mail
+        </label>
+        {/* autoFocus : le formulaire s'ouvre sur demande, le focus y entre. */}
+        <input {...field('email')} type="email" autoComplete="email" inputMode="email" autoFocus />
+        {hint('email')}
+      </div>
+      <div className="mt-3">
+        <label htmlFor={ids.password} className="text-sm font-medium">
+          Votre mot de passe
+        </label>
+        <input {...field('password')} type="password" autoComplete="current-password" />
+        {hint('password')}
+      </div>
+      {error && (
+        <p
+          id={ids.error}
+          role="alert"
+          className="mt-3 rounded-md border border-danger-400/40 bg-danger-950 px-3 py-2.5 text-sm text-iron-100"
+        >
+          {error}
+        </p>
+      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button type="submit" disabled={pending}>
+          {pending && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
+          {pending ? 'Enregistrement…' : 'Enregistrer l’adresse'}
+        </Button>
+        <Button type="button" variant="quiet" onClick={onCancel} disabled={pending}>
+          Annuler
+        </Button>
+      </div>
+    </form>
   );
 }
 

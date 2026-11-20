@@ -29,6 +29,11 @@ export interface Session {
    * un lien à usage unique (ADR-0014).
    */
   adopt(opened: OpenedSession): void;
+  /**
+   * Remplace le compte connecté par sa version à jour, par exemple après un
+   * changement d'adresse ; sans effet hors d'une session ouverte.
+   */
+  updateUser(user: User): void;
   /** Ferme la session, même si le serveur ne répond pas. */
   logout(): Promise<void>;
   /** Relance la vérification du jeton conservé. */

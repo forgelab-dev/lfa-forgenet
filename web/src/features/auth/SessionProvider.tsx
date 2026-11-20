@@ -2,6 +2,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { timestampMs } from '@bufbuild/protobuf/wkt';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import type { User } from '../../gen/forgenet/v1/auth_pb';
 import { createApiClients, type TransportFactory } from '../../lib/api/client';
 import { describeError } from '../../lib/api/errors';
 import { SessionContext, type OpenedSession, type Session, type SessionState } from './session';
@@ -101,12 +102,20 @@ export function SessionProvider({ transportFactory, children }: Props) {
     close({ status: 'anonymous' });
   }, [api, close]);
 
+  const updateUser = useCallback(
+    (user: User) =>
+      setState((current) =>
+        current.status === 'authenticated' ? { status: 'authenticated', user } : current
+      ),
+    []
+  );
+
   const retry = useCallback(() => setState({ status: 'checking' }), []);
   const expire = useCallback(() => close({ status: 'anonymous', notice: 'expired' }), [close]);
 
   const session = useMemo<Session>(
-    () => ({ state, api, login, adopt, logout, retry, token: tokens.get, expire }),
-    [state, api, login, adopt, logout, retry, tokens, expire]
+    () => ({ state, api, login, adopt, updateUser, logout, retry, token: tokens.get, expire }),
+    [state, api, login, adopt, updateUser, logout, retry, tokens, expire]
   );
 
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;

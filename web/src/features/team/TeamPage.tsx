@@ -1,5 +1,6 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 import {
+  AtSign,
   Ban,
   Check,
   CircleCheck,
@@ -22,9 +23,15 @@ import { fieldClass } from '../../components/ui/field';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { RequestError } from '../../components/ui/RequestError';
 import { UserRole } from '../../gen/forgenet/v1/auth_pb';
-import { MemberStatus, type InvitationResult, type Member } from '../../gen/forgenet/v1/team_pb';
+import {
+  MemberStatus,
+  type InvitationResult,
+  type Member,
+  type UpdateMemberEmailResponse,
+} from '../../gen/forgenet/v1/team_pb';
 import { describeError } from '../../lib/api/errors';
 import { useRequest } from '../../lib/useRequest';
+import { checkNewEmail } from '../account/email';
 import { useApi, useCurrentUser } from '../auth/session';
 
 const until = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
@@ -224,7 +231,14 @@ function MemberRow({
         </p>
       )}
       {outcome && <InvitationOutcome result={outcome} onDismiss={() => setOutcome(undefined)} />}
-      <MemberActions member={member} self={self} onUpdated={onUpdated} onRemoved={onRemoved} />
+      <MemberActions
+        member={member}
+        self={self}
+        mailEnabled={mailEnabled}
+        onUpdated={onUpdated}
+        onRemoved={onRemoved}
+        onInvited={setOutcome}
+      />
     </li>
   );
 }
@@ -237,22 +251,28 @@ function plural(n: bigint, one: string, many: string) {
 
 /**
  * Les gestes d'un administrateur sur un compte (#103) : fermer ses sessions,
- * le suspendre ou le réactiver, le supprimer. Sur son propre compte, seules
- * ses autres sessions se ferment : le serveur refuse le reste.
+ * le suspendre ou le réactiver, le supprimer, corriger son adresse (#100).
+ * Sur son propre compte, seules ses autres sessions se ferment : le serveur
+ * refuse le reste, et sa propre adresse se change depuis la page Compte.
  */
 function MemberActions({
   member,
   self,
+  mailEnabled,
   onUpdated,
   onRemoved,
+  onInvited,
 }: {
   member: Member;
   self: boolean;
+  mailEnabled: boolean;
   onUpdated: (m: Member) => void;
   onRemoved: (m: Member) => void;
+  onInvited: (r: InvitationResult) => void;
 }) {
   const api = useApi();
   const [confirming, setConfirming] = useState<Confirming>();
+  const [editingEmail, setEditingEmail] = useState(false);
   const [typed, setTyped] = useState('');
   const [pending, setPending] = useState<'sessions' | 'resume' | Confirming>();
   const [error, setError] = useState<string>();
@@ -325,6 +345,14 @@ function MemberActions({
   }
 
   const busy = pending !== undefined;
+  const emailButton = useRef<HTMLButtonElement>(null);
+  const closeEmail = (message?: string) => {
+    setEditingEmail(false);
+    setDone(message);
+    // Le focus revient au bouton qui a ouvert le formulaire.
+    requestAnimationFrame(() => emailButton.current?.focus());
+  };
+
   return (
     <>
       <p
@@ -338,8 +366,47 @@ function MemberActions({
           {error}
         </p>
       )}
-      {!confirming ? (
+      {editingEmail ? (
+        <MemberEmailForm
+          member={member}
+          mailEnabled={mailEnabled}
+          onCancel={() => closeEmail()}
+          onChanged={(res) => {
+            if (res.member) {
+              onUpdated(res.member);
+            }
+            if (res.invitation) {
+              onInvited(res.invitation);
+            }
+            closeEmail(
+              res.invitation
+                ? `Adresse de ${member.username} corrigée ; son ancien lien ne vaut plus.`
+                : `Adresse de ${member.username} corrigée.${
+                    mailEnabled && member.status === MemberStatus.ACTIVE
+                      ? ' Un avis part à l’ancienne adresse.'
+                      : ''
+                  }`
+            );
+          }}
+        />
+      ) : !confirming ? (
         <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-iron-800 pt-3">
+          {!self && (
+            <Button
+              ref={emailButton}
+              variant="quiet"
+              onClick={() => {
+                setEditingEmail(true);
+                setDone(undefined);
+                setError(undefined);
+              }}
+              disabled={busy}
+              aria-label={`Changer l’adresse de ${member.username}`}
+            >
+              <AtSign aria-hidden="true" className="size-4" />
+              Changer l’adresse
+            </Button>
+          )}
           {active && (
             <Button
               variant="quiet"
@@ -485,6 +552,106 @@ function MemberActions({
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * Correction de l'adresse d'un compte par un administrateur (#100). Le
+ * serveur annule les liens partis vers l'ancienne adresse ; un compte qui
+ * attendait son mot de passe est réinvité à la nouvelle.
+ */
+function MemberEmailForm({
+  member,
+  mailEnabled,
+  onChanged,
+  onCancel,
+}: {
+  member: Member;
+  mailEnabled: boolean;
+  onChanged: (res: UpdateMemberEmailResponse) => void;
+  onCancel: () => void;
+}) {
+  const api = useApi();
+  const [email, setEmail] = useState('');
+  const [problem, setProblem] = useState<string>();
+  const [error, setError] = useState<string>();
+  const [pending, setPending] = useState(false);
+  const ids = { email: useId(), note: useId(), error: useId(), hint: useId() };
+
+  const waiting =
+    member.status === MemberStatus.INVITED || member.status === MemberStatus.INVITATION_EXPIRED;
+  const note = waiting
+    ? `Son lien actuel ne vaudra plus, et ${mailEnabled ? 'une nouvelle invitation partira à cette adresse' : 'un nouveau lien sera fait, à lui transmettre'}.`
+    : member.status === MemberStatus.SUSPENDED
+      ? 'Ses liens en attente seront annulés. Le compte reste suspendu.'
+      : `Ses liens en attente seront annulés${mailEnabled ? ', et un avis partira à l’ancienne adresse' : ''}. Ses sessions restent ouvertes.`;
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const found = checkNewEmail(email, member.email);
+    setProblem(found);
+    setError(undefined);
+    if (found) {
+      return;
+    }
+    setPending(true);
+    try {
+      onChanged(await api.team.updateMemberEmail({ userId: member.id, email: email.trim() }));
+    } catch (err) {
+      setError(describeError(err));
+      setPending(false);
+    }
+  }
+
+  return (
+    <form
+      noValidate
+      onSubmit={submit}
+      aria-label={`Changer l’adresse de ${member.username}`}
+      aria-describedby={error ? `${ids.note} ${ids.error}` : ids.note}
+      className="mt-3 rounded-md border border-iron-700 bg-iron-900 px-3 py-3"
+    >
+      <label htmlFor={ids.email} className="text-sm font-medium text-iron-100">
+        Nouvelle adresse de <span className="font-mono">{member.username}</span>
+      </label>
+      {/* autoFocus : le formulaire s'ouvre sur demande, le focus y entre. */}
+      <input
+        id={ids.email}
+        type="email"
+        inputMode="email"
+        autoComplete="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        autoFocus
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        aria-invalid={problem ? true : undefined}
+        aria-describedby={problem ? ids.hint : undefined}
+        className={`${fieldClass} font-mono ${problem ? 'border-danger-400' : 'border-iron-700'}`}
+      />
+      {problem && (
+        <p id={ids.hint} className="mt-1.5 text-sm text-danger-400">
+          {problem}
+        </p>
+      )}
+      <p id={ids.note} className="mt-2 text-xs text-iron-300">
+        {note}
+      </p>
+      {error && (
+        <p id={ids.error} role="alert" className="mt-2 text-sm text-danger-400">
+          {error}
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap gap-3">
+        <Button type="submit" disabled={pending}>
+          {pending && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
+          {pending ? 'Enregistrement…' : 'Enregistrer l’adresse'}
+        </Button>
+        <Button variant="quiet" onClick={onCancel} disabled={pending}>
+          Annuler
+        </Button>
+      </div>
+    </form>
   );
 }
 

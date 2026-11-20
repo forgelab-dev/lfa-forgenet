@@ -4,12 +4,23 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { memoryLocation } from 'wouter/memory-location';
 
 import { App } from '../../app/App';
-import { AuthService, UserRole, type ChangePasswordRequest } from '../../gen/forgenet/v1/auth_pb';
+import {
+  AuthService,
+  UserRole,
+  type ChangeEmailRequest,
+  type ChangePasswordRequest,
+} from '../../gen/forgenet/v1/auth_pb';
 import { sessionInterceptors, type TransportFactory } from '../../lib/api/client';
 
 /** Faux serveur : une session ouverte ; ChangePassword répond `answer`. */
-function fakeServer(answer: () => { revokedSessions: number } = () => ({ revokedSessions: 2 })) {
+function fakeServer(
+  answer: () => { revokedSessions: number } = () => ({ revokedSessions: 2 }),
+  emailAnswer: (req: ChangeEmailRequest) => object = (req) => ({
+    user: { id: 'u1', username: 'ana', email: req.newEmail.toLowerCase(), role: UserRole.MEMBER },
+  })
+) {
   const calls: ChangePasswordRequest[] = [];
+  const emailCalls: ChangeEmailRequest[] = [];
   const factory: TransportFactory = (session) =>
     createRouterTransport(
       ({ service }) => {
@@ -31,11 +42,15 @@ function fakeServer(answer: () => { revokedSessions: number } = () => ({ revoked
             calls.push(req);
             return answer();
           },
+          changeEmail(req) {
+            emailCalls.push(req);
+            return emailAnswer(req);
+          },
         });
       },
       { transport: { interceptors: sessionInterceptors(session) } }
     );
-  return { factory, calls };
+  return { factory, calls, emailCalls };
 }
 
 function renderAccount(server: ReturnType<typeof fakeServer>, path = '/compte') {
@@ -168,5 +183,67 @@ describe('AccountPage', () => {
     expect(screen.getByLabelText('Mot de passe actuel')).toHaveAttribute('type', 'password');
     fireEvent.click(screen.getByLabelText('Afficher les mots de passe'));
     expect(screen.getByLabelText('Mot de passe actuel')).toHaveAttribute('type', 'text');
+  });
+
+  it('change l’adresse avec le mot de passe, puis montre la nouvelle', async () => {
+    const server = fakeServer();
+    renderAccount(server);
+    const identity = await screen.findByRole('region', { name: 'Identité' });
+
+    const open = within(identity).getByRole('button', { name: 'Changer d’adresse e-mail' });
+    fireEvent.click(open);
+    expect(screen.getByLabelText('Nouvelle adresse e-mail')).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer l’adresse' }));
+    expect(screen.getByText('Saisissez la nouvelle adresse.')).toBeInTheDocument();
+    expect(screen.getByText('Saisissez votre mot de passe pour confirmer.')).toBeInTheDocument();
+    expect(server.emailCalls).toHaveLength(0);
+
+    fill('Nouvelle adresse e-mail', ' Ana@Nouveau.org ');
+    fill('Votre mot de passe', 'mot-de-passe-actuel');
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer l’adresse' }));
+
+    expect(await within(identity).findByText('ana@nouveau.org')).toBeInTheDocument();
+    expect(within(identity).getByRole('status')).toHaveTextContent(/Adresse changée/);
+    expect(server.emailCalls).toEqual([
+      expect.objectContaining({
+        currentPassword: 'mot-de-passe-actuel',
+        newEmail: 'Ana@Nouveau.org',
+      }),
+    ]);
+    expect(screen.queryByLabelText('Nouvelle adresse e-mail')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        within(identity).getByRole('button', { name: 'Changer d’adresse e-mail' })
+      ).toHaveFocus()
+    );
+  });
+
+  it('montre le refus du serveur et garde le formulaire ouvert', async () => {
+    renderAccount(
+      fakeServer(undefined, () => {
+        throw new ConnectError('cette adresse e-mail a déjà un compte', Code.AlreadyExists);
+      })
+    );
+    const identity = await screen.findByRole('region', { name: 'Identité' });
+    fireEvent.click(within(identity).getByRole('button', { name: 'Changer d’adresse e-mail' }));
+    fill('Nouvelle adresse e-mail', 'bio@forgenet.test');
+    fill('Votre mot de passe', 'mot-de-passe-actuel');
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer l’adresse' }));
+
+    expect(await within(identity).findByRole('alert')).toHaveTextContent(/déjà un compte/);
+    expect(within(identity).getByText('ana@forgenet.test')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nouvelle adresse e-mail')).toHaveValue('bio@forgenet.test');
+  });
+
+  it('referme le formulaire sans rien changer', async () => {
+    const server = fakeServer();
+    renderAccount(server);
+    const identity = await screen.findByRole('region', { name: 'Identité' });
+    fireEvent.click(within(identity).getByRole('button', { name: 'Changer d’adresse e-mail' }));
+    fireEvent.click(within(identity).getByRole('button', { name: 'Annuler' }));
+
+    expect(screen.queryByLabelText('Nouvelle adresse e-mail')).not.toBeInTheDocument();
+    expect(server.emailCalls).toHaveLength(0);
   });
 });
