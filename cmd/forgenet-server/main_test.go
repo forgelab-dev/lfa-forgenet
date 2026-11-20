@@ -259,6 +259,30 @@ proxy:
 	}
 }
 
+// Un argument inconnu ne démarre jamais le serveur : lancé à la main dans le
+// conteneur (docker exec), il en aurait ouvert un second à côté du premier.
+func TestServer_UnknownCommandDoesNotStart(t *testing.T) {
+	cases := map[string][]string{
+		"audit":  {"audit", "--help"},
+		"statut": {"statut"},
+		"reset":  {"--config", "x.yaml", "reset"},
+	}
+	for unknown, args := range cases {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			cmd := exec.CommandContext(ctx, binPath, args...)
+			cmd.Dir = t.TempDir()
+			out, err := cmd.CombinedOutput()
+			require.NoError(t, ctx.Err(), "le binaire n'aurait pas dû rester lancé")
+			assert.Equal(t, 2, exitCode(t, err))
+			assert.Contains(t, string(out), "forgenet-server : commande inconnue : "+unknown+" (")
+			assert.Contains(t, string(out), "user, update, mail")
+			assert.NotContains(t, string(out), "démarrage de ForgeNet Server")
+		})
+	}
+}
+
 func TestUserCreate_FirstAdminFromCommandLine(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "forgenet.db")
 	configFile := writeConfig(t, fmt.Sprintf("database:\n  path: %q\n", dbPath))
