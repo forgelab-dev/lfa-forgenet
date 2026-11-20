@@ -130,6 +130,23 @@ function renderTeam({
             act(`delete(${req.confirmUsername})`, req.userId);
             return {};
           },
+          updateMemberEmail: (req) => {
+            act(`email(${req.email})`, req.userId);
+            const before = byId(req.userId);
+            if (
+              before.status === MemberStatus.INVITED ||
+              before.status === MemberStatus.INVITATION_EXPIRED
+            ) {
+              const again = {
+                ...before,
+                email: req.email.toLowerCase(),
+                status: MemberStatus.INVITED,
+                invitationExpiresAt: timestampFromDate(inSevenDays),
+              };
+              return { member: again, invitation: invited(again) };
+            }
+            return { member: { ...before, email: req.email.toLowerCase() } };
+          },
           renewInvitation: (req) => {
             calls.renewed.push(req.userId);
             const before = initialMembers.find((m) => m.id === req.userId)!;
@@ -369,5 +386,71 @@ describe('TeamPage', () => {
     );
     fireEvent.click(within(confirm).getByRole('button', { name: 'Garder le compte' }));
     expect(screen.queryByRole('group', { name: 'Suspendre dan' })).not.toBeInTheDocument();
+  });
+
+  it('corrige l’adresse d’un compte actif et prévient l’ancienne', async () => {
+    const calls = renderTeam({ mailEnabled: true });
+    await screen.findByRole('heading', { name: /5 comptes/ });
+
+    fireEvent.click(within(row('dan')).getByRole('button', { name: 'Changer l’adresse de dan' }));
+    const field = screen.getByLabelText('Nouvelle adresse de dan');
+    expect(field).toHaveFocus();
+    expect(
+      within(row('dan')).getByText(/un avis partira à l’ancienne adresse/)
+    ).toBeInTheDocument();
+
+    fireEvent.click(within(row('dan')).getByRole('button', { name: 'Enregistrer l’adresse' }));
+    expect(within(row('dan')).getByText('Saisissez la nouvelle adresse.')).toBeInTheDocument();
+    fireEvent.change(field, { target: { value: 'DAN@exemple.org' } });
+    fireEvent.click(within(row('dan')).getByRole('button', { name: 'Enregistrer l’adresse' }));
+    expect(within(row('dan')).getByText('C’est déjà l’adresse de ce compte.')).toBeInTheDocument();
+    expect(calls.actions).toEqual([]);
+
+    fireEvent.change(field, { target: { value: ' Dan@Nouveau.org ' } });
+    fireEvent.click(within(row('dan')).getByRole('button', { name: 'Enregistrer l’adresse' }));
+
+    expect(await within(row('dan')).findByText('dan@nouveau.org')).toBeInTheDocument();
+    expect(within(row('dan')).getByRole('status')).toHaveTextContent(
+      'Adresse de dan corrigée. Un avis part à l’ancienne adresse.'
+    );
+    expect(calls.actions).toEqual(['email(Dan@Nouveau.org):u4']);
+  });
+
+  it('réinvite à la nouvelle adresse un compte qui attendait son mot de passe', async () => {
+    renderTeam();
+    await screen.findByRole('heading', { name: /5 comptes/ });
+
+    fireEvent.click(within(row('eloi')).getByRole('button', { name: 'Changer l’adresse de eloi' }));
+    expect(
+      within(row('eloi')).getByText(/un nouveau lien sera fait, à lui transmettre/)
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Nouvelle adresse de eloi'), {
+      target: { value: 'eloi@bonne.org' },
+    });
+    fireEvent.click(within(row('eloi')).getByRole('button', { name: 'Enregistrer l’adresse' }));
+
+    expect(await within(row('eloi')).findByText('eloi@bonne.org')).toBeInTheDocument();
+    expect(within(row('eloi')).getByText(/son ancien lien ne vaut plus/)).toBeInTheDocument();
+    expect(within(row('eloi')).getByText(/Invité, lien valable jusqu’au/)).toBeInTheDocument();
+    expect(within(row('eloi')).getByDisplayValue(link)).toBeInTheDocument();
+  });
+
+  it('montre le refus du serveur et garde la saisie', async () => {
+    renderTeam({
+      accountError: new ConnectError('cette adresse e-mail a déjà un compte', Code.AlreadyExists),
+    });
+    await screen.findByRole('heading', { name: /5 comptes/ });
+
+    fireEvent.click(within(row('dan')).getByRole('button', { name: 'Changer l’adresse de dan' }));
+    fireEvent.change(screen.getByLabelText('Nouvelle adresse de dan'), {
+      target: { value: 'bio@exemple.org' },
+    });
+    fireEvent.click(within(row('dan')).getByRole('button', { name: 'Enregistrer l’adresse' }));
+
+    expect(await within(row('dan')).findByRole('alert')).toHaveTextContent(/déjà un compte/);
+    expect(screen.getByLabelText('Nouvelle adresse de dan')).toHaveValue('bio@exemple.org');
+    fireEvent.click(within(row('dan')).getByRole('button', { name: 'Annuler' }));
+    expect(screen.queryByLabelText('Nouvelle adresse de dan')).not.toBeInTheDocument();
+    expect(within(row('dan')).getByText('dan@exemple.org')).toBeInTheDocument();
   });
 });
