@@ -3,6 +3,7 @@ package config_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -388,4 +389,20 @@ func TestLoad_SMTPValidation(t *testing.T) {
 		_, err := config.Load("")
 		require.NoError(t, err)
 	})
+}
+
+func TestLoad_SecretsKey(t *testing.T) {
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.Empty(t, cfg.Secrets.Key, "sans clé, les réglages du dashboard restent fermés")
+
+	t.Setenv("FORGENET_SECRETS_KEY", strings.Repeat("0f", 32))
+	cfg, err = config.Load("")
+	require.NoError(t, err)
+	assert.Equal(t, strings.Repeat("0f", 32), cfg.Secrets.Key)
+
+	t.Setenv("FORGENET_SECRETS_KEY", "trop-courte")
+	_, err = config.Load("")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "secrets.key")
 }

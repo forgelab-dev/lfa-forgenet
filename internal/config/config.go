@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+
+	"github.com/forgelab-dev/lfa-forgenet/internal/sealed"
 )
 
 const (
@@ -216,33 +218,47 @@ type SMTPConfig struct {
 // Enabled dit si un relais est configuré.
 func (c SMTPConfig) Enabled() bool { return c.Host != "" }
 
-func (c SMTPConfig) validate() error {
+// Validate vérifie les réglages du relais, qu'ils viennent de .env ou du
+// dashboard (ADR-0015) : les messages nomment le champ et sa clé.
+func (c SMTPConfig) Validate() error {
 	if !c.Enabled() {
 		return nil
 	}
 	if strings.ContainsAny(c.Host, " \t\r\n/@") {
-		return fmt.Errorf("smtp.host doit être un nom d'hôte ou une adresse : %q", c.Host)
+		return fmt.Errorf("le relais doit être un nom d'hôte ou une adresse IP (smtp.host) : %q", c.Host)
 	}
 	if c.Port <= 0 || c.Port > 65535 {
-		return fmt.Errorf("smtp.port invalide : %d", c.Port)
+		return fmt.Errorf("port du relais invalide (smtp.port) : %d", c.Port)
 	}
 	if (c.Username == "") != (c.Password == "") {
-		return errors.New("smtp.username et smtp.password vont ensemble : les deux, ou aucun")
+		return errors.New("l'identifiant et le mot de passe du relais vont ensemble : les deux, ou aucun (smtp.username, smtp.password)")
+	}
+	if strings.ContainsAny(c.Username, "\r\n") || strings.ContainsAny(c.Password, "\r\n") {
+		return errors.New("l'identifiant et le mot de passe du relais ne contiennent pas de saut de ligne")
 	}
 	if _, err := mail.ParseAddress(c.From); err != nil || strings.ContainsAny(c.From, "\r\n") {
-		return fmt.Errorf("smtp.from doit être une adresse e-mail : %q", c.From)
+		return fmt.Errorf("l'expéditeur doit être une adresse e-mail (smtp.from) : %q", c.From)
 	}
 	switch c.TLS {
 	case SMTPStartTLS, SMTPImplicit:
 	case SMTPNoTLS:
 		// Sans TLS, identifiants et messages passeraient en clair sur le réseau.
 		if c.Host != "localhost" && c.Host != "127.0.0.1" && c.Host != "::1" {
-			return fmt.Errorf("smtp.tls=none n'est accepté que vers un relais local (localhost), pas %q", c.Host)
+			return fmt.Errorf("sans protection (smtp.tls=none), seul un relais local est accepté (localhost), pas %q", c.Host)
 		}
 	default:
 		return fmt.Errorf("smtp.tls inconnu : %q (valeurs acceptées : starttls, implicit, none)", c.TLS)
 	}
 	return nil
+}
+
+// SecretsConfig porte la clé qui chiffre en base les secrets réglés depuis le
+// dashboard, comme le mot de passe du relais SMTP (ADR-0015).
+type SecretsConfig struct {
+	// Key : 64 caractères hexadécimaux, écrits par install.sh dans .env
+	// (FORGENET_SECRET_KEY). Vide : ces réglages ne se changent pas depuis le
+	// dashboard, et le reste marche.
+	Key string `mapstructure:"key"`
 }
 
 // Config est la structure racine de la configuration ForgeNet.
@@ -259,6 +275,7 @@ type Config struct {
 	Web         WebConfig      `mapstructure:"web"`
 	Updates     UpdatesConfig  `mapstructure:"updates"`
 	SMTP        SMTPConfig     `mapstructure:"smtp"`
+	Secrets     SecretsConfig  `mapstructure:"secrets"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -355,8 +372,13 @@ func (c *Config) Validate() error {
 	if err := c.Proxy.validate(c.Environment); err != nil {
 		return err
 	}
-	if err := c.SMTP.validate(); err != nil {
+	if err := c.SMTP.Validate(); err != nil {
 		return err
+	}
+	if c.Secrets.Key != "" {
+		if _, err := sealed.ParseKey(c.Secrets.Key); err != nil {
+			return fmt.Errorf("secrets.key : %w", err)
+		}
 	}
 	if c.Web.Root != "" && !filepath.IsAbs(c.Web.Root) {
 		return fmt.Errorf("web.root doit être un chemin absolu : %q", c.Web.Root)
@@ -414,6 +436,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("smtp.password", "")
 	v.SetDefault("smtp.from", "")
 	v.SetDefault("smtp.tls", SMTPStartTLS)
+	v.SetDefault("secrets.key", "")
 
 	v.SetDefault("proxy.enabled", false)
 	v.SetDefault("proxy.admin_address", DefaultProxyAdminAddress)
