@@ -66,6 +66,9 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 	if len(args) > 0 && args[0] == "update" {
 		return runUpdate(ctx, args[1:], stdout)
 	}
+	if len(args) > 0 && args[0] == "mail" {
+		return runMail(ctx, args[1:], stdout)
+	}
 
 	flags := flag.NewFlagSet("forgenet-server", flag.ContinueOnError)
 	var (
@@ -173,22 +176,22 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	deploymentAPI := transportGRPC.NewDeploymentServiceServer(deployments, logger)
 	domainAPI := transportGRPC.NewDomainServiceServer(domainService, logger)
 	metricsAPI := transportGRPC.NewMetricsServiceServer(recorder, engine, logger)
-	// Envoi d'e-mails par un relais SMTP, facultatif (ADR-0014).
-	smtpSender := mail.NewSMTP(cfg.SMTP)
-	mailAPI := transportGRPC.NewMailServiceServer(cfg.SMTP, smtpSender, db.Users(), auditor, logger)
+	// Envoi d'e-mails par un relais SMTP, facultatif (ADR-0014), réglable
+	// depuis le dashboard sans redémarrage (ADR-0015).
+	relay, err := openRelay(ctx, cfg, db)
+	if err != nil {
+		return err
+	}
+	logRelay(logger, relay)
+	mailAPI := transportGRPC.NewMailServiceServer(relay, db.Users(), auditor, logger)
 	// Les e-mails des comptes (mot de passe oublié, invitations) partent en
-	// tâche de fond, avec trois essais espacés.
-	outbox := mail.NewOutbox(smtpSender, nil, logger)
+	// tâche de fond, avec trois essais espacés. La file et les écrans qui en
+	// dépendent suivent l'état du relais.
+	outbox := mail.NewOutbox(relay, nil, logger)
+	authAPI.EnablePasswordReset(outbox, cfg.Proxy.DashboardHost)
 	teamDeps := transportGRPC.TeamDeps{
 		Auth: authService, Users: db.Users(), Links: db.ActionTokens(),
-		DashboardHost: cfg.Proxy.DashboardHost, Auditor: auditor,
-	}
-	if cfg.SMTP.Enabled() {
-		logger.Info().Str("relais", cfg.SMTP.Host).Msg("envoi d'e-mails activé")
-		authAPI.EnablePasswordReset(outbox, cfg.Proxy.DashboardHost)
-		teamDeps.Outbox = outbox
-	} else {
-		logger.Info().Msg("envoi d'e-mails désactivé : aucun relais SMTP configuré")
+		DashboardHost: cfg.Proxy.DashboardHost, Auditor: auditor, Outbox: outbox,
 	}
 	teamAPI := transportGRPC.NewTeamServiceServer(teamDeps, logger)
 	// Annonce des nouvelles versions et mise à jour depuis le dashboard

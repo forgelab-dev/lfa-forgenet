@@ -43,8 +43,8 @@ type AuthServiceServer struct {
 	// passwords freine les essais du mot de passe actuel lors d'un
 	// changement : une session volée ne doit pas servir à le deviner.
 	passwords *loginLimiter
-	// reset est nil tant que « mot de passe oublié » n'est pas activé
-	// (aucun relais SMTP).
+	// reset est nil tant que « mot de passe oublié » n'est pas branché ;
+	// branché, il suit l'état de la file d'envoi.
 	reset  *passwordReset
 	logger zerolog.Logger
 }

@@ -19,17 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MailService_GetMailStatus_FullMethodName = "/forgenet.v1.MailService/GetMailStatus"
-	MailService_SendTestMail_FullMethodName  = "/forgenet.v1.MailService/SendTestMail"
+	MailService_GetMailStatus_FullMethodName     = "/forgenet.v1.MailService/GetMailStatus"
+	MailService_SendTestMail_FullMethodName      = "/forgenet.v1.MailService/SendTestMail"
+	MailService_SaveMailSettings_FullMethodName  = "/forgenet.v1.MailService/SaveMailSettings"
+	MailService_DisableMail_FullMethodName       = "/forgenet.v1.MailService/DisableMail"
+	MailService_ResetMailSettings_FullMethodName = "/forgenet.v1.MailService/ResetMailSettings"
 )
 
 // MailServiceClient is the client API for MailService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// MailService montre l'envoi d'e-mails et l'essaie. Réservé aux
-// administrateurs. Les réglages se changent sur le serveur, par install.sh
-// (ADR-0014).
+// MailService montre l'envoi d'e-mails, l'essaie et le règle. Réservé aux
+// administrateurs. Les réglages du dashboard l'emportent sur ceux
+// d'install.sh tant qu'ils existent (ADR-0015).
 type MailServiceClient interface {
 	GetMailStatus(ctx context.Context, in *GetMailStatusRequest, opts ...grpc.CallOption) (*GetMailStatusResponse, error)
 	// SendTestMail envoie un e-mail d'essai à l'administrateur connecté et
@@ -37,6 +40,19 @@ type MailServiceClient interface {
 	// relais : FAILED_PRECONDITION avec sa réponse. Envois répétés :
 	// RESOURCE_EXHAUSTED.
 	SendTestMail(ctx context.Context, in *SendTestMailRequest, opts ...grpc.CallOption) (*SendTestMailResponse, error)
+	// SaveMailSettings essaie les nouveaux réglages par un e-mail à
+	// l'administrateur connecté, puis les enregistre et les applique sans
+	// redémarrage. Réglages invalides : INVALID_ARGUMENT. Refus du relais :
+	// FAILED_PRECONDITION avec sa réponse, et les anciens réglages restent.
+	// Serveur sans clé : FAILED_PRECONDITION. Essais répétés :
+	// RESOURCE_EXHAUSTED.
+	SaveMailSettings(ctx context.Context, in *SaveMailSettingsRequest, opts ...grpc.CallOption) (*SaveMailSettingsResponse, error)
+	// DisableMail coupe l'envoi ; les valeurs restent pour le rouvrir.
+	// Serveur sans clé : FAILED_PRECONDITION.
+	DisableMail(ctx context.Context, in *DisableMailRequest, opts ...grpc.CallOption) (*DisableMailResponse, error)
+	// ResetMailSettings efface les réglages du dashboard : ceux d'install.sh
+	// (.env) s'appliquent de nouveau.
+	ResetMailSettings(ctx context.Context, in *ResetMailSettingsRequest, opts ...grpc.CallOption) (*ResetMailSettingsResponse, error)
 }
 
 type mailServiceClient struct {
@@ -67,13 +83,43 @@ func (c *mailServiceClient) SendTestMail(ctx context.Context, in *SendTestMailRe
 	return out, nil
 }
 
+func (c *mailServiceClient) SaveMailSettings(ctx context.Context, in *SaveMailSettingsRequest, opts ...grpc.CallOption) (*SaveMailSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveMailSettingsResponse)
+	err := c.cc.Invoke(ctx, MailService_SaveMailSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *mailServiceClient) DisableMail(ctx context.Context, in *DisableMailRequest, opts ...grpc.CallOption) (*DisableMailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisableMailResponse)
+	err := c.cc.Invoke(ctx, MailService_DisableMail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *mailServiceClient) ResetMailSettings(ctx context.Context, in *ResetMailSettingsRequest, opts ...grpc.CallOption) (*ResetMailSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResetMailSettingsResponse)
+	err := c.cc.Invoke(ctx, MailService_ResetMailSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MailServiceServer is the server API for MailService service.
 // All implementations must embed UnimplementedMailServiceServer
 // for forward compatibility.
 //
-// MailService montre l'envoi d'e-mails et l'essaie. Réservé aux
-// administrateurs. Les réglages se changent sur le serveur, par install.sh
-// (ADR-0014).
+// MailService montre l'envoi d'e-mails, l'essaie et le règle. Réservé aux
+// administrateurs. Les réglages du dashboard l'emportent sur ceux
+// d'install.sh tant qu'ils existent (ADR-0015).
 type MailServiceServer interface {
 	GetMailStatus(context.Context, *GetMailStatusRequest) (*GetMailStatusResponse, error)
 	// SendTestMail envoie un e-mail d'essai à l'administrateur connecté et
@@ -81,6 +127,19 @@ type MailServiceServer interface {
 	// relais : FAILED_PRECONDITION avec sa réponse. Envois répétés :
 	// RESOURCE_EXHAUSTED.
 	SendTestMail(context.Context, *SendTestMailRequest) (*SendTestMailResponse, error)
+	// SaveMailSettings essaie les nouveaux réglages par un e-mail à
+	// l'administrateur connecté, puis les enregistre et les applique sans
+	// redémarrage. Réglages invalides : INVALID_ARGUMENT. Refus du relais :
+	// FAILED_PRECONDITION avec sa réponse, et les anciens réglages restent.
+	// Serveur sans clé : FAILED_PRECONDITION. Essais répétés :
+	// RESOURCE_EXHAUSTED.
+	SaveMailSettings(context.Context, *SaveMailSettingsRequest) (*SaveMailSettingsResponse, error)
+	// DisableMail coupe l'envoi ; les valeurs restent pour le rouvrir.
+	// Serveur sans clé : FAILED_PRECONDITION.
+	DisableMail(context.Context, *DisableMailRequest) (*DisableMailResponse, error)
+	// ResetMailSettings efface les réglages du dashboard : ceux d'install.sh
+	// (.env) s'appliquent de nouveau.
+	ResetMailSettings(context.Context, *ResetMailSettingsRequest) (*ResetMailSettingsResponse, error)
 	mustEmbedUnimplementedMailServiceServer()
 }
 
@@ -96,6 +155,15 @@ func (UnimplementedMailServiceServer) GetMailStatus(context.Context, *GetMailSta
 }
 func (UnimplementedMailServiceServer) SendTestMail(context.Context, *SendTestMailRequest) (*SendTestMailResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendTestMail not implemented")
+}
+func (UnimplementedMailServiceServer) SaveMailSettings(context.Context, *SaveMailSettingsRequest) (*SaveMailSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveMailSettings not implemented")
+}
+func (UnimplementedMailServiceServer) DisableMail(context.Context, *DisableMailRequest) (*DisableMailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DisableMail not implemented")
+}
+func (UnimplementedMailServiceServer) ResetMailSettings(context.Context, *ResetMailSettingsRequest) (*ResetMailSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetMailSettings not implemented")
 }
 func (UnimplementedMailServiceServer) mustEmbedUnimplementedMailServiceServer() {}
 func (UnimplementedMailServiceServer) testEmbeddedByValue()                     {}
@@ -154,6 +222,60 @@ func _MailService_SendTestMail_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MailService_SaveMailSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveMailSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MailServiceServer).SaveMailSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MailService_SaveMailSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MailServiceServer).SaveMailSettings(ctx, req.(*SaveMailSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MailService_DisableMail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisableMailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MailServiceServer).DisableMail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MailService_DisableMail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MailServiceServer).DisableMail(ctx, req.(*DisableMailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MailService_ResetMailSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetMailSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MailServiceServer).ResetMailSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MailService_ResetMailSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MailServiceServer).ResetMailSettings(ctx, req.(*ResetMailSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MailService_ServiceDesc is the grpc.ServiceDesc for MailService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -168,6 +290,18 @@ var MailService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendTestMail",
 			Handler:    _MailService_SendTestMail_Handler,
+		},
+		{
+			MethodName: "SaveMailSettings",
+			Handler:    _MailService_SaveMailSettings_Handler,
+		},
+		{
+			MethodName: "DisableMail",
+			Handler:    _MailService_DisableMail_Handler,
+		},
+		{
+			MethodName: "ResetMailSettings",
+			Handler:    _MailService_ResetMailSettings_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

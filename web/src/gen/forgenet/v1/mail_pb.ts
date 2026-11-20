@@ -4,13 +4,15 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file forgenet/v1/mail.proto.
  */
 export const file_forgenet_v1_mail: GenFile = /*@__PURE__*/
-  fileDesc("ChZmb3JnZW5ldC92MS9tYWlsLnByb3RvEgtmb3JnZW5ldC52MSIWChRHZXRNYWlsU3RhdHVzUmVxdWVzdCKMAQoVR2V0TWFpbFN0YXR1c1Jlc3BvbnNlEg8KB2VuYWJsZWQYASABKAgSDAoEaG9zdBgCIAEoCRIMCgRwb3J0GAMgASgNEiEKA3RscxgEIAEoDjIULmZvcmdlbmV0LnYxLk1haWxUTFMSDAoEZnJvbRgFIAEoCRIVCg1hdXRoZW50aWNhdGVkGAYgASgIIhUKE1NlbmRUZXN0TWFpbFJlcXVlc3QiIgoUU2VuZFRlc3RNYWlsUmVzcG9uc2USCgoCdG8YASABKAkqZAoHTWFpbFRMUxIYChRNQUlMX1RMU19VTlNQRUNJRklFRBAAEhUKEU1BSUxfVExTX1NUQVJUVExTEAESFQoRTUFJTF9UTFNfSU1QTElDSVQQAhIRCg1NQUlMX1RMU19OT05FEAMyugEKC01haWxTZXJ2aWNlElYKDUdldE1haWxTdGF0dXMSIS5mb3JnZW5ldC52MS5HZXRNYWlsU3RhdHVzUmVxdWVzdBoiLmZvcmdlbmV0LnYxLkdldE1haWxTdGF0dXNSZXNwb25zZRJTCgxTZW5kVGVzdE1haWwSIC5mb3JnZW5ldC52MS5TZW5kVGVzdE1haWxSZXF1ZXN0GiEuZm9yZ2VuZXQudjEuU2VuZFRlc3RNYWlsUmVzcG9uc2VCRVpDZ2l0aHViLmNvbS9mb3JnZWxhYi1kZXYvbGZhLWZvcmdlbmV0L3BrZy9nZW4vZm9yZ2VuZXQvdjE7Zm9yZ2VuZXR2MWIGcHJvdG8z");
+  fileDesc("ChZmb3JnZW5ldC92MS9tYWlsLnByb3RvEgtmb3JnZW5ldC52MSIWChRHZXRNYWlsU3RhdHVzUmVxdWVzdCLMAgoVR2V0TWFpbFN0YXR1c1Jlc3BvbnNlEg8KB2VuYWJsZWQYASABKAgSDAoEaG9zdBgCIAEoCRIMCgRwb3J0GAMgASgNEiEKA3RscxgEIAEoDjIULmZvcmdlbmV0LnYxLk1haWxUTFMSDAoEZnJvbRgFIAEoCRIVCg1hdXRoZW50aWNhdGVkGAYgASgIEicKBnNvdXJjZRgHIAEoDjIXLmZvcmdlbmV0LnYxLk1haWxTb3VyY2USEAoIZWRpdGFibGUYCCABKAgSEAoIdXNlcm5hbWUYCSABKAkSEAoIZGlzYWJsZWQYCiABKAgSGwoTcGFzc3dvcmRfdW5yZWFkYWJsZRgLIAEoCBIuCgp1cGRhdGVkX2F0GAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBISCgp1cGRhdGVkX2J5GA0gASgJIhUKE1NlbmRUZXN0TWFpbFJlcXVlc3QiIgoUU2VuZFRlc3RNYWlsUmVzcG9uc2USCgoCdG8YASABKAkioQEKF1NhdmVNYWlsU2V0dGluZ3NSZXF1ZXN0EgwKBGhvc3QYASABKAkSDAoEcG9ydBgCIAEoDRIhCgN0bHMYAyABKA4yFC5mb3JnZW5ldC52MS5NYWlsVExTEhAKCHVzZXJuYW1lGAQgASgJEgwKBGZyb20YBSABKAkSFQoNa2VlcF9wYXNzd29yZBgGIAEoCBIQCghwYXNzd29yZBgHIAEoCSJaChhTYXZlTWFpbFNldHRpbmdzUmVzcG9uc2USMgoGc3RhdHVzGAEgASgLMiIuZm9yZ2VuZXQudjEuR2V0TWFpbFN0YXR1c1Jlc3BvbnNlEgoKAnRvGAIgASgJIhQKEkRpc2FibGVNYWlsUmVxdWVzdCJJChNEaXNhYmxlTWFpbFJlc3BvbnNlEjIKBnN0YXR1cxgBIAEoCzIiLmZvcmdlbmV0LnYxLkdldE1haWxTdGF0dXNSZXNwb25zZSIaChhSZXNldE1haWxTZXR0aW5nc1JlcXVlc3QiTwoZUmVzZXRNYWlsU2V0dGluZ3NSZXNwb25zZRIyCgZzdGF0dXMYASABKAsyIi5mb3JnZW5ldC52MS5HZXRNYWlsU3RhdHVzUmVzcG9uc2UqZAoHTWFpbFRMUxIYChRNQUlMX1RMU19VTlNQRUNJRklFRBAAEhUKEU1BSUxfVExTX1NUQVJUVExTEAESFQoRTUFJTF9UTFNfSU1QTElDSVQQAhIRCg1NQUlMX1RMU19OT05FEAMqXAoKTWFpbFNvdXJjZRIbChdNQUlMX1NPVVJDRV9VTlNQRUNJRklFRBAAEhYKEk1BSUxfU09VUkNFX1NFUlZFUhABEhkKFU1BSUxfU09VUkNFX0RBU0hCT0FSRBACMtEDCgtNYWlsU2VydmljZRJWCg1HZXRNYWlsU3RhdHVzEiEuZm9yZ2VuZXQudjEuR2V0TWFpbFN0YXR1c1JlcXVlc3QaIi5mb3JnZW5ldC52MS5HZXRNYWlsU3RhdHVzUmVzcG9uc2USUwoMU2VuZFRlc3RNYWlsEiAuZm9yZ2VuZXQudjEuU2VuZFRlc3RNYWlsUmVxdWVzdBohLmZvcmdlbmV0LnYxLlNlbmRUZXN0TWFpbFJlc3BvbnNlEl8KEFNhdmVNYWlsU2V0dGluZ3MSJC5mb3JnZW5ldC52MS5TYXZlTWFpbFNldHRpbmdzUmVxdWVzdBolLmZvcmdlbmV0LnYxLlNhdmVNYWlsU2V0dGluZ3NSZXNwb25zZRJQCgtEaXNhYmxlTWFpbBIfLmZvcmdlbmV0LnYxLkRpc2FibGVNYWlsUmVxdWVzdBogLmZvcmdlbmV0LnYxLkRpc2FibGVNYWlsUmVzcG9uc2USYgoRUmVzZXRNYWlsU2V0dGluZ3MSJS5mb3JnZW5ldC52MS5SZXNldE1haWxTZXR0aW5nc1JlcXVlc3QaJi5mb3JnZW5ldC52MS5SZXNldE1haWxTZXR0aW5nc1Jlc3BvbnNlQkVaQ2dpdGh1Yi5jb20vZm9yZ2VsYWItZGV2L2xmYS1mb3JnZW5ldC9wa2cvZ2VuL2ZvcmdlbmV0L3YxO2ZvcmdlbmV0djFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message forgenet.v1.GetMailStatusRequest
@@ -26,20 +28,23 @@ export const GetMailStatusRequestSchema: GenMessage<GetMailStatusRequest> = /*@_
   messageDesc(file_forgenet_v1_mail, 0);
 
 /**
- * GetMailStatusResponse décrit l'envoi d'e-mails. Les identifiants du relais
- * ne quittent jamais le serveur : seule leur présence est dite.
+ * GetMailStatusResponse décrit l'envoi d'e-mails. Le mot de passe du relais
+ * ne quitte jamais le serveur : seule sa présence est dite (authenticated).
  *
  * @generated from message forgenet.v1.GetMailStatusResponse
  */
 export type GetMailStatusResponse = Message<"forgenet.v1.GetMailStatusResponse"> & {
   /**
-   * Faux : aucun relais n'est configuré, ForgeNet n'envoie rien.
+   * Faux : aucun relais n'est réglé, ou l'envoi est coupé ; ForgeNet
+   * n'envoie rien.
    *
    * @generated from field: bool enabled = 1;
    */
   enabled: boolean;
 
   /**
+   * Les valeurs restent données quand l'envoi est coupé, pour le rouvrir.
+   *
    * @generated from field: string host = 2;
    */
   host: string;
@@ -62,11 +67,59 @@ export type GetMailStatusResponse = Message<"forgenet.v1.GetMailStatusResponse">
   from: string;
 
   /**
-   * Vrai : le serveur s'authentifie auprès du relais.
+   * Vrai : le serveur s'authentifie auprès du relais (un mot de passe est
+   * enregistré).
    *
    * @generated from field: bool authenticated = 6;
    */
   authenticated: boolean;
+
+  /**
+   * @generated from field: forgenet.v1.MailSource source = 7;
+   */
+  source: MailSource;
+
+  /**
+   * Vrai : les réglages se changent depuis le dashboard (le serveur a sa clé
+   * FORGENET_SECRET_KEY).
+   *
+   * @generated from field: bool editable = 8;
+   */
+  editable: boolean;
+
+  /**
+   * Identifiant auprès du relais, pour le formulaire.
+   *
+   * @generated from field: string username = 9;
+   */
+  username: string;
+
+  /**
+   * Vrai : l'envoi a été coupé depuis le dashboard.
+   *
+   * @generated from field: bool disabled = 10;
+   */
+  disabled: boolean;
+
+  /**
+   * Vrai : des réglages du dashboard existent, mais leur mot de passe ne
+   * s'ouvre plus avec la clé du serveur ; ceux de .env s'appliquent.
+   *
+   * @generated from field: bool password_unreadable = 11;
+   */
+  passwordUnreadable: boolean;
+
+  /**
+   * Dernier enregistrement depuis le dashboard : quand et par quel compte.
+   *
+   * @generated from field: google.protobuf.Timestamp updated_at = 12;
+   */
+  updatedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: string updated_by = 13;
+   */
+  updatedBy: string;
 };
 
 /**
@@ -109,6 +162,147 @@ export const SendTestMailResponseSchema: GenMessage<SendTestMailResponse> = /*@_
   messageDesc(file_forgenet_v1_mail, 3);
 
 /**
+ * SaveMailSettingsRequest porte les nouveaux réglages du relais.
+ *
+ * @generated from message forgenet.v1.SaveMailSettingsRequest
+ */
+export type SaveMailSettingsRequest = Message<"forgenet.v1.SaveMailSettingsRequest"> & {
+  /**
+   * @generated from field: string host = 1;
+   */
+  host: string;
+
+  /**
+   * @generated from field: uint32 port = 2;
+   */
+  port: number;
+
+  /**
+   * MAIL_TLS_UNSPECIFIED vaut STARTTLS.
+   *
+   * @generated from field: forgenet.v1.MailTLS tls = 3;
+   */
+  tls: MailTLS;
+
+  /**
+   * Vide : le relais est utilisé sans authentification.
+   *
+   * @generated from field: string username = 4;
+   */
+  username: string;
+
+  /**
+   * @generated from field: string from = 5;
+   */
+  from: string;
+
+  /**
+   * Vrai : le mot de passe enregistré est gardé, password est ignoré.
+   *
+   * @generated from field: bool keep_password = 6;
+   */
+  keepPassword: boolean;
+
+  /**
+   * Nouveau mot de passe, quand keep_password est faux. Jamais renvoyé.
+   *
+   * @generated from field: string password = 7;
+   */
+  password: string;
+};
+
+/**
+ * Describes the message forgenet.v1.SaveMailSettingsRequest.
+ * Use `create(SaveMailSettingsRequestSchema)` to create a new message.
+ */
+export const SaveMailSettingsRequestSchema: GenMessage<SaveMailSettingsRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_mail, 4);
+
+/**
+ * @generated from message forgenet.v1.SaveMailSettingsResponse
+ */
+export type SaveMailSettingsResponse = Message<"forgenet.v1.SaveMailSettingsResponse"> & {
+  /**
+   * @generated from field: forgenet.v1.GetMailStatusResponse status = 1;
+   */
+  status?: GetMailStatusResponse | undefined;
+
+  /**
+   * Adresse du compte connecté, à qui l'e-mail d'essai est parti.
+   *
+   * @generated from field: string to = 2;
+   */
+  to: string;
+};
+
+/**
+ * Describes the message forgenet.v1.SaveMailSettingsResponse.
+ * Use `create(SaveMailSettingsResponseSchema)` to create a new message.
+ */
+export const SaveMailSettingsResponseSchema: GenMessage<SaveMailSettingsResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_mail, 5);
+
+/**
+ * @generated from message forgenet.v1.DisableMailRequest
+ */
+export type DisableMailRequest = Message<"forgenet.v1.DisableMailRequest"> & {
+};
+
+/**
+ * Describes the message forgenet.v1.DisableMailRequest.
+ * Use `create(DisableMailRequestSchema)` to create a new message.
+ */
+export const DisableMailRequestSchema: GenMessage<DisableMailRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_mail, 6);
+
+/**
+ * @generated from message forgenet.v1.DisableMailResponse
+ */
+export type DisableMailResponse = Message<"forgenet.v1.DisableMailResponse"> & {
+  /**
+   * @generated from field: forgenet.v1.GetMailStatusResponse status = 1;
+   */
+  status?: GetMailStatusResponse | undefined;
+};
+
+/**
+ * Describes the message forgenet.v1.DisableMailResponse.
+ * Use `create(DisableMailResponseSchema)` to create a new message.
+ */
+export const DisableMailResponseSchema: GenMessage<DisableMailResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_mail, 7);
+
+/**
+ * @generated from message forgenet.v1.ResetMailSettingsRequest
+ */
+export type ResetMailSettingsRequest = Message<"forgenet.v1.ResetMailSettingsRequest"> & {
+};
+
+/**
+ * Describes the message forgenet.v1.ResetMailSettingsRequest.
+ * Use `create(ResetMailSettingsRequestSchema)` to create a new message.
+ */
+export const ResetMailSettingsRequestSchema: GenMessage<ResetMailSettingsRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_mail, 8);
+
+/**
+ * @generated from message forgenet.v1.ResetMailSettingsResponse
+ */
+export type ResetMailSettingsResponse = Message<"forgenet.v1.ResetMailSettingsResponse"> & {
+  /**
+   * @generated from field: forgenet.v1.GetMailStatusResponse status = 1;
+   */
+  status?: GetMailStatusResponse | undefined;
+};
+
+/**
+ * Describes the message forgenet.v1.ResetMailSettingsResponse.
+ * Use `create(ResetMailSettingsResponseSchema)` to create a new message.
+ */
+export const ResetMailSettingsResponseSchema: GenMessage<ResetMailSettingsResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_mail, 9);
+
+/**
  * MailTLS est la protection de la liaison avec le relais (ADR-0014).
  *
  * @generated from enum forgenet.v1.MailTLS
@@ -148,9 +342,41 @@ export const MailTLSSchema: GenEnum<MailTLS> = /*@__PURE__*/
   enumDesc(file_forgenet_v1_mail, 0);
 
 /**
- * MailService montre l'envoi d'e-mails et l'essaie. Réservé aux
- * administrateurs. Les réglages se changent sur le serveur, par install.sh
- * (ADR-0014).
+ * MailSource dit d'où viennent les réglages en vigueur (ADR-0015).
+ *
+ * @generated from enum forgenet.v1.MailSource
+ */
+export enum MailSource {
+  /**
+   * @generated from enum value: MAIL_SOURCE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * .env, écrit par install.sh
+   *
+   * @generated from enum value: MAIL_SOURCE_SERVER = 1;
+   */
+  SERVER = 1,
+
+  /**
+   * enregistrés depuis la page Réglages
+   *
+   * @generated from enum value: MAIL_SOURCE_DASHBOARD = 2;
+   */
+  DASHBOARD = 2,
+}
+
+/**
+ * Describes the enum forgenet.v1.MailSource.
+ */
+export const MailSourceSchema: GenEnum<MailSource> = /*@__PURE__*/
+  enumDesc(file_forgenet_v1_mail, 1);
+
+/**
+ * MailService montre l'envoi d'e-mails, l'essaie et le règle. Réservé aux
+ * administrateurs. Les réglages du dashboard l'emportent sur ceux
+ * d'install.sh tant qu'ils existent (ADR-0015).
  *
  * @generated from service forgenet.v1.MailService
  */
@@ -175,6 +401,43 @@ export const MailService: GenService<{
     methodKind: "unary";
     input: typeof SendTestMailRequestSchema;
     output: typeof SendTestMailResponseSchema;
+  },
+  /**
+   * SaveMailSettings essaie les nouveaux réglages par un e-mail à
+   * l'administrateur connecté, puis les enregistre et les applique sans
+   * redémarrage. Réglages invalides : INVALID_ARGUMENT. Refus du relais :
+   * FAILED_PRECONDITION avec sa réponse, et les anciens réglages restent.
+   * Serveur sans clé : FAILED_PRECONDITION. Essais répétés :
+   * RESOURCE_EXHAUSTED.
+   *
+   * @generated from rpc forgenet.v1.MailService.SaveMailSettings
+   */
+  saveMailSettings: {
+    methodKind: "unary";
+    input: typeof SaveMailSettingsRequestSchema;
+    output: typeof SaveMailSettingsResponseSchema;
+  },
+  /**
+   * DisableMail coupe l'envoi ; les valeurs restent pour le rouvrir.
+   * Serveur sans clé : FAILED_PRECONDITION.
+   *
+   * @generated from rpc forgenet.v1.MailService.DisableMail
+   */
+  disableMail: {
+    methodKind: "unary";
+    input: typeof DisableMailRequestSchema;
+    output: typeof DisableMailResponseSchema;
+  },
+  /**
+   * ResetMailSettings efface les réglages du dashboard : ceux d'install.sh
+   * (.env) s'appliquent de nouveau.
+   *
+   * @generated from rpc forgenet.v1.MailService.ResetMailSettings
+   */
+  resetMailSettings: {
+    methodKind: "unary";
+    input: typeof ResetMailSettingsRequestSchema;
+    output: typeof ResetMailSettingsResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_forgenet_v1_mail, 0);

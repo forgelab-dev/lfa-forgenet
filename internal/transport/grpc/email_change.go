@@ -43,7 +43,7 @@ func (s *AuthServiceServer) ChangeEmail(ctx context.Context, req *forgenetv1.Cha
 	}
 	s.passwords.reset(key)
 
-	if s.reset != nil {
+	if s.reset != nil && mailOn(s.reset.outbox) {
 		sendEmailChangeNotice(s.reset.outbox, change, change.User.Username)
 	}
 	return &forgenetv1.ChangeEmailResponse{User: toUser(change.User, claims.Role)}, nil
@@ -83,7 +83,7 @@ func (s *TeamServiceServer) UpdateMemberEmail(ctx context.Context, req *forgenet
 		}
 		res.Invitation = invitation
 		res.Member = invitation.GetMember()
-	case change.HadPassword && s.deps.Outbox != nil:
+	case change.HadPassword && mailOn(s.deps.Outbox):
 		sendEmailChangeNotice(s.deps.Outbox, change, claims.Username)
 	}
 	return res, nil

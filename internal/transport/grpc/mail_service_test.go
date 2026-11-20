@@ -1,6 +1,7 @@
 package grpc_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"sync"
@@ -16,6 +17,7 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/audit"
 	"github.com/forgelab-dev/lfa-forgenet/internal/config"
 	"github.com/forgelab-dev/lfa-forgenet/internal/mail"
+	"github.com/forgelab-dev/lfa-forgenet/internal/sealed"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 	transportGRPC "github.com/forgelab-dev/lfa-forgenet/internal/transport/grpc"
 	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
@@ -43,12 +45,52 @@ var relay = config.SMTPConfig{
 	From: "ForgeNet <forgenet@exemple.org>", TLS: config.SMTPStartTLS,
 }
 
+// relayLog note les réglages de chaque envoi : c'est le relais qui reçoit le
+// message, pas seulement son contenu, que les tests vérifient.
+type relayLog struct {
+	mu      sync.Mutex
+	configs []config.SMTPConfig
+}
+
+func (l *relayLog) last() config.SMTPConfig {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if len(l.configs) == 0 {
+		return config.SMTPConfig{}
+	}
+	return l.configs[len(l.configs)-1]
+}
+
+func testSealedBox(t *testing.T) *sealed.Box {
+	t.Helper()
+	box, err := sealed.NewBox(bytes.Repeat([]byte{3}, sealed.KeySize))
+	require.NoError(t, err)
+	return box
+}
+
 func startMailServer(t *testing.T, cfg config.SMTPConfig, sender mail.Sender) (*testServer, forgenetv1.MailServiceClient) {
 	t.Helper()
+	ts, client, _, _ := startMailServerWith(t, cfg, sender, testSealedBox(t))
+	return ts, client
+}
+
+// startMailServerWith sert le service Mail sur un relais dont chaque envoi
+// passe par sender ; box nil : serveur sans FORGENET_SECRET_KEY.
+func startMailServerWith(t *testing.T, cfg config.SMTPConfig, sender mail.Sender, box *sealed.Box) (*testServer, forgenetv1.MailServiceClient, *mail.Relay, *relayLog) {
+	t.Helper()
+	log := &relayLog{}
+	var r *mail.Relay
 	ts := startTestServer(t, &fakeEngine{}, func(srv *grpc.Server, st store.Store, auditor audit.Auditor) {
-		forgenetv1.RegisterMailServiceServer(srv, transportGRPC.NewMailServiceServer(cfg, sender, st.Users(), auditor, zerolog.Nop()))
+		r = mail.NewRelay(cfg, st.MailSettings(), box, mail.WithSenderFactory(func(c config.SMTPConfig) mail.Sender {
+			log.mu.Lock()
+			log.configs = append(log.configs, c)
+			log.mu.Unlock()
+			return sender
+		}))
+		require.NoError(t, r.Load(context.Background()))
+		forgenetv1.RegisterMailServiceServer(srv, transportGRPC.NewMailServiceServer(r, st.Users(), auditor, zerolog.Nop()))
 	})
-	return ts, forgenetv1.NewMailServiceClient(ts.conn)
+	return ts, forgenetv1.NewMailServiceClient(ts.conn), r, log
 }
 
 func TestMailService_ReservedToAdmins(t *testing.T) {
@@ -56,6 +98,12 @@ func TestMailService_ReservedToAdmins(t *testing.T) {
 	_, err := client.GetMailStatus(as(ts.memberToken), &forgenetv1.GetMailStatusRequest{})
 	assert.Equal(t, codes.PermissionDenied, status.Code(err))
 	_, err = client.SendTestMail(as(ts.memberToken), &forgenetv1.SendTestMailRequest{})
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+	_, err = client.SaveMailSettings(as(ts.memberToken), &forgenetv1.SaveMailSettingsRequest{Host: "smtp.autre.org"})
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+	_, err = client.DisableMail(as(ts.memberToken), &forgenetv1.DisableMailRequest{})
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+	_, err = client.ResetMailSettings(as(ts.memberToken), &forgenetv1.ResetMailSettingsRequest{})
 	assert.Equal(t, codes.PermissionDenied, status.Code(err))
 }
 
