@@ -206,12 +206,16 @@ func runUserSetEmail(ctx context.Context, args []string, stdout io.Writer) error
 			_, err = fmt.Fprintf(stdout, "Son lien en attente est annulé ; refaites-le pour la nouvelle adresse : forgenet user login-link --username %s --send\n", user.Username)
 			return err
 		}
-		if !cfg.SMTP.Enabled() {
+		relay, err := openRelay(ctx, cfg, db)
+		if err != nil {
+			return err
+		}
+		if !relay.Enabled() {
 			return nil
 		}
 		sendCtx, cancel := context.WithTimeout(ctx, mail.DefaultTimeout)
 		defer cancel()
-		if err := mail.NewSMTP(cfg.SMTP).Send(sendCtx, mail.EmailChangedMessage(change.OldEmail, user.Username, change.User.Email, "")); err != nil {
+		if err := relay.Send(sendCtx, mail.EmailChangedMessage(change.OldEmail, user.Username, change.User.Email, "")); err != nil {
 			// L'adresse est changée : l'avis manqué ne l'annule pas.
 			_, err = fmt.Fprintf(stdout, "L'avis à l'ancienne adresse n'est pas parti : %v\n", err)
 			return err
@@ -246,11 +250,15 @@ func runUserLoginLink(ctx context.Context, args []string, stdout io.Writer) erro
 	if err != nil {
 		return err
 	}
-	if send && !cfg.SMTP.Enabled() {
-		return fmt.Errorf("%w ; sans --send, le lien s'affiche ici", mail.ErrDisabled)
-	}
-
 	return withAuth(ctx, cfg, func(authService auth.Service, db store.Store) error {
+		// Les réglages du dashboard l'emportent sur .env (ADR-0015).
+		relay, err := openRelay(ctx, cfg, db)
+		if err != nil {
+			return err
+		}
+		if send && !relay.Enabled() {
+			return fmt.Errorf("%w ; sans --send, le lien s'affiche ici", mail.ErrDisabled)
+		}
 		user, err := db.Users().GetUserByUsername(ctx, username)
 		if errors.Is(err, store.ErrNotFound) {
 			return fmt.Errorf("aucun compte ne s'appelle %q", username)
@@ -274,7 +282,7 @@ func runUserLoginLink(ctx context.Context, args []string, stdout io.Writer) erro
 		}
 		sendCtx, cancel := context.WithTimeout(ctx, mail.DefaultTimeout)
 		defer cancel()
-		if err := mail.NewSMTP(cfg.SMTP).Send(sendCtx, mail.FirstLoginMessage(user.Email, user.Username, url, local, auth.HasPassword(user))); err != nil {
+		if err := relay.Send(sendCtx, mail.FirstLoginMessage(user.Email, user.Username, url, local, auth.HasPassword(user))); err != nil {
 			return fmt.Errorf("le relais n'a pas pris le lien : %w", err)
 		}
 		// L'adresse n'est pas répétée : cette sortie peut finir dans un journal.
