@@ -57,6 +57,16 @@ func NewOutbox(sender Sender, delays []time.Duration, logger zerolog.Logger) *Ou
 	}
 }
 
+// Enabled dit si les messages partent : la file suit l'état du relais, qui
+// peut changer sans redémarrage (ADR-0015). Un Sender qui ne le dit pas est
+// considéré comme réglé.
+func (o *Outbox) Enabled() bool {
+	if e, ok := o.sender.(interface{ Enabled() bool }); ok {
+		return e.Enabled()
+	}
+	return true
+}
+
 // Enqueue ajoute un envoi sans attendre. Il renvoie false si la file est
 // pleine ou arrêtée.
 func (o *Outbox) Enqueue(job Job) bool {
