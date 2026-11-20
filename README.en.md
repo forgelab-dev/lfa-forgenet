@@ -43,7 +43,7 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 - **Monitoring**: CPU, memory, disk and network for the server and each container, live, with the last hour; clean reconnection on a slow or dropped connection.
 - **Containers**: list, inspect, start, stop, restart.
 - **Updates**: a new version is announced in the dashboard and installs in one click, with a backup of the database and configuration, a health check and an automatic rollback to the previous version on failure; `install.sh --restore` puts a backup back.
-- **Team**: invite a member from the dashboard, with their role; they choose their own password through a link valid for 7 days, sent by email or passed on by the admin. An account can be suspended (its sessions and tokens are closed at once), reactivated or deleted; its sessions can also be closed without suspending it, when a device is lost.
+- **Team**: invite a member from the dashboard, with their role; they choose their own password through a link valid for 7 days, sent by email or passed on by the admin. An account can be suspended (its sessions and tokens are closed at once), reactivated or deleted; its sessions can also be closed without suspending it, when a device is lost. A mistyped address can be corrected: everyone changes their own from “My account”, an admin changes another account's.
 - **Accounts and security**: admin and member roles, permissions checked on every call, rate-limited sign-in, audit log.
 - **API**: gRPC contract ([`api/proto`](api/proto)), also served over Connect and gRPC-Web, with generated TypeScript and Dart clients.
 

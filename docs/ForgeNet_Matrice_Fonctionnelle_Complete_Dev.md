@@ -167,8 +167,9 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 - [ ] Page "Soutenir ForgeNet" sur `don.lucidforgeafrica.com/forgenet`, page de don commune de LucidForge Africa (GitHub Sponsors à côté ; FedaPay, Kkiapay, PayPal) — page et profil Sponsors référencés depuis `.github/FUNDING.yml` `🔓 CE`
 
 ### 2.9 Paramètres & Compte
-- [ ] Profil, tokens API, préférences de notification `🔓 CE` — *v0.6.0, en partie : la page « Mon compte » montre le nom, l'adresse et le rôle du compte ; ils ne se modifient pas encore, et les jetons API comme les notifications restent à faire*
+- [ ] Profil, tokens API, préférences de notification `🔓 CE` — *v0.6.0, en partie : la page « Mon compte » montre le nom, l'adresse et le rôle du compte ; l'adresse se change depuis #100 (voir plus bas), le nom et le rôle pas encore, et les jetons API comme les notifications restent à faire*
 - [x] Changer son mot de passe, dans le dashboard et en terminal (`user set-password`) `🔓 CE` — *v0.6.0 (#72) : page « Mon compte » (mot de passe actuel exigé, 8 caractères au moins), `forgenet user set-password` sur le serveur pour un mot de passe perdu ; les autres sessions et les jetons API du compte sont fermés, le changement est inscrit au journal d'audit*
+- [x] Changer l'adresse e-mail d'un compte, dans le dashboard et en terminal (`user set-email`) `🔓 CE` — *#100 : page « Mon compte » (mot de passe actuel exigé), page Équipe pour un autre compte, `forgenet user set-email` ; les liens partis vers l'ancienne adresse sont annulés, un compte invité est réinvité à la nouvelle, un avis part à l'ancienne avec un relais SMTP ; le journal d'audit ne garde pas les adresses*
 - [x] Envoi d'e-mails (SMTP) : lien à usage unique pour la première connexion de l'administrateur, mot de passe oublié `🔓 CE` — *v0.8.0 à v0.10.0 (#73, ADR-0014) : relais SMTP réglé par `install.sh --smtp-*`, page Réglages avec e-mail d'essai ; lien de première connexion à l'installation sans terminal (page `/acces`, `forgenet user login-link`) ; « Mot de passe oublié ? » sur l'écran de connexion, envoi en tâche de fond avec trois essais*
 - [ ] Thème clair/sombre `🔓 CE`
 - [ ] Localisation FR/EN `🔓 CE`
