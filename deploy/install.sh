@@ -75,7 +75,8 @@ Usage : sudo bash install.sh [options]
                       (son nom ou son chemin) : base, .env et fichiers
                       d'installation, avec la version qu'ils désignent.
   --smtp-host HÔTE    Relais SMTP pour les e-mails de ForgeNet (ADR-0014).
-                      --smtp-host "" coupe l'envoi d'e-mails.
+                      --smtp-host "" coupe l'envoi d'e-mails. Remplace les
+                      réglages faits depuis la page Réglages (ADR-0015).
   --smtp-port PORT    587 (STARTTLS, défaut) ou 465 (TLS direct).
   --smtp-user NOM     Identifiant du relais ; le mot de passe est demandé sur
                       le terminal, ou lu dans FORGENET_SMTP_PASSWORD, jamais
@@ -333,6 +334,14 @@ write_files() {
 		set_env FORGENET_JWT_SECRET "$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
 		ok "clé de session générée"
 	fi
+	# La clé des secrets réglés depuis le dashboard (ADR-0015), comme le mot
+	# de passe du relais SMTP. Créée une fois : la changer les rendrait
+	# illisibles. Distincte de la clé de session, qu'on change pour fermer
+	# toutes les sessions.
+	if [ -z "$(get_env FORGENET_SECRET_KEY)" ]; then
+		set_env FORGENET_SECRET_KEY "$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+		ok "clé des secrets générée"
+	fi
 	set_env FORGENET_VERSION "$VERSION"
 	set_env FORGENET_IMAGE_DIGEST "$(release_digest)"
 	set_env FORGENET_INSTALL_DIR "$INSTALL_DIR"
@@ -434,6 +443,11 @@ start_stack() {
 		die "démarrage impossible. Si l'image ghcr.io/forgelab-dev/forgenet-server:$VERSION est introuvable, cette version n'est pas publiée."
 	fi
 
+	wait_healthy
+	ok "serveur et Caddy démarrés"
+}
+
+wait_healthy() {
 	local status=""
 	for _ in $(seq 1 60); do
 		status="$(docker inspect -f '{{.State.Health.Status}}' forgenet-server 2>/dev/null || true)"
@@ -444,7 +458,26 @@ start_stack() {
 		compose logs --tail 30 server >&2 || true
 		die "le serveur ne répond pas après 2 minutes (état : ${status:-inconnu}) ; journaux ci-dessus"
 	fi
-	ok "serveur et Caddy démarrés"
+}
+
+# apply_smtp_choice fait l'emporter les options --smtp-* sur les réglages faits
+# depuis le dashboard (ADR-0015) : la dernière action explicite gagne. Le
+# serveur les garde en mémoire : il redémarre pour relire .env.
+apply_smtp_choice() {
+	[ "$SMTP_SET" -eq 1 ] || return 0
+	local out
+	if ! out="$(compose exec -T server forgenet-server mail reset)"; then
+		warn "réglages d'envoi du dashboard non effacés (message ci-dessus) : ils l'emportent sur --smtp-host ; « Revenir aux réglages du serveur » dans Réglages les efface"
+		return 0
+	fi
+	case "$out" in
+	*"effacés"*)
+		info "Réglages d'envoi du dashboard remplacés par ceux de --smtp-host"
+		compose restart server >/dev/null || die "redémarrage du serveur impossible"
+		wait_healthy
+		ok "serveur redémarré avec les réglages d'envoi de .env"
+		;;
+	esac
 }
 
 # ask lit une réponse sur le terminal, même quand le script arrive par un tube.
@@ -757,6 +790,7 @@ main() {
 	check_ports
 	write_files
 	start_stack
+	apply_smtp_choice
 	install_command
 	create_admin
 	check_dns

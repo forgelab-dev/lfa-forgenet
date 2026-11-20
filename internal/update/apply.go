@@ -2,7 +2,9 @@ package update
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -199,10 +201,20 @@ func (e *Engine) Apply(ctx context.Context, target Release) (State, error) {
 			}
 		}
 	}
-	if err := writeEnv(e.envPath(), map[string]string{
+	set := map[string]string{
 		"FORGENET_VERSION":      target.Version,
 		"FORGENET_IMAGE_DIGEST": target.Digest,
-	}); err != nil {
+	}
+	// La clé des secrets du dashboard (ADR-0015) : install.sh la crée, mais
+	// une installation plus ancienne mise à jour d'ici ne repasse pas par lui.
+	if env["FORGENET_SECRET_KEY"] == "" {
+		key, err := newSecretKey()
+		if err != nil {
+			return e.rollback(ctx, &st, err)
+		}
+		set["FORGENET_SECRET_KEY"] = key
+	}
+	if err := writeEnv(e.envPath(), set); err != nil {
 		return e.rollback(ctx, &st, fmt.Errorf("écriture de .env : %w", err))
 	}
 	// Sans --no-deps : si docker-compose.yml a changé, compose recrée aussi
@@ -483,6 +495,16 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return os.Rename(tmp, dst)
+}
+
+// newSecretKey tire la clé des secrets : 32 octets en hexadécimal, comme
+// install.sh.
+func newSecretKey() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("tirage de FORGENET_SECRET_KEY : %w", err)
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // readEnv lit un fichier .env simple (CLÉ=valeur, commentaires ignorés).

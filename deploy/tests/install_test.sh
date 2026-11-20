@@ -111,5 +111,32 @@ check "envoi refusé : lien écrit dans le fichier" "$(grep -c 'acces#JETON-SECR
 check "envoi refusé : raison donnée" "$(grep -c 'relais injoignable' "$WORK/out")" "1"
 check "envoi refusé : lien jamais affiché" "$(grep -c 'JETON-SECRET' "$WORK/out")" "0"
 
+# --- Réglages du dashboard face à --smtp-host (ADR-0015) --------------------
+
+# smtp_choice lance apply_smtp_choice avec une doublure de compose : « mail
+# reset » répond EFFACE (réglages du dashboard effacés) ou non, et chaque appel
+# est noté ; wait_healthy est remplacé, faute de Docker.
+smtp_choice() {
+	rm -f "$WORK/appels"
+	# shellcheck disable=SC2016
+	FORGENET_INSTALL_LIB=1 FORGENET_DIR="$WORK/install" APPELS="$WORK/appels" \
+		setsid -w bash -c '. "$0" "$@" && compose() {
+			printf "%s\n" "$*" >>"$APPELS"
+			case "$*" in
+			*"mail reset"*) if [ "${EFFACE:-0}" = 1 ]; then echo "Réglages d'"'"'envoi du dashboard effacés"; else echo "Aucun réglage"; fi ;;
+			esac
+		} && wait_healthy() { echo "attente" >>"$APPELS"; } && apply_smtp_choice' "$SCRIPT" "$@" </dev/null >"$WORK/out" 2>&1
+}
+
+FORGENET_SMTP_PASSWORD=secret EFFACE=1 smtp_choice --smtp-host smtp.exemple.org --smtp-user forgenet --smtp-from envois@exemple.org
+check "--smtp-host efface les réglages du dashboard" "$(grep -c 'exec -T server forgenet-server mail reset' "$WORK/appels")" "1"
+check "puis le serveur redémarre pour relire .env" "$(grep -c '^restart server$' "$WORK/appels")" "1"
+
+FORGENET_SMTP_PASSWORD=secret smtp_choice --smtp-host smtp.exemple.org --smtp-user forgenet --smtp-from envois@exemple.org
+check "rien à effacer : pas de redémarrage" "$(grep -c '^restart server$' "$WORK/appels")" "0"
+
+smtp_choice
+check "sans --smtp-host, les réglages du dashboard restent" "$([ -e "$WORK/appels" ] && cat "$WORK/appels")" ""
+
 printf '\n%d vérifications, %d en échec\n' "$((pass + fail))" "$fail"
 [ "$fail" -eq 0 ]

@@ -51,6 +51,9 @@ services:
       FORGENET_SMTP_USERNAME: ${FORGENET_SMTP_USER:-}
       FORGENET_SMTP_PASSWORD: ${FORGENET_SMTP_PASSWORD:-}
       FORGENET_SMTP_FROM: ${FORGENET_SMTP_FROM:-}
+      # Clé qui chiffre en base le mot de passe du relais réglé depuis le
+      # dashboard (ADR-0015) ; vide, le relais se règle par install.sh seul.
+      FORGENET_SECRETS_KEY: ${FORGENET_SECRET_KEY:-}
       # Métriques de l'hôte, pas du seul conteneur.
       HOST_PROC: /host/proc
       # Dossier d'installation sur l'hôte : le conteneur de mise à jour y
