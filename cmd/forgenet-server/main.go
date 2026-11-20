@@ -49,12 +49,22 @@ func main() {
 			fmt.Fprintf(os.Stderr, "forgenet-server : %v\n", err)
 		}
 		stop()
+		var usage usageError
+		if errors.As(err, &usage) {
+			os.Exit(2)
+		}
 		os.Exit(1)
 	}
 }
 
 // errAlreadyReported signale une erreur déjà écrite dans le journal structuré.
 var errAlreadyReported = errors.New("erreur déjà journalisée")
+
+// usageError signale une ligne de commande mal formée : code de sortie 2,
+// comme le veut l'usage des commandes Unix.
+type usageError string
+
+func (e usageError) Error() string { return string(e) }
 
 // run lit les options, charge la configuration et sert jusqu'à l'annulation de ctx.
 // « forgenet-server user … » administre les comptes et « forgenet-server
@@ -81,6 +91,13 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 	flags.BoolVar(&showVersion, "v", false, "Affiche la version du binaire (raccourci)")
 	if err := flags.Parse(args); err != nil {
 		return err
+	}
+	// Sans sous-commande connue, le binaire sert. Un argument en trop ne doit
+	// jamais démarrer le serveur : lancé dans le conteneur (docker exec), il
+	// en ouvrirait un second à côté de celui qui tourne.
+	if flags.NArg() > 0 {
+		return usageError(fmt.Sprintf("commande inconnue : %s (commandes : user, update, mail ; sans commande, le serveur démarre)",
+			flags.Arg(0)))
 	}
 
 	if showVersion {
