@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/quotedprintable"
+	"mime"
+	"mime/multipart"
 	"net"
 	"net/http"
+	netmail "net/mail"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -394,12 +396,27 @@ smtp:
 
 	data := relay.received()
 	assert.Contains(t, data, "To: <admin@forgenet.test>")
-	_, body, ok := strings.Cut(data, "\r\n\r\n")
-	require.True(t, ok, data)
-	decoded, err := io.ReadAll(quotedprintable.NewReader(strings.NewReader(body)))
+	decoded := plainPart(t, data)
+	assert.Regexp(t, `https://forgenet\.exemple\.org/acces#[A-Za-z0-9_-]{43}`, decoded)
+	assert.NotContains(t, decoded, "ssh -N", "avec un domaine, pas de tunnel")
+}
+
+// plainPart rend la version texte d'un e-mail reçu, qui part en deux
+// versions (ADR-0016) : multipart/alternative, texte brut en premier. Les
+// blancs sont réduits à une espace : le texte est coupé à 76 caractères.
+func plainPart(t *testing.T, data string) string {
+	t.Helper()
+	msg, err := netmail.ReadMessage(strings.NewReader(data))
 	require.NoError(t, err)
-	assert.Regexp(t, `https://forgenet\.exemple\.org/acces#[A-Za-z0-9_-]{43}`, string(decoded))
-	assert.NotContains(t, string(decoded), "ssh -N", "avec un domaine, pas de tunnel")
+	mediaType, params, err := mime.ParseMediaType(msg.Header.Get("Content-Type"))
+	require.NoError(t, err)
+	require.Equal(t, "multipart/alternative", mediaType)
+	part, err := multipart.NewReader(msg.Body, params["boundary"]).NextPart()
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(part.Header.Get("Content-Type"), "text/plain"))
+	text, err := io.ReadAll(part) // NextPart décode lui-même le quoted-printable
+	require.NoError(t, err)
+	return strings.Join(strings.Fields(string(text)), " ")
 }
 
 // plainRelay est un relais SMTP local sans TLS (smtp.tls=none), qui garde le
@@ -555,12 +572,9 @@ smtp:
 
 	data := relay.received()
 	assert.Contains(t, data, "To: <admin@forgenet.test>", "l'avis part à l'ancienne adresse")
-	_, body, ok := strings.Cut(data, "\r\n\r\n")
-	require.True(t, ok, data)
-	decoded, err := io.ReadAll(quotedprintable.NewReader(strings.NewReader(body)))
-	require.NoError(t, err)
-	assert.Contains(t, string(decoded), "a été changée sur le serveur")
-	assert.Contains(t, string(decoded), "a***@nouveau.test")
+	decoded := plainPart(t, data)
+	assert.Contains(t, decoded, "a été changée sur le serveur")
+	assert.Contains(t, decoded, "a***@nouveau.test")
 
 	// Un compte qui attend son mot de passe : pas d'avis (l'ancienne adresse
 	// n'a jamais servi), mais son lien est annulé et la commande le dit.
