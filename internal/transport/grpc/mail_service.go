@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -235,14 +234,7 @@ func (s *MailServiceServer) testRecipient(ctx context.Context) (*store.User, err
 }
 
 func testMessage(user *store.User, host string) mail.Message {
-	return mail.Message{
-		To:      user.Email,
-		Subject: "Essai d'envoi de ForgeNet",
-		Body: fmt.Sprintf("Bonjour %s,\n\n"+
-			"Cet e-mail confirme que votre serveur ForgeNet envoie bien ses messages par le relais %s.\n"+
-			"Vous n'avez rien à faire.\n\n"+
-			"— ForgeNet\n", user.Username, host),
-	}
+	return mail.TestMessage(user.Email, user.Username, host)
 }
 
 // noteTest inscrit l'essai au journal : le compte, le relais et l'issue,

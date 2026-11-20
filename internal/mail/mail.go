@@ -1,8 +1,9 @@
 // Package mail envoie les e-mails de ForgeNet par un relais SMTP (ADR-0014).
 //
-// Bibliothèque standard seule (net/smtp, crypto/tls) : texte brut UTF-8, un
-// destinataire, sans pièce jointe ni HTML. Le paquet ne journalise rien : les
-// appelants notent le type de message et le compte, jamais le contenu.
+// Bibliothèque standard seule (net/smtp, crypto/tls, mime/multipart) : un
+// destinataire, le texte brut UTF-8 et sa version HTML avec le logo joint
+// (ADR-0016). Le paquet ne journalise rien : les appelants notent le type de
+// message et le compte, jamais le contenu.
 package mail
 
 import (
@@ -10,14 +11,18 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"mime"
+	"mime/multipart"
 	"mime/quotedprintable"
 	"net"
 	"net/mail"
 	"net/smtp"
+	"net/textproto"
 	"strconv"
 	"strings"
 	"time"
@@ -31,11 +36,14 @@ var ErrDisabled = errors.New("l'envoi d'e-mails n'est pas configuré sur ce serv
 // DefaultTimeout borne une remise complète, connexion comprise.
 const DefaultTimeout = 30 * time.Second
 
-// Message est un e-mail en texte brut pour un seul destinataire.
+// Message est un e-mail pour un seul destinataire. Body est le texte brut,
+// toujours présent ; HTML, s'il n'est pas vide, en est la version mise en
+// forme, qui appelle le logo par cid:.
 type Message struct {
 	To      string
 	Subject string
 	Body    string
+	HTML    string
 }
 
 // Sender remet un message. Les tests en fournissent une doublure.
@@ -170,8 +178,15 @@ func (s *SMTP) deliver(c *smtp.Client, from, to string, data []byte) error {
 	return c.Quit()
 }
 
-// build écrit le message : en-têtes encodés, corps en quoted-printable, fins
-// de ligne CRLF comme le veut SMTP.
+// build écrit le message : en-têtes encodés, fins de ligne CRLF comme le
+// veut SMTP. Sans HTML, le texte seul ; avec, la structure que lisent toutes
+// les messageries :
+//
+//	multipart/alternative
+//	├── text/plain
+//	└── multipart/related
+//	    ├── text/html
+//	    └── image/png (logo, Content-ID)
 func (s *SMTP) build(from, to *mail.Address, msg Message) ([]byte, error) {
 	var b bytes.Buffer
 	header := func(k, v string) { b.WriteString(k + ": " + v + "\r\n") }
@@ -181,19 +196,104 @@ func (s *SMTP) build(from, to *mail.Address, msg Message) ([]byte, error) {
 	header("Date", s.now().Format(time.RFC1123Z))
 	header("Message-ID", messageID(from.Address))
 	header("MIME-Version", "1.0")
-	header("Content-Type", "text/plain; charset=UTF-8")
-	header("Content-Transfer-Encoding", "quoted-printable")
-	b.WriteString("\r\n")
 
-	qp := quotedprintable.NewWriter(&b)
-	body := strings.ReplaceAll(strings.ReplaceAll(msg.Body, "\r\n", "\n"), "\n", "\r\n")
-	if _, err := qp.Write([]byte(body)); err != nil {
-		return nil, fmt.Errorf("écriture du message : %w", err)
+	if msg.HTML == "" {
+		header("Content-Type", "text/plain; charset=UTF-8")
+		header("Content-Transfer-Encoding", "quoted-printable")
+		b.WriteString("\r\n")
+		if err := writeQP(&b, msg.Body); err != nil {
+			return nil, err
+		}
+		return b.Bytes(), nil
 	}
-	if err := qp.Close(); err != nil {
+
+	alt := multipart.NewWriter(&b)
+	header("Content-Type", "multipart/alternative; boundary="+alt.Boundary())
+	b.WriteString("\r\n")
+	if err := writeAlternative(alt, msg); err != nil {
 		return nil, fmt.Errorf("écriture du message : %w", err)
 	}
 	return b.Bytes(), nil
+}
+
+func writeAlternative(alt *multipart.Writer, msg Message) error {
+	text, err := alt.CreatePart(textproto.MIMEHeader{
+		"Content-Type":              {"text/plain; charset=UTF-8"},
+		"Content-Transfer-Encoding": {"quoted-printable"},
+	})
+	if err != nil {
+		return err
+	}
+	if err := writeQP(text, msg.Body); err != nil {
+		return err
+	}
+
+	// La partie related s'écrit d'abord à part : son en-tête doit porter la
+	// frontière que choisit son propre writer.
+	var inner bytes.Buffer
+	rel := multipart.NewWriter(&inner)
+	html, err := rel.CreatePart(textproto.MIMEHeader{
+		"Content-Type":              {"text/html; charset=UTF-8"},
+		"Content-Transfer-Encoding": {"quoted-printable"},
+	})
+	if err != nil {
+		return err
+	}
+	if err := writeQP(html, msg.HTML); err != nil {
+		return err
+	}
+	logo, err := rel.CreatePart(textproto.MIMEHeader{
+		"Content-Type":              {"image/png"},
+		"Content-Transfer-Encoding": {"base64"},
+		"Content-Id":                {"<" + logoCID + ">"},
+		"Content-Disposition":       {`inline; filename="forgenet.png"`},
+	})
+	if err != nil {
+		return err
+	}
+	if err := writeBase64(logo, logoPNG); err != nil {
+		return err
+	}
+	if err := rel.Close(); err != nil {
+		return err
+	}
+
+	related, err := alt.CreatePart(textproto.MIMEHeader{
+		"Content-Type": {`multipart/related; type="text/html"; boundary=` + rel.Boundary()},
+	})
+	if err != nil {
+		return err
+	}
+	if _, err := related.Write(inner.Bytes()); err != nil {
+		return err
+	}
+	return alt.Close()
+}
+
+// writeQP écrit text en quoted-printable, fins de ligne en CRLF.
+func writeQP(w io.Writer, text string) error {
+	qp := quotedprintable.NewWriter(w)
+	body := strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\n", "\r\n")
+	if _, err := qp.Write([]byte(body)); err != nil {
+		return fmt.Errorf("écriture du message : %w", err)
+	}
+	if err := qp.Close(); err != nil {
+		return fmt.Errorf("écriture du message : %w", err)
+	}
+	return nil
+}
+
+// writeBase64 écrit data en base64, en lignes de 76 caractères (RFC 2045).
+func writeBase64(w io.Writer, data []byte) error {
+	enc := base64.StdEncoding.EncodeToString(data)
+	for len(enc) > 76 {
+		if _, err := fmt.Fprint(w, enc[:76]+"\r\n"); err != nil {
+			return err
+		}
+		enc = enc[76:]
+	}
+	_, err := fmt.Fprint(w, enc+"\r\n")
+	return err
 }
 
 // helloName se présente sous le domaine de l'expéditeur : « localhost »,
