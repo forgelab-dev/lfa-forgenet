@@ -93,7 +93,7 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 ### 1.8 Intégration IA & Télémétrie
 - [ ] Endpoint interne exposant logs/metrics formatés au moteur Ollama `🔓 CE`
 - [ ] File d'attente des requêtes IA (éviter de saturer la machine hôte) `🔓 CE`
-- [ ] Télémétrie opt-in uniquement, anonymisée, désactivable à tout moment `🔓 CE`
+- [ ] Télémétrie opt-in uniquement, anonymisée, désactivable à tout moment `🔓 CE` — *#109, [ADR-0017](decisions/0017-telemetrie-opt-in.md) : désactivée par défaut, un identifiant au hasard, la version et l'architecture une fois par jour, rien d'autre ; code à venir*
 
 ### 1.9 Installation & Mises à jour de ForgeNet
 - [x] Installation en une commande sur Debian et Ubuntu (x86_64, ARM64), serveur et Caddy en conteneurs durcis, image signée par cosign `🔓 CE` — *v0.1.0 : `deploy/install.sh` (#15)*
