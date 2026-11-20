@@ -112,6 +112,19 @@ message CloseMemberSessionsResponse {
   int64 closed_sessions = 1;
 }
 
+message UpdateMemberEmailRequest {
+  string user_id = 1;
+  // Nouvelle adresse : adresse nue (sans nom affiché), 254 caractères au plus.
+  string email = 2;
+}
+
+message UpdateMemberEmailResponse {
+  Member member = 1;
+  // Présent quand le compte attendait son mot de passe : son ancien lien est
+  // annulé, et une nouvelle invitation part à la nouvelle adresse.
+  InvitationResult invitation = 2;
+}
+
 message DeleteMemberRequest {
   string user_id = 1;
   // Le nom du compte, retapé pour confirmer : une suppression ne part pas
@@ -152,6 +165,16 @@ service TeamService {
   // suspendre (appareil perdu). Sur son propre compte, la session qui fait
   // l'appel reste ouverte. Compte inconnu : NOT_FOUND.
   rpc CloseMemberSessions(CloseMemberSessionsRequest) returns (CloseMemberSessionsResponse);
+
+  // UpdateMemberEmail corrige l'adresse d'un compte (#100). Ses liens en
+  // attente sont annulés : partis vers l'ancienne adresse, ils ouvriraient le
+  // compte à qui la lit. Un compte qui attendait son mot de passe reçoit une
+  // nouvelle invitation ; un compte actif, avec un relais SMTP, reçoit un avis
+  // à l'ancienne adresse. Son propre compte : FAILED_PRECONDITION (il se
+  // change depuis la page Compte, avec le mot de passe). Adresse invalide ou
+  // inchangée : INVALID_ARGUMENT ; déjà prise : ALREADY_EXISTS. Compte
+  // inconnu : NOT_FOUND.
+  rpc UpdateMemberEmail(UpdateMemberEmailRequest) returns (UpdateMemberEmailResponse);
 
   // DeleteMember supprime le compte, définitivement ; une invitation en
   // attente est ainsi annulée. Le journal d'audit garde ses entrées. Nom de

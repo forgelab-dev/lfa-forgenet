@@ -1034,6 +1034,160 @@ class CloseMemberSessionsResponse extends $pb.GeneratedMessage {
   void clearClosedSessions() => $_clearField(1);
 }
 
+class UpdateMemberEmailRequest extends $pb.GeneratedMessage {
+  factory UpdateMemberEmailRequest({
+    $core.String? userId,
+    $core.String? email,
+  }) {
+    final result = UpdateMemberEmailRequest._();
+    if (userId != null) result.userId = userId;
+    if (email != null) result.email = email;
+    return result;
+  }
+
+  UpdateMemberEmailRequest._();
+
+  factory UpdateMemberEmailRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateMemberEmailRequest()..mergeFromBuffer(data, registry);
+  factory UpdateMemberEmailRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateMemberEmailRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateMemberEmailRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: UpdateMemberEmailRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..aOS(2, _omitFieldNames ? '' : 'email')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateMemberEmailRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateMemberEmailRequest copyWith(
+          void Function(UpdateMemberEmailRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdateMemberEmailRequest))
+          as UpdateMemberEmailRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use UpdateMemberEmailRequest() / UpdateMemberEmailRequest.new instead')
+  static UpdateMemberEmailRequest create() => UpdateMemberEmailRequest._();
+  static $pb.GeneratedMessage $_createMessage() => UpdateMemberEmailRequest._();
+  @$core.override
+  UpdateMemberEmailRequest createEmptyInstance() =>
+      UpdateMemberEmailRequest._();
+  @$core.pragma('dart2js:noInline')
+  static UpdateMemberEmailRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateMemberEmailRequest>(
+          UpdateMemberEmailRequest.$_createMessage);
+  static UpdateMemberEmailRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get userId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set userId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUserId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUserId() => $_clearField(1);
+
+  /// Nouvelle adresse : adresse nue (sans nom affiché), 254 caractères au plus.
+  @$pb.TagNumber(2)
+  $core.String get email => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set email($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasEmail() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEmail() => $_clearField(2);
+}
+
+class UpdateMemberEmailResponse extends $pb.GeneratedMessage {
+  factory UpdateMemberEmailResponse({
+    Member? member,
+    InvitationResult? invitation,
+  }) {
+    final result = UpdateMemberEmailResponse._();
+    if (member != null) result.member = member;
+    if (invitation != null) result.invitation = invitation;
+    return result;
+  }
+
+  UpdateMemberEmailResponse._();
+
+  factory UpdateMemberEmailResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateMemberEmailResponse()..mergeFromBuffer(data, registry);
+  factory UpdateMemberEmailResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UpdateMemberEmailResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateMemberEmailResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: UpdateMemberEmailResponse.$_createMessage)
+    ..aOM<Member>(1, _omitFieldNames ? '' : 'member',
+        subBuilder: Member.$_createMessage)
+    ..aOM<InvitationResult>(2, _omitFieldNames ? '' : 'invitation',
+        subBuilder: InvitationResult.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateMemberEmailResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateMemberEmailResponse copyWith(
+          void Function(UpdateMemberEmailResponse) updates) =>
+      super.copyWith((message) => updates(message as UpdateMemberEmailResponse))
+          as UpdateMemberEmailResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use UpdateMemberEmailResponse() / UpdateMemberEmailResponse.new instead')
+  static UpdateMemberEmailResponse create() => UpdateMemberEmailResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      UpdateMemberEmailResponse._();
+  @$core.override
+  UpdateMemberEmailResponse createEmptyInstance() =>
+      UpdateMemberEmailResponse._();
+  @$core.pragma('dart2js:noInline')
+  static UpdateMemberEmailResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateMemberEmailResponse>(
+          UpdateMemberEmailResponse.$_createMessage);
+  static UpdateMemberEmailResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Member get member => $_getN(0);
+  @$pb.TagNumber(1)
+  set member(Member value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMember() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMember() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Member ensureMember() => $_ensure(0);
+
+  /// Présent quand le compte attendait son mot de passe : son ancien lien est
+  /// annulé, et une nouvelle invitation part à la nouvelle adresse.
+  @$pb.TagNumber(2)
+  InvitationResult get invitation => $_getN(1);
+  @$pb.TagNumber(2)
+  set invitation(InvitationResult value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasInvitation() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearInvitation() => $_clearField(2);
+  @$pb.TagNumber(2)
+  InvitationResult ensureInvitation() => $_ensure(1);
+}
+
 class DeleteMemberRequest extends $pb.GeneratedMessage {
   factory DeleteMemberRequest({
     $core.String? userId,

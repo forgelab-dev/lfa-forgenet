@@ -25,6 +25,7 @@ const (
 	TeamService_SuspendMember_FullMethodName       = "/forgenet.v1.TeamService/SuspendMember"
 	TeamService_ResumeMember_FullMethodName        = "/forgenet.v1.TeamService/ResumeMember"
 	TeamService_CloseMemberSessions_FullMethodName = "/forgenet.v1.TeamService/CloseMemberSessions"
+	TeamService_UpdateMemberEmail_FullMethodName   = "/forgenet.v1.TeamService/UpdateMemberEmail"
 	TeamService_DeleteMember_FullMethodName        = "/forgenet.v1.TeamService/DeleteMember"
 )
 
@@ -56,6 +57,15 @@ type TeamServiceClient interface {
 	// suspendre (appareil perdu). Sur son propre compte, la session qui fait
 	// l'appel reste ouverte. Compte inconnu : NOT_FOUND.
 	CloseMemberSessions(ctx context.Context, in *CloseMemberSessionsRequest, opts ...grpc.CallOption) (*CloseMemberSessionsResponse, error)
+	// UpdateMemberEmail corrige l'adresse d'un compte (#100). Ses liens en
+	// attente sont annulés : partis vers l'ancienne adresse, ils ouvriraient le
+	// compte à qui la lit. Un compte qui attendait son mot de passe reçoit une
+	// nouvelle invitation ; un compte actif, avec un relais SMTP, reçoit un avis
+	// à l'ancienne adresse. Son propre compte : FAILED_PRECONDITION (il se
+	// change depuis la page Compte, avec le mot de passe). Adresse invalide ou
+	// inchangée : INVALID_ARGUMENT ; déjà prise : ALREADY_EXISTS. Compte
+	// inconnu : NOT_FOUND.
+	UpdateMemberEmail(ctx context.Context, in *UpdateMemberEmailRequest, opts ...grpc.CallOption) (*UpdateMemberEmailResponse, error)
 	// DeleteMember supprime le compte, définitivement ; une invitation en
 	// attente est ainsi annulée. Le journal d'audit garde ses entrées. Nom de
 	// confirmation différent : INVALID_ARGUMENT. Son propre compte, ou le
@@ -132,6 +142,16 @@ func (c *teamServiceClient) CloseMemberSessions(ctx context.Context, in *CloseMe
 	return out, nil
 }
 
+func (c *teamServiceClient) UpdateMemberEmail(ctx context.Context, in *UpdateMemberEmailRequest, opts ...grpc.CallOption) (*UpdateMemberEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateMemberEmailResponse)
+	err := c.cc.Invoke(ctx, TeamService_UpdateMemberEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *teamServiceClient) DeleteMember(ctx context.Context, in *DeleteMemberRequest, opts ...grpc.CallOption) (*DeleteMemberResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteMemberResponse)
@@ -170,6 +190,15 @@ type TeamServiceServer interface {
 	// suspendre (appareil perdu). Sur son propre compte, la session qui fait
 	// l'appel reste ouverte. Compte inconnu : NOT_FOUND.
 	CloseMemberSessions(context.Context, *CloseMemberSessionsRequest) (*CloseMemberSessionsResponse, error)
+	// UpdateMemberEmail corrige l'adresse d'un compte (#100). Ses liens en
+	// attente sont annulés : partis vers l'ancienne adresse, ils ouvriraient le
+	// compte à qui la lit. Un compte qui attendait son mot de passe reçoit une
+	// nouvelle invitation ; un compte actif, avec un relais SMTP, reçoit un avis
+	// à l'ancienne adresse. Son propre compte : FAILED_PRECONDITION (il se
+	// change depuis la page Compte, avec le mot de passe). Adresse invalide ou
+	// inchangée : INVALID_ARGUMENT ; déjà prise : ALREADY_EXISTS. Compte
+	// inconnu : NOT_FOUND.
+	UpdateMemberEmail(context.Context, *UpdateMemberEmailRequest) (*UpdateMemberEmailResponse, error)
 	// DeleteMember supprime le compte, définitivement ; une invitation en
 	// attente est ainsi annulée. Le journal d'audit garde ses entrées. Nom de
 	// confirmation différent : INVALID_ARGUMENT. Son propre compte, ou le
@@ -203,6 +232,9 @@ func (UnimplementedTeamServiceServer) ResumeMember(context.Context, *ResumeMembe
 }
 func (UnimplementedTeamServiceServer) CloseMemberSessions(context.Context, *CloseMemberSessionsRequest) (*CloseMemberSessionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CloseMemberSessions not implemented")
+}
+func (UnimplementedTeamServiceServer) UpdateMemberEmail(context.Context, *UpdateMemberEmailRequest) (*UpdateMemberEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateMemberEmail not implemented")
 }
 func (UnimplementedTeamServiceServer) DeleteMember(context.Context, *DeleteMemberRequest) (*DeleteMemberResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteMember not implemented")
@@ -336,6 +368,24 @@ func _TeamService_CloseMemberSessions_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TeamService_UpdateMemberEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateMemberEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TeamServiceServer).UpdateMemberEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TeamService_UpdateMemberEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TeamServiceServer).UpdateMemberEmail(ctx, req.(*UpdateMemberEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TeamService_DeleteMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteMemberRequest)
 	if err := dec(in); err != nil {
@@ -384,6 +434,10 @@ var TeamService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CloseMemberSessions",
 			Handler:    _TeamService_CloseMemberSessions_Handler,
+		},
+		{
+			MethodName: "UpdateMemberEmail",
+			Handler:    _TeamService_UpdateMemberEmail_Handler,
 		},
 		{
 			MethodName: "DeleteMember",

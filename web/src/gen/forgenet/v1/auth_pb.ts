@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file forgenet/v1/auth.proto.
  */
 export const file_forgenet_v1_auth: GenFile = /*@__PURE__*/
-  fileDesc("ChZmb3JnZW5ldC92MS9hdXRoLnByb3RvEgtmb3JnZW5ldC52MSJYCgRVc2VyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZSIvCgxMb2dpblJlcXVlc3QSDQoFbG9naW4YASABKAkSEAoIcGFzc3dvcmQYAiABKAkibwoNTG9naW5SZXNwb25zZRINCgV0b2tlbhgBIAEoCRIuCgpleHBpcmVzX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIfCgR1c2VyGAMgASgLMhEuZm9yZ2VuZXQudjEuVXNlciIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIhcKFUdldEN1cnJlbnRVc2VyUmVxdWVzdCI5ChZHZXRDdXJyZW50VXNlclJlc3BvbnNlEh8KBHVzZXIYASABKAsyES5mb3JnZW5ldC52MS5Vc2VyIkcKFUNoYW5nZVBhc3N3b3JkUmVxdWVzdBIYChBjdXJyZW50X3Bhc3N3b3JkGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIyChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlEhgKEHJldm9rZWRfc2Vzc2lvbnMYASABKAUiKQoYSW5zcGVjdEFjY2Vzc0xpbmtSZXF1ZXN0Eg0KBXRva2VuGAEgASgJIo4BChlJbnNwZWN0QWNjZXNzTGlua1Jlc3BvbnNlEhAKCHVzZXJuYW1lGAEgASgJEi8KB3B1cnBvc2UYAiABKA4yHi5mb3JnZW5ldC52MS5BY2Nlc3NMaW5rUHVycG9zZRIuCgpleHBpcmVzX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCI+ChdSZWRlZW1BY2Nlc3NMaW5rUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIUCgxuZXdfcGFzc3dvcmQYAiABKAkiegoYUmVkZWVtQWNjZXNzTGlua1Jlc3BvbnNlEg0KBXRva2VuGAEgASgJEi4KCmV4cGlyZXNfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh8KBHVzZXIYAyABKAsyES5mb3JnZW5ldC52MS5Vc2VyIhgKFkdldExvZ2luT3B0aW9uc1JlcXVlc3QiMQoXR2V0TG9naW5PcHRpb25zUmVzcG9uc2USFgoOcGFzc3dvcmRfcmVzZXQYASABKAgiLAobUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXF1ZXN0Eg0KBWxvZ2luGAEgASgJIh4KHFJlcXVlc3RQYXNzd29yZFJlc2V0UmVzcG9uc2UqUAoIVXNlclJvbGUSGQoVVVNFUl9ST0xFX1VOU1BFQ0lGSUVEEAASEwoPVVNFUl9ST0xFX0FETUlOEAESFAoQVVNFUl9ST0xFX01FTUJFUhACKqkBChFBY2Nlc3NMaW5rUHVycG9zZRIjCh9BQ0NFU1NfTElOS19QVVJQT1NFX1VOU1BFQ0lGSUVEEAASIwofQUNDRVNTX0xJTktfUFVSUE9TRV9GSVJTVF9MT0dJThABEiYKIkFDQ0VTU19MSU5LX1BVUlBPU0VfUEFTU1dPUkRfUkVTRVQQAhIiCh5BQ0NFU1NfTElOS19QVVJQT1NFX0lOVklUQVRJT04QAzLWBQoLQXV0aFNlcnZpY2USPgoFTG9naW4SGS5mb3JnZW5ldC52MS5Mb2dpblJlcXVlc3QaGi5mb3JnZW5ldC52MS5Mb2dpblJlc3BvbnNlEkEKBkxvZ291dBIaLmZvcmdlbmV0LnYxLkxvZ291dFJlcXVlc3QaGy5mb3JnZW5ldC52MS5Mb2dvdXRSZXNwb25zZRJZCg5HZXRDdXJyZW50VXNlchIiLmZvcmdlbmV0LnYxLkdldEN1cnJlbnRVc2VyUmVxdWVzdBojLmZvcmdlbmV0LnYxLkdldEN1cnJlbnRVc2VyUmVzcG9uc2USWQoOQ2hhbmdlUGFzc3dvcmQSIi5mb3JnZW5ldC52MS5DaGFuZ2VQYXNzd29yZFJlcXVlc3QaIy5mb3JnZW5ldC52MS5DaGFuZ2VQYXNzd29yZFJlc3BvbnNlEmIKEUluc3BlY3RBY2Nlc3NMaW5rEiUuZm9yZ2VuZXQudjEuSW5zcGVjdEFjY2Vzc0xpbmtSZXF1ZXN0GiYuZm9yZ2VuZXQudjEuSW5zcGVjdEFjY2Vzc0xpbmtSZXNwb25zZRJfChBSZWRlZW1BY2Nlc3NMaW5rEiQuZm9yZ2VuZXQudjEuUmVkZWVtQWNjZXNzTGlua1JlcXVlc3QaJS5mb3JnZW5ldC52MS5SZWRlZW1BY2Nlc3NMaW5rUmVzcG9uc2USXAoPR2V0TG9naW5PcHRpb25zEiMuZm9yZ2VuZXQudjEuR2V0TG9naW5PcHRpb25zUmVxdWVzdBokLmZvcmdlbmV0LnYxLkdldExvZ2luT3B0aW9uc1Jlc3BvbnNlEmsKFFJlcXVlc3RQYXNzd29yZFJlc2V0EiguZm9yZ2VuZXQudjEuUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXF1ZXN0GikuZm9yZ2VuZXQudjEuUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXNwb25zZUJFWkNnaXRodWIuY29tL2ZvcmdlbGFiLWRldi9sZmEtZm9yZ2VuZXQvcGtnL2dlbi9mb3JnZW5ldC92MTtmb3JnZW5ldHYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChZmb3JnZW5ldC92MS9hdXRoLnByb3RvEgtmb3JnZW5ldC52MSJYCgRVc2VyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZSIvCgxMb2dpblJlcXVlc3QSDQoFbG9naW4YASABKAkSEAoIcGFzc3dvcmQYAiABKAkibwoNTG9naW5SZXNwb25zZRINCgV0b2tlbhgBIAEoCRIuCgpleHBpcmVzX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIfCgR1c2VyGAMgASgLMhEuZm9yZ2VuZXQudjEuVXNlciIPCg1Mb2dvdXRSZXF1ZXN0IhAKDkxvZ291dFJlc3BvbnNlIhcKFUdldEN1cnJlbnRVc2VyUmVxdWVzdCI5ChZHZXRDdXJyZW50VXNlclJlc3BvbnNlEh8KBHVzZXIYASABKAsyES5mb3JnZW5ldC52MS5Vc2VyIkcKFUNoYW5nZVBhc3N3b3JkUmVxdWVzdBIYChBjdXJyZW50X3Bhc3N3b3JkGAEgASgJEhQKDG5ld19wYXNzd29yZBgCIAEoCSIyChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlEhgKEHJldm9rZWRfc2Vzc2lvbnMYASABKAUiQQoSQ2hhbmdlRW1haWxSZXF1ZXN0EhgKEGN1cnJlbnRfcGFzc3dvcmQYASABKAkSEQoJbmV3X2VtYWlsGAIgASgJIjYKE0NoYW5nZUVtYWlsUmVzcG9uc2USHwoEdXNlchgBIAEoCzIRLmZvcmdlbmV0LnYxLlVzZXIiKQoYSW5zcGVjdEFjY2Vzc0xpbmtSZXF1ZXN0Eg0KBXRva2VuGAEgASgJIo4BChlJbnNwZWN0QWNjZXNzTGlua1Jlc3BvbnNlEhAKCHVzZXJuYW1lGAEgASgJEi8KB3B1cnBvc2UYAiABKA4yHi5mb3JnZW5ldC52MS5BY2Nlc3NMaW5rUHVycG9zZRIuCgpleHBpcmVzX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCI+ChdSZWRlZW1BY2Nlc3NMaW5rUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIUCgxuZXdfcGFzc3dvcmQYAiABKAkiegoYUmVkZWVtQWNjZXNzTGlua1Jlc3BvbnNlEg0KBXRva2VuGAEgASgJEi4KCmV4cGlyZXNfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh8KBHVzZXIYAyABKAsyES5mb3JnZW5ldC52MS5Vc2VyIhgKFkdldExvZ2luT3B0aW9uc1JlcXVlc3QiMQoXR2V0TG9naW5PcHRpb25zUmVzcG9uc2USFgoOcGFzc3dvcmRfcmVzZXQYASABKAgiLAobUmVxdWVzdFBhc3N3b3JkUmVzZXRSZXF1ZXN0Eg0KBWxvZ2luGAEgASgJIh4KHFJlcXVlc3RQYXNzd29yZFJlc2V0UmVzcG9uc2UqUAoIVXNlclJvbGUSGQoVVVNFUl9ST0xFX1VOU1BFQ0lGSUVEEAASEwoPVVNFUl9ST0xFX0FETUlOEAESFAoQVVNFUl9ST0xFX01FTUJFUhACKqkBChFBY2Nlc3NMaW5rUHVycG9zZRIjCh9BQ0NFU1NfTElOS19QVVJQT1NFX1VOU1BFQ0lGSUVEEAASIwofQUNDRVNTX0xJTktfUFVSUE9TRV9GSVJTVF9MT0dJThABEiYKIkFDQ0VTU19MSU5LX1BVUlBPU0VfUEFTU1dPUkRfUkVTRVQQAhIiCh5BQ0NFU1NfTElOS19QVVJQT1NFX0lOVklUQVRJT04QAzKoBgoLQXV0aFNlcnZpY2USPgoFTG9naW4SGS5mb3JnZW5ldC52MS5Mb2dpblJlcXVlc3QaGi5mb3JnZW5ldC52MS5Mb2dpblJlc3BvbnNlEkEKBkxvZ291dBIaLmZvcmdlbmV0LnYxLkxvZ291dFJlcXVlc3QaGy5mb3JnZW5ldC52MS5Mb2dvdXRSZXNwb25zZRJZCg5HZXRDdXJyZW50VXNlchIiLmZvcmdlbmV0LnYxLkdldEN1cnJlbnRVc2VyUmVxdWVzdBojLmZvcmdlbmV0LnYxLkdldEN1cnJlbnRVc2VyUmVzcG9uc2USWQoOQ2hhbmdlUGFzc3dvcmQSIi5mb3JnZW5ldC52MS5DaGFuZ2VQYXNzd29yZFJlcXVlc3QaIy5mb3JnZW5ldC52MS5DaGFuZ2VQYXNzd29yZFJlc3BvbnNlElAKC0NoYW5nZUVtYWlsEh8uZm9yZ2VuZXQudjEuQ2hhbmdlRW1haWxSZXF1ZXN0GiAuZm9yZ2VuZXQudjEuQ2hhbmdlRW1haWxSZXNwb25zZRJiChFJbnNwZWN0QWNjZXNzTGluaxIlLmZvcmdlbmV0LnYxLkluc3BlY3RBY2Nlc3NMaW5rUmVxdWVzdBomLmZvcmdlbmV0LnYxLkluc3BlY3RBY2Nlc3NMaW5rUmVzcG9uc2USXwoQUmVkZWVtQWNjZXNzTGluaxIkLmZvcmdlbmV0LnYxLlJlZGVlbUFjY2Vzc0xpbmtSZXF1ZXN0GiUuZm9yZ2VuZXQudjEuUmVkZWVtQWNjZXNzTGlua1Jlc3BvbnNlElwKD0dldExvZ2luT3B0aW9ucxIjLmZvcmdlbmV0LnYxLkdldExvZ2luT3B0aW9uc1JlcXVlc3QaJC5mb3JnZW5ldC52MS5HZXRMb2dpbk9wdGlvbnNSZXNwb25zZRJrChRSZXF1ZXN0UGFzc3dvcmRSZXNldBIoLmZvcmdlbmV0LnYxLlJlcXVlc3RQYXNzd29yZFJlc2V0UmVxdWVzdBopLmZvcmdlbmV0LnYxLlJlcXVlc3RQYXNzd29yZFJlc2V0UmVzcG9uc2VCRVpDZ2l0aHViLmNvbS9mb3JnZWxhYi1kZXYvbGZhLWZvcmdlbmV0L3BrZy9nZW4vZm9yZ2VuZXQvdjE7Zm9yZ2VuZXR2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * User décrit le compte connecté. Le mot de passe et ses empreintes ne
@@ -207,6 +207,52 @@ export const ChangePasswordResponseSchema: GenMessage<ChangePasswordResponse> = 
   messageDesc(file_forgenet_v1_auth, 8);
 
 /**
+ * @generated from message forgenet.v1.ChangeEmailRequest
+ */
+export type ChangeEmailRequest = Message<"forgenet.v1.ChangeEmailRequest"> & {
+  /**
+   * Mot de passe actuel, exigé même avec une session ouverte : une session
+   * volée ne doit pas suffire à détourner le « mot de passe oublié ».
+   *
+   * @generated from field: string current_password = 1;
+   */
+  currentPassword: string;
+
+  /**
+   * Nouvelle adresse : adresse nue (sans nom affiché), 254 caractères au plus.
+   *
+   * @generated from field: string new_email = 2;
+   */
+  newEmail: string;
+};
+
+/**
+ * Describes the message forgenet.v1.ChangeEmailRequest.
+ * Use `create(ChangeEmailRequestSchema)` to create a new message.
+ */
+export const ChangeEmailRequestSchema: GenMessage<ChangeEmailRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 9);
+
+/**
+ * @generated from message forgenet.v1.ChangeEmailResponse
+ */
+export type ChangeEmailResponse = Message<"forgenet.v1.ChangeEmailResponse"> & {
+  /**
+   * Le compte à jour.
+   *
+   * @generated from field: forgenet.v1.User user = 1;
+   */
+  user?: User | undefined;
+};
+
+/**
+ * Describes the message forgenet.v1.ChangeEmailResponse.
+ * Use `create(ChangeEmailResponseSchema)` to create a new message.
+ */
+export const ChangeEmailResponseSchema: GenMessage<ChangeEmailResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_auth, 10);
+
+/**
  * @generated from message forgenet.v1.InspectAccessLinkRequest
  */
 export type InspectAccessLinkRequest = Message<"forgenet.v1.InspectAccessLinkRequest"> & {
@@ -223,7 +269,7 @@ export type InspectAccessLinkRequest = Message<"forgenet.v1.InspectAccessLinkReq
  * Use `create(InspectAccessLinkRequestSchema)` to create a new message.
  */
 export const InspectAccessLinkRequestSchema: GenMessage<InspectAccessLinkRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_auth, 9);
+  messageDesc(file_forgenet_v1_auth, 11);
 
 /**
  * @generated from message forgenet.v1.InspectAccessLinkResponse
@@ -252,7 +298,7 @@ export type InspectAccessLinkResponse = Message<"forgenet.v1.InspectAccessLinkRe
  * Use `create(InspectAccessLinkResponseSchema)` to create a new message.
  */
 export const InspectAccessLinkResponseSchema: GenMessage<InspectAccessLinkResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_auth, 10);
+  messageDesc(file_forgenet_v1_auth, 12);
 
 /**
  * @generated from message forgenet.v1.RedeemAccessLinkRequest
@@ -276,7 +322,7 @@ export type RedeemAccessLinkRequest = Message<"forgenet.v1.RedeemAccessLinkReque
  * Use `create(RedeemAccessLinkRequestSchema)` to create a new message.
  */
 export const RedeemAccessLinkRequestSchema: GenMessage<RedeemAccessLinkRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_auth, 11);
+  messageDesc(file_forgenet_v1_auth, 13);
 
 /**
  * @generated from message forgenet.v1.RedeemAccessLinkResponse
@@ -305,7 +351,7 @@ export type RedeemAccessLinkResponse = Message<"forgenet.v1.RedeemAccessLinkResp
  * Use `create(RedeemAccessLinkResponseSchema)` to create a new message.
  */
 export const RedeemAccessLinkResponseSchema: GenMessage<RedeemAccessLinkResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_auth, 12);
+  messageDesc(file_forgenet_v1_auth, 14);
 
 /**
  * @generated from message forgenet.v1.GetLoginOptionsRequest
@@ -318,7 +364,7 @@ export type GetLoginOptionsRequest = Message<"forgenet.v1.GetLoginOptionsRequest
  * Use `create(GetLoginOptionsRequestSchema)` to create a new message.
  */
 export const GetLoginOptionsRequestSchema: GenMessage<GetLoginOptionsRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_auth, 13);
+  messageDesc(file_forgenet_v1_auth, 15);
 
 /**
  * @generated from message forgenet.v1.GetLoginOptionsResponse
@@ -339,7 +385,7 @@ export type GetLoginOptionsResponse = Message<"forgenet.v1.GetLoginOptionsRespon
  * Use `create(GetLoginOptionsResponseSchema)` to create a new message.
  */
 export const GetLoginOptionsResponseSchema: GenMessage<GetLoginOptionsResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_auth, 14);
+  messageDesc(file_forgenet_v1_auth, 16);
 
 /**
  * @generated from message forgenet.v1.RequestPasswordResetRequest
@@ -358,7 +404,7 @@ export type RequestPasswordResetRequest = Message<"forgenet.v1.RequestPasswordRe
  * Use `create(RequestPasswordResetRequestSchema)` to create a new message.
  */
 export const RequestPasswordResetRequestSchema: GenMessage<RequestPasswordResetRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_auth, 15);
+  messageDesc(file_forgenet_v1_auth, 17);
 
 /**
  * @generated from message forgenet.v1.RequestPasswordResetResponse
@@ -371,7 +417,7 @@ export type RequestPasswordResetResponse = Message<"forgenet.v1.RequestPasswordR
  * Use `create(RequestPasswordResetResponseSchema)` to create a new message.
  */
 export const RequestPasswordResetResponseSchema: GenMessage<RequestPasswordResetResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_auth, 16);
+  messageDesc(file_forgenet_v1_auth, 18);
 
 /**
  * UserRole reprend les rôles du serveur. Un admin gère tout ; un membre
@@ -493,6 +539,23 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof ChangePasswordRequestSchema;
     output: typeof ChangePasswordResponseSchema;
+  },
+  /**
+   * ChangeEmail change l'adresse du compte connecté (#100). Ses liens à usage
+   * unique en attente sont annulés ; ses sessions restent ouvertes. Avec un
+   * relais SMTP, un avis part à l'ancienne adresse. Mot de passe actuel
+   * incorrect, adresse invalide ou inchangée : INVALID_ARGUMENT (jamais
+   * UNAUTHENTICATED) ; adresse déjà prise : ALREADY_EXISTS ; des échecs
+   * répétés du mot de passe répondent RESOURCE_EXHAUSTED, avec le même
+   * compteur que ChangePassword. Le changement est inscrit au journal
+   * d'audit, sans les adresses.
+   *
+   * @generated from rpc forgenet.v1.AuthService.ChangeEmail
+   */
+  changeEmail: {
+    methodKind: "unary";
+    input: typeof ChangeEmailRequestSchema;
+    output: typeof ChangeEmailResponseSchema;
   },
   /**
    * InspectAccessLink décrit un lien à usage unique encore valable, sans

@@ -192,6 +192,40 @@ final $typed_data.Uint8List changePasswordResponseDescriptor =
         'ChZDaGFuZ2VQYXNzd29yZFJlc3BvbnNlEikKEHJldm9rZWRfc2Vzc2lvbnMYASABKAVSD3Jldm'
         '9rZWRTZXNzaW9ucw==');
 
+@$core.Deprecated('Use changeEmailRequestDescriptor instead')
+const ChangeEmailRequest$json = {
+  '1': 'ChangeEmailRequest',
+  '2': [
+    {'1': 'current_password', '3': 1, '4': 1, '5': 9, '10': 'currentPassword'},
+    {'1': 'new_email', '3': 2, '4': 1, '5': 9, '10': 'newEmail'},
+  ],
+};
+
+/// Descriptor for `ChangeEmailRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List changeEmailRequestDescriptor = $convert.base64Decode(
+    'ChJDaGFuZ2VFbWFpbFJlcXVlc3QSKQoQY3VycmVudF9wYXNzd29yZBgBIAEoCVIPY3VycmVudF'
+    'Bhc3N3b3JkEhsKCW5ld19lbWFpbBgCIAEoCVIIbmV3RW1haWw=');
+
+@$core.Deprecated('Use changeEmailResponseDescriptor instead')
+const ChangeEmailResponse$json = {
+  '1': 'ChangeEmailResponse',
+  '2': [
+    {
+      '1': 'user',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.forgenet.v1.User',
+      '10': 'user'
+    },
+  ],
+};
+
+/// Descriptor for `ChangeEmailResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List changeEmailResponseDescriptor = $convert.base64Decode(
+    'ChNDaGFuZ2VFbWFpbFJlc3BvbnNlEiUKBHVzZXIYASABKAsyES5mb3JnZW5ldC52MS5Vc2VyUg'
+    'R1c2Vy');
+
 @$core.Deprecated('Use inspectAccessLinkRequestDescriptor instead')
 const InspectAccessLinkRequest$json = {
   '1': 'InspectAccessLinkRequest',
