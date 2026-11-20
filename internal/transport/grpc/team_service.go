@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"errors"
-	netmail "net/mail"
 	"regexp"
 	"strings"
 	"time"
@@ -19,8 +18,6 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
 )
-
-const maxEmailLength = 254
 
 // usernamePattern borne les noms des comptes invités : lettres et chiffres
 // ASCII, point, tiret et soulignement, de 2 à 64 caractères. Le nom sert à se
@@ -101,13 +98,13 @@ func (s *TeamServiceServer) InviteMember(ctx context.Context, req *forgenetv1.In
 		return nil, status.Error(codes.Unauthenticated, "authentification requise")
 	}
 	username := strings.TrimSpace(req.GetUsername())
-	email := strings.ToLower(strings.TrimSpace(req.GetEmail()))
 	if !usernamePattern.MatchString(username) {
 		return nil, status.Error(codes.InvalidArgument,
 			"le nom d'utilisateur fait de 2 à 64 caractères : lettres sans accent, chiffres, point, tiret ou soulignement")
 	}
-	if !validEmail(email) {
-		return nil, status.Error(codes.InvalidArgument, "l'adresse e-mail n'est pas valide")
+	email, err := auth.NormalizeEmail(req.GetEmail())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	role, ok := fromUserRole(req.GetRole())
 	if !ok {
@@ -306,14 +303,4 @@ func fromUserRole(r forgenetv1.UserRole) (store.Role, bool) {
 	default:
 		return "", false
 	}
-}
-
-// validEmail n'accepte qu'une adresse nue, sans nom affiché ni retour à la
-// ligne : elle part telle quelle dans l'en-tête To.
-func validEmail(email string) bool {
-	if email == "" || len(email) > maxEmailLength || strings.ContainsAny(email, "\r\n") {
-		return false
-	}
-	addr, err := netmail.ParseAddress(email)
-	return err == nil && addr.Address == email && addr.Name == ""
 }
