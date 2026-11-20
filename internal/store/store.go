@@ -386,6 +386,37 @@ type DomainStore interface {
 	DeleteDomain(ctx context.Context, id string) error
 }
 
+// MailSettings sont les réglages du relais SMTP faits depuis le dashboard
+// (ADR-0015). Ils l'emportent sur ceux de .env tant qu'ils existent.
+type MailSettings struct {
+	// Disabled : l'envoi a été coupé depuis le dashboard. Les autres champs
+	// restent, pour rouvrir l'envoi sans tout ressaisir.
+	Disabled bool
+	Host     string
+	Port     int
+	TLS      string
+	Username string
+	// PasswordSealed est le mot de passe du relais chiffré par le serveur ;
+	// vide sans authentification.
+	PasswordSealed []byte
+	From           string
+	// UpdatedBy est l'identifiant du compte qui a enregistré.
+	UpdatedBy string
+	UpdatedAt time.Time
+}
+
+// MailSettingsStore garde les réglages du relais faits depuis le dashboard.
+type MailSettingsStore interface {
+	// GetMailSettings renvoie ErrNotFound tant que rien n'a été enregistré
+	// depuis le dashboard.
+	GetMailSettings(ctx context.Context) (*MailSettings, error)
+	// SaveMailSettings remplace les réglages d'un bloc.
+	SaveMailSettings(ctx context.Context, m *MailSettings) error
+	// DeleteMailSettings rend la main à .env ; sans erreur s'il n'y avait rien.
+	// Renvoie true si des réglages ont été effacés.
+	DeleteMailSettings(ctx context.Context) (bool, error)
+}
+
 // Store est l'interface globale du registre de persistance.
 type Store interface {
 	Users() UserStore
@@ -394,6 +425,7 @@ type Store interface {
 	Deployments() DeploymentStore
 	Domains() DomainStore
 	ActionTokens() ActionTokenStore
+	MailSettings() MailSettingsStore
 	Ping(ctx context.Context) error
 	Close() error
 }

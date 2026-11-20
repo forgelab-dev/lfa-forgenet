@@ -23,6 +23,7 @@ type sqliteStore struct {
 	deployments store.DeploymentStore
 	domains     store.DomainStore
 	actions     store.ActionTokenStore
+	mail        store.MailSettingsStore
 }
 
 // Open initialise une connexion à la base SQLite, applique les migrations requises et retourne un store prêt à l'emploi.
@@ -78,6 +79,7 @@ func Open(ctx context.Context, cfg config.DatabaseConfig) (store.Store, error) {
 	s.deployments = newDeploymentsStore(db)
 	s.domains = newDomainsStore(db)
 	s.actions = newActionTokensStore(db)
+	s.mail = newMailSettingsStore(db)
 
 	return s, nil
 }
@@ -104,6 +106,10 @@ func (s *sqliteStore) Domains() store.DomainStore {
 
 func (s *sqliteStore) ActionTokens() store.ActionTokenStore {
 	return s.actions
+}
+
+func (s *sqliteStore) MailSettings() store.MailSettingsStore {
+	return s.mail
 }
 
 // Ping vérifie que la base de données est accessible.
