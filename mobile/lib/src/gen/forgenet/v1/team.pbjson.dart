@@ -319,6 +319,50 @@ final $typed_data.Uint8List closeMemberSessionsResponseDescriptor =
         'ChtDbG9zZU1lbWJlclNlc3Npb25zUmVzcG9uc2USJwoPY2xvc2VkX3Nlc3Npb25zGAEgASgDUg'
         '5jbG9zZWRTZXNzaW9ucw==');
 
+@$core.Deprecated('Use updateMemberEmailRequestDescriptor instead')
+const UpdateMemberEmailRequest$json = {
+  '1': 'UpdateMemberEmailRequest',
+  '2': [
+    {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
+    {'1': 'email', '3': 2, '4': 1, '5': 9, '10': 'email'},
+  ],
+};
+
+/// Descriptor for `UpdateMemberEmailRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateMemberEmailRequestDescriptor =
+    $convert.base64Decode(
+        'ChhVcGRhdGVNZW1iZXJFbWFpbFJlcXVlc3QSFwoHdXNlcl9pZBgBIAEoCVIGdXNlcklkEhQKBW'
+        'VtYWlsGAIgASgJUgVlbWFpbA==');
+
+@$core.Deprecated('Use updateMemberEmailResponseDescriptor instead')
+const UpdateMemberEmailResponse$json = {
+  '1': 'UpdateMemberEmailResponse',
+  '2': [
+    {
+      '1': 'member',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.forgenet.v1.Member',
+      '10': 'member'
+    },
+    {
+      '1': 'invitation',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.forgenet.v1.InvitationResult',
+      '10': 'invitation'
+    },
+  ],
+};
+
+/// Descriptor for `UpdateMemberEmailResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateMemberEmailResponseDescriptor = $convert.base64Decode(
+    'ChlVcGRhdGVNZW1iZXJFbWFpbFJlc3BvbnNlEisKBm1lbWJlchgBIAEoCzITLmZvcmdlbmV0Ln'
+    'YxLk1lbWJlclIGbWVtYmVyEj0KCmludml0YXRpb24YAiABKAsyHS5mb3JnZW5ldC52MS5JbnZp'
+    'dGF0aW9uUmVzdWx0UgppbnZpdGF0aW9u');
+
 @$core.Deprecated('Use deleteMemberRequestDescriptor instead')
 const DeleteMemberRequest$json = {
   '1': 'DeleteMemberRequest',

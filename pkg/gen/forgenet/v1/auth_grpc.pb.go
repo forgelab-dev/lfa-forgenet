@@ -23,6 +23,7 @@ const (
 	AuthService_Logout_FullMethodName               = "/forgenet.v1.AuthService/Logout"
 	AuthService_GetCurrentUser_FullMethodName       = "/forgenet.v1.AuthService/GetCurrentUser"
 	AuthService_ChangePassword_FullMethodName       = "/forgenet.v1.AuthService/ChangePassword"
+	AuthService_ChangeEmail_FullMethodName          = "/forgenet.v1.AuthService/ChangeEmail"
 	AuthService_InspectAccessLink_FullMethodName    = "/forgenet.v1.AuthService/InspectAccessLink"
 	AuthService_RedeemAccessLink_FullMethodName     = "/forgenet.v1.AuthService/RedeemAccessLink"
 	AuthService_GetLoginOptions_FullMethodName      = "/forgenet.v1.AuthService/GetLoginOptions"
@@ -49,6 +50,15 @@ type AuthServiceClient interface {
 	// fermerait la session du demandeur) ; des échecs répétés répondent
 	// RESOURCE_EXHAUSTED. Le changement est inscrit au journal d'audit.
 	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
+	// ChangeEmail change l'adresse du compte connecté (#100). Ses liens à usage
+	// unique en attente sont annulés ; ses sessions restent ouvertes. Avec un
+	// relais SMTP, un avis part à l'ancienne adresse. Mot de passe actuel
+	// incorrect, adresse invalide ou inchangée : INVALID_ARGUMENT (jamais
+	// UNAUTHENTICATED) ; adresse déjà prise : ALREADY_EXISTS ; des échecs
+	// répétés du mot de passe répondent RESOURCE_EXHAUSTED, avec le même
+	// compteur que ChangePassword. Le changement est inscrit au journal
+	// d'audit, sans les adresses.
+	ChangeEmail(ctx context.Context, in *ChangeEmailRequest, opts ...grpc.CallOption) (*ChangeEmailResponse, error)
 	// InspectAccessLink décrit un lien à usage unique encore valable, sans
 	// l'utiliser : la page dit pour quel compte on choisit un mot de passe.
 	// Appelable sans jeton. Un lien inconnu, expiré, déjà utilisé ou remplacé
@@ -121,6 +131,16 @@ func (c *authServiceClient) ChangePassword(ctx context.Context, in *ChangePasswo
 	return out, nil
 }
 
+func (c *authServiceClient) ChangeEmail(ctx context.Context, in *ChangeEmailRequest, opts ...grpc.CallOption) (*ChangeEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeEmailResponse)
+	err := c.cc.Invoke(ctx, AuthService_ChangeEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) InspectAccessLink(ctx context.Context, in *InspectAccessLinkRequest, opts ...grpc.CallOption) (*InspectAccessLinkResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(InspectAccessLinkResponse)
@@ -181,6 +201,15 @@ type AuthServiceServer interface {
 	// fermerait la session du demandeur) ; des échecs répétés répondent
 	// RESOURCE_EXHAUSTED. Le changement est inscrit au journal d'audit.
 	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
+	// ChangeEmail change l'adresse du compte connecté (#100). Ses liens à usage
+	// unique en attente sont annulés ; ses sessions restent ouvertes. Avec un
+	// relais SMTP, un avis part à l'ancienne adresse. Mot de passe actuel
+	// incorrect, adresse invalide ou inchangée : INVALID_ARGUMENT (jamais
+	// UNAUTHENTICATED) ; adresse déjà prise : ALREADY_EXISTS ; des échecs
+	// répétés du mot de passe répondent RESOURCE_EXHAUSTED, avec le même
+	// compteur que ChangePassword. Le changement est inscrit au journal
+	// d'audit, sans les adresses.
+	ChangeEmail(context.Context, *ChangeEmailRequest) (*ChangeEmailResponse, error)
 	// InspectAccessLink décrit un lien à usage unique encore valable, sans
 	// l'utiliser : la page dit pour quel compte on choisit un mot de passe.
 	// Appelable sans jeton. Un lien inconnu, expiré, déjà utilisé ou remplacé
@@ -224,6 +253,9 @@ func (UnimplementedAuthServiceServer) GetCurrentUser(context.Context, *GetCurren
 }
 func (UnimplementedAuthServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ChangePassword not implemented")
+}
+func (UnimplementedAuthServiceServer) ChangeEmail(context.Context, *ChangeEmailRequest) (*ChangeEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ChangeEmail not implemented")
 }
 func (UnimplementedAuthServiceServer) InspectAccessLink(context.Context, *InspectAccessLinkRequest) (*InspectAccessLinkResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method InspectAccessLink not implemented")
@@ -330,6 +362,24 @@ func _AuthService_ChangePassword_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_ChangeEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ChangeEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ChangeEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ChangeEmail(ctx, req.(*ChangeEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_InspectAccessLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(InspectAccessLinkRequest)
 	if err := dec(in); err != nil {
@@ -424,6 +474,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ChangePassword",
 			Handler:    _AuthService_ChangePassword_Handler,
+		},
+		{
+			MethodName: "ChangeEmail",
+			Handler:    _AuthService_ChangeEmail_Handler,
 		},
 		{
 			MethodName: "InspectAccessLink",

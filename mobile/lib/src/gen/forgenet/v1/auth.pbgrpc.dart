@@ -71,6 +71,21 @@ class AuthServiceClient extends $grpc.Client {
     return $createUnaryCall(_$changePassword, request, options: options);
   }
 
+  /// ChangeEmail change l'adresse du compte connecté (#100). Ses liens à usage
+  /// unique en attente sont annulés ; ses sessions restent ouvertes. Avec un
+  /// relais SMTP, un avis part à l'ancienne adresse. Mot de passe actuel
+  /// incorrect, adresse invalide ou inchangée : INVALID_ARGUMENT (jamais
+  /// UNAUTHENTICATED) ; adresse déjà prise : ALREADY_EXISTS ; des échecs
+  /// répétés du mot de passe répondent RESOURCE_EXHAUSTED, avec le même
+  /// compteur que ChangePassword. Le changement est inscrit au journal
+  /// d'audit, sans les adresses.
+  $grpc.ResponseFuture<$0.ChangeEmailResponse> changeEmail(
+    $0.ChangeEmailRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$changeEmail, request, options: options);
+  }
+
   /// InspectAccessLink décrit un lien à usage unique encore valable, sans
   /// l'utiliser : la page dit pour quel compte on choisit un mot de passe.
   /// Appelable sans jeton. Un lien inconnu, expiré, déjà utilisé ou remplacé
@@ -138,6 +153,11 @@ class AuthServiceClient extends $grpc.Client {
           '/forgenet.v1.AuthService/ChangePassword',
           ($0.ChangePasswordRequest value) => value.writeToBuffer(),
           $0.ChangePasswordResponse.fromBuffer);
+  static final _$changeEmail =
+      $grpc.ClientMethod<$0.ChangeEmailRequest, $0.ChangeEmailResponse>(
+          '/forgenet.v1.AuthService/ChangeEmail',
+          ($0.ChangeEmailRequest value) => value.writeToBuffer(),
+          $0.ChangeEmailResponse.fromBuffer);
   static final _$inspectAccessLink = $grpc.ClientMethod<
           $0.InspectAccessLinkRequest, $0.InspectAccessLinkResponse>(
       '/forgenet.v1.AuthService/InspectAccessLink',
@@ -197,6 +217,15 @@ abstract class AuthServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.ChangePasswordRequest.fromBuffer(value),
         ($0.ChangePasswordResponse value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.ChangeEmailRequest, $0.ChangeEmailResponse>(
+            'ChangeEmail',
+            changeEmail_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.ChangeEmailRequest.fromBuffer(value),
+            ($0.ChangeEmailResponse value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.InspectAccessLinkRequest,
             $0.InspectAccessLinkResponse>(
         'InspectAccessLink',
@@ -268,6 +297,14 @@ abstract class AuthServiceBase extends $grpc.Service {
 
   $async.Future<$0.ChangePasswordResponse> changePassword(
       $grpc.ServiceCall call, $0.ChangePasswordRequest request);
+
+  $async.Future<$0.ChangeEmailResponse> changeEmail_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.ChangeEmailRequest> $request) async {
+    return changeEmail($call, await $request);
+  }
+
+  $async.Future<$0.ChangeEmailResponse> changeEmail(
+      $grpc.ServiceCall call, $0.ChangeEmailRequest request);
 
   $async.Future<$0.InspectAccessLinkResponse> inspectAccessLink_Pre(
       $grpc.ServiceCall $call,

@@ -91,6 +91,21 @@ class TeamServiceClient extends $grpc.Client {
     return $createUnaryCall(_$closeMemberSessions, request, options: options);
   }
 
+  /// UpdateMemberEmail corrige l'adresse d'un compte (#100). Ses liens en
+  /// attente sont annulés : partis vers l'ancienne adresse, ils ouvriraient le
+  /// compte à qui la lit. Un compte qui attendait son mot de passe reçoit une
+  /// nouvelle invitation ; un compte actif, avec un relais SMTP, reçoit un avis
+  /// à l'ancienne adresse. Son propre compte : FAILED_PRECONDITION (il se
+  /// change depuis la page Compte, avec le mot de passe). Adresse invalide ou
+  /// inchangée : INVALID_ARGUMENT ; déjà prise : ALREADY_EXISTS. Compte
+  /// inconnu : NOT_FOUND.
+  $grpc.ResponseFuture<$0.UpdateMemberEmailResponse> updateMemberEmail(
+    $0.UpdateMemberEmailRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$updateMemberEmail, request, options: options);
+  }
+
   /// DeleteMember supprime le compte, définitivement ; une invitation en
   /// attente est ainsi annulée. Le journal d'audit garde ses entrées. Nom de
   /// confirmation différent : INVALID_ARGUMENT. Son propre compte, ou le
@@ -135,6 +150,11 @@ class TeamServiceClient extends $grpc.Client {
       '/forgenet.v1.TeamService/CloseMemberSessions',
       ($0.CloseMemberSessionsRequest value) => value.writeToBuffer(),
       $0.CloseMemberSessionsResponse.fromBuffer);
+  static final _$updateMemberEmail = $grpc.ClientMethod<
+          $0.UpdateMemberEmailRequest, $0.UpdateMemberEmailResponse>(
+      '/forgenet.v1.TeamService/UpdateMemberEmail',
+      ($0.UpdateMemberEmailRequest value) => value.writeToBuffer(),
+      $0.UpdateMemberEmailResponse.fromBuffer);
   static final _$deleteMember =
       $grpc.ClientMethod<$0.DeleteMemberRequest, $0.DeleteMemberResponse>(
           '/forgenet.v1.TeamService/DeleteMember',
@@ -201,6 +221,15 @@ abstract class TeamServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.CloseMemberSessionsRequest.fromBuffer(value),
         ($0.CloseMemberSessionsResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.UpdateMemberEmailRequest,
+            $0.UpdateMemberEmailResponse>(
+        'UpdateMemberEmail',
+        updateMemberEmail_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.UpdateMemberEmailRequest.fromBuffer(value),
+        ($0.UpdateMemberEmailResponse value) => value.writeToBuffer()));
     $addMethod(
         $grpc.ServiceMethod<$0.DeleteMemberRequest, $0.DeleteMemberResponse>(
             'DeleteMember',
@@ -264,6 +293,15 @@ abstract class TeamServiceBase extends $grpc.Service {
 
   $async.Future<$0.CloseMemberSessionsResponse> closeMemberSessions(
       $grpc.ServiceCall call, $0.CloseMemberSessionsRequest request);
+
+  $async.Future<$0.UpdateMemberEmailResponse> updateMemberEmail_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.UpdateMemberEmailRequest> $request) async {
+    return updateMemberEmail($call, await $request);
+  }
+
+  $async.Future<$0.UpdateMemberEmailResponse> updateMemberEmail(
+      $grpc.ServiceCall call, $0.UpdateMemberEmailRequest request);
 
   $async.Future<$0.DeleteMemberResponse> deleteMember_Pre(
       $grpc.ServiceCall $call,

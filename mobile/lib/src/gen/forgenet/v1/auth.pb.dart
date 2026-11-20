@@ -597,6 +597,140 @@ class ChangePasswordResponse extends $pb.GeneratedMessage {
   void clearRevokedSessions() => $_clearField(1);
 }
 
+class ChangeEmailRequest extends $pb.GeneratedMessage {
+  factory ChangeEmailRequest({
+    $core.String? currentPassword,
+    $core.String? newEmail,
+  }) {
+    final result = ChangeEmailRequest._();
+    if (currentPassword != null) result.currentPassword = currentPassword;
+    if (newEmail != null) result.newEmail = newEmail;
+    return result;
+  }
+
+  ChangeEmailRequest._();
+
+  factory ChangeEmailRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangeEmailRequest()..mergeFromBuffer(data, registry);
+  factory ChangeEmailRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangeEmailRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChangeEmailRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: ChangeEmailRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'currentPassword')
+    ..aOS(2, _omitFieldNames ? '' : 'newEmail')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangeEmailRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangeEmailRequest copyWith(void Function(ChangeEmailRequest) updates) =>
+      super.copyWith((message) => updates(message as ChangeEmailRequest))
+          as ChangeEmailRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ChangeEmailRequest() / ChangeEmailRequest.new instead')
+  static ChangeEmailRequest create() => ChangeEmailRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ChangeEmailRequest._();
+  @$core.override
+  ChangeEmailRequest createEmptyInstance() => ChangeEmailRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ChangeEmailRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChangeEmailRequest>(
+          ChangeEmailRequest.$_createMessage);
+  static ChangeEmailRequest? _defaultInstance;
+
+  /// Mot de passe actuel, exigé même avec une session ouverte : une session
+  /// volée ne doit pas suffire à détourner le « mot de passe oublié ».
+  @$pb.TagNumber(1)
+  $core.String get currentPassword => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set currentPassword($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCurrentPassword() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCurrentPassword() => $_clearField(1);
+
+  /// Nouvelle adresse : adresse nue (sans nom affiché), 254 caractères au plus.
+  @$pb.TagNumber(2)
+  $core.String get newEmail => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set newEmail($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasNewEmail() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearNewEmail() => $_clearField(2);
+}
+
+class ChangeEmailResponse extends $pb.GeneratedMessage {
+  factory ChangeEmailResponse({
+    User? user,
+  }) {
+    final result = ChangeEmailResponse._();
+    if (user != null) result.user = user;
+    return result;
+  }
+
+  ChangeEmailResponse._();
+
+  factory ChangeEmailResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangeEmailResponse()..mergeFromBuffer(data, registry);
+  factory ChangeEmailResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ChangeEmailResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ChangeEmailResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: ChangeEmailResponse.$_createMessage)
+    ..aOM<User>(1, _omitFieldNames ? '' : 'user',
+        subBuilder: User.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangeEmailResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ChangeEmailResponse copyWith(void Function(ChangeEmailResponse) updates) =>
+      super.copyWith((message) => updates(message as ChangeEmailResponse))
+          as ChangeEmailResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use ChangeEmailResponse() / ChangeEmailResponse.new instead')
+  static ChangeEmailResponse create() => ChangeEmailResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ChangeEmailResponse._();
+  @$core.override
+  ChangeEmailResponse createEmptyInstance() => ChangeEmailResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ChangeEmailResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ChangeEmailResponse>(
+          ChangeEmailResponse.$_createMessage);
+  static ChangeEmailResponse? _defaultInstance;
+
+  /// Le compte à jour.
+  @$pb.TagNumber(1)
+  User get user => $_getN(0);
+  @$pb.TagNumber(1)
+  set user(User value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasUser() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearUser() => $_clearField(1);
+  @$pb.TagNumber(1)
+  User ensureUser() => $_ensure(0);
+}
+
 class InspectAccessLinkRequest extends $pb.GeneratedMessage {
   factory InspectAccessLinkRequest({
     $core.String? token,

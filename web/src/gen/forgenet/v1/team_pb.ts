@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file forgenet/v1/team.proto.
  */
 export const file_forgenet_v1_team: GenFile = /*@__PURE__*/
-  fileDesc("ChZmb3JnZW5ldC92MS90ZWFtLnByb3RvEgtmb3JnZW5ldC52MSKiAgoGTWVtYmVyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZRIpCgZzdGF0dXMYBSABKA4yGS5mb3JnZW5ldC52MS5NZW1iZXJTdGF0dXMSOQoVaW52aXRhdGlvbl9leHBpcmVzX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpjcmVhdGVkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxzdXNwZW5kZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhQKEkxpc3RNZW1iZXJzUmVxdWVzdCJRChNMaXN0TWVtYmVyc1Jlc3BvbnNlEiQKB21lbWJlcnMYASADKAsyEy5mb3JnZW5ldC52MS5NZW1iZXISFAoMbWFpbF9lbmFibGVkGAIgASgIIlsKE0ludml0ZU1lbWJlclJlcXVlc3QSEAoIdXNlcm5hbWUYASABKAkSDQoFZW1haWwYAiABKAkSIwoEcm9sZRgDIAEoDjIVLmZvcmdlbmV0LnYxLlVzZXJSb2xlInkKEEludml0YXRpb25SZXN1bHQSIwoGbWVtYmVyGAEgASgLMhMuZm9yZ2VuZXQudjEuTWVtYmVyEg8KB2VtYWlsZWQYAiABKAgSFgoOaW52aXRhdGlvbl91cmwYAyABKAkSFwoPbG9jYWxfZGFzaGJvYXJkGAQgASgIIkUKFEludml0ZU1lbWJlclJlc3BvbnNlEi0KBnJlc3VsdBgBIAEoCzIdLmZvcmdlbmV0LnYxLkludml0YXRpb25SZXN1bHQiKQoWUmVuZXdJbnZpdGF0aW9uUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJIkgKF1JlbmV3SW52aXRhdGlvblJlc3BvbnNlEi0KBnJlc3VsdBgBIAEoCzIdLmZvcmdlbmV0LnYxLkludml0YXRpb25SZXN1bHQiJwoUU3VzcGVuZE1lbWJlclJlcXVlc3QSDwoHdXNlcl9pZBgBIAEoCSJVChVTdXNwZW5kTWVtYmVyUmVzcG9uc2USIwoGbWVtYmVyGAEgASgLMhMuZm9yZ2VuZXQudjEuTWVtYmVyEhcKD2Nsb3NlZF9zZXNzaW9ucxgCIAEoAyImChNSZXN1bWVNZW1iZXJSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiOwoUUmVzdW1lTWVtYmVyUmVzcG9uc2USIwoGbWVtYmVyGAEgASgLMhMuZm9yZ2VuZXQudjEuTWVtYmVyIi0KGkNsb3NlTWVtYmVyU2Vzc2lvbnNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiNgobQ2xvc2VNZW1iZXJTZXNzaW9uc1Jlc3BvbnNlEhcKD2Nsb3NlZF9zZXNzaW9ucxgBIAEoAyJAChNEZWxldGVNZW1iZXJSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSGAoQY29uZmlybV91c2VybmFtZRgCIAEoCSIWChREZWxldGVNZW1iZXJSZXNwb25zZSqlAQoMTWVtYmVyU3RhdHVzEh0KGU1FTUJFUl9TVEFUVVNfVU5TUEVDSUZJRUQQABIYChRNRU1CRVJfU1RBVFVTX0FDVElWRRABEhkKFU1FTUJFUl9TVEFUVVNfSU5WSVRFRBACEiQKIE1FTUJFUl9TVEFUVVNfSU5WSVRBVElPTl9FWFBJUkVEEAMSGwoXTUVNQkVSX1NUQVRVU19TVVNQRU5ERUQQBDL+BAoLVGVhbVNlcnZpY2USUAoLTGlzdE1lbWJlcnMSHy5mb3JnZW5ldC52MS5MaXN0TWVtYmVyc1JlcXVlc3QaIC5mb3JnZW5ldC52MS5MaXN0TWVtYmVyc1Jlc3BvbnNlElMKDEludml0ZU1lbWJlchIgLmZvcmdlbmV0LnYxLkludml0ZU1lbWJlclJlcXVlc3QaIS5mb3JnZW5ldC52MS5JbnZpdGVNZW1iZXJSZXNwb25zZRJcCg9SZW5ld0ludml0YXRpb24SIy5mb3JnZW5ldC52MS5SZW5ld0ludml0YXRpb25SZXF1ZXN0GiQuZm9yZ2VuZXQudjEuUmVuZXdJbnZpdGF0aW9uUmVzcG9uc2USVgoNU3VzcGVuZE1lbWJlchIhLmZvcmdlbmV0LnYxLlN1c3BlbmRNZW1iZXJSZXF1ZXN0GiIuZm9yZ2VuZXQudjEuU3VzcGVuZE1lbWJlclJlc3BvbnNlElMKDFJlc3VtZU1lbWJlchIgLmZvcmdlbmV0LnYxLlJlc3VtZU1lbWJlclJlcXVlc3QaIS5mb3JnZW5ldC52MS5SZXN1bWVNZW1iZXJSZXNwb25zZRJoChNDbG9zZU1lbWJlclNlc3Npb25zEicuZm9yZ2VuZXQudjEuQ2xvc2VNZW1iZXJTZXNzaW9uc1JlcXVlc3QaKC5mb3JnZW5ldC52MS5DbG9zZU1lbWJlclNlc3Npb25zUmVzcG9uc2USUwoMRGVsZXRlTWVtYmVyEiAuZm9yZ2VuZXQudjEuRGVsZXRlTWVtYmVyUmVxdWVzdBohLmZvcmdlbmV0LnYxLkRlbGV0ZU1lbWJlclJlc3BvbnNlQkVaQ2dpdGh1Yi5jb20vZm9yZ2VsYWItZGV2L2xmYS1mb3JnZW5ldC9wa2cvZ2VuL2ZvcmdlbmV0L3YxO2ZvcmdlbmV0djFiBnByb3RvMw", [file_forgenet_v1_auth, file_google_protobuf_timestamp]);
+  fileDesc("ChZmb3JnZW5ldC92MS90ZWFtLnByb3RvEgtmb3JnZW5ldC52MSKiAgoGTWVtYmVyEgoKAmlkGAEgASgJEhAKCHVzZXJuYW1lGAIgASgJEg0KBWVtYWlsGAMgASgJEiMKBHJvbGUYBCABKA4yFS5mb3JnZW5ldC52MS5Vc2VyUm9sZRIpCgZzdGF0dXMYBSABKA4yGS5mb3JnZW5ldC52MS5NZW1iZXJTdGF0dXMSOQoVaW52aXRhdGlvbl9leHBpcmVzX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpjcmVhdGVkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxzdXNwZW5kZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhQKEkxpc3RNZW1iZXJzUmVxdWVzdCJRChNMaXN0TWVtYmVyc1Jlc3BvbnNlEiQKB21lbWJlcnMYASADKAsyEy5mb3JnZW5ldC52MS5NZW1iZXISFAoMbWFpbF9lbmFibGVkGAIgASgIIlsKE0ludml0ZU1lbWJlclJlcXVlc3QSEAoIdXNlcm5hbWUYASABKAkSDQoFZW1haWwYAiABKAkSIwoEcm9sZRgDIAEoDjIVLmZvcmdlbmV0LnYxLlVzZXJSb2xlInkKEEludml0YXRpb25SZXN1bHQSIwoGbWVtYmVyGAEgASgLMhMuZm9yZ2VuZXQudjEuTWVtYmVyEg8KB2VtYWlsZWQYAiABKAgSFgoOaW52aXRhdGlvbl91cmwYAyABKAkSFwoPbG9jYWxfZGFzaGJvYXJkGAQgASgIIkUKFEludml0ZU1lbWJlclJlc3BvbnNlEi0KBnJlc3VsdBgBIAEoCzIdLmZvcmdlbmV0LnYxLkludml0YXRpb25SZXN1bHQiKQoWUmVuZXdJbnZpdGF0aW9uUmVxdWVzdBIPCgd1c2VyX2lkGAEgASgJIkgKF1JlbmV3SW52aXRhdGlvblJlc3BvbnNlEi0KBnJlc3VsdBgBIAEoCzIdLmZvcmdlbmV0LnYxLkludml0YXRpb25SZXN1bHQiJwoUU3VzcGVuZE1lbWJlclJlcXVlc3QSDwoHdXNlcl9pZBgBIAEoCSJVChVTdXNwZW5kTWVtYmVyUmVzcG9uc2USIwoGbWVtYmVyGAEgASgLMhMuZm9yZ2VuZXQudjEuTWVtYmVyEhcKD2Nsb3NlZF9zZXNzaW9ucxgCIAEoAyImChNSZXN1bWVNZW1iZXJSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiOwoUUmVzdW1lTWVtYmVyUmVzcG9uc2USIwoGbWVtYmVyGAEgASgLMhMuZm9yZ2VuZXQudjEuTWVtYmVyIi0KGkNsb3NlTWVtYmVyU2Vzc2lvbnNSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkiNgobQ2xvc2VNZW1iZXJTZXNzaW9uc1Jlc3BvbnNlEhcKD2Nsb3NlZF9zZXNzaW9ucxgBIAEoAyI6ChhVcGRhdGVNZW1iZXJFbWFpbFJlcXVlc3QSDwoHdXNlcl9pZBgBIAEoCRINCgVlbWFpbBgCIAEoCSJzChlVcGRhdGVNZW1iZXJFbWFpbFJlc3BvbnNlEiMKBm1lbWJlchgBIAEoCzITLmZvcmdlbmV0LnYxLk1lbWJlchIxCgppbnZpdGF0aW9uGAIgASgLMh0uZm9yZ2VuZXQudjEuSW52aXRhdGlvblJlc3VsdCJAChNEZWxldGVNZW1iZXJSZXF1ZXN0Eg8KB3VzZXJfaWQYASABKAkSGAoQY29uZmlybV91c2VybmFtZRgCIAEoCSIWChREZWxldGVNZW1iZXJSZXNwb25zZSqlAQoMTWVtYmVyU3RhdHVzEh0KGU1FTUJFUl9TVEFUVVNfVU5TUEVDSUZJRUQQABIYChRNRU1CRVJfU1RBVFVTX0FDVElWRRABEhkKFU1FTUJFUl9TVEFUVVNfSU5WSVRFRBACEiQKIE1FTUJFUl9TVEFUVVNfSU5WSVRBVElPTl9FWFBJUkVEEAMSGwoXTUVNQkVSX1NUQVRVU19TVVNQRU5ERUQQBDLiBQoLVGVhbVNlcnZpY2USUAoLTGlzdE1lbWJlcnMSHy5mb3JnZW5ldC52MS5MaXN0TWVtYmVyc1JlcXVlc3QaIC5mb3JnZW5ldC52MS5MaXN0TWVtYmVyc1Jlc3BvbnNlElMKDEludml0ZU1lbWJlchIgLmZvcmdlbmV0LnYxLkludml0ZU1lbWJlclJlcXVlc3QaIS5mb3JnZW5ldC52MS5JbnZpdGVNZW1iZXJSZXNwb25zZRJcCg9SZW5ld0ludml0YXRpb24SIy5mb3JnZW5ldC52MS5SZW5ld0ludml0YXRpb25SZXF1ZXN0GiQuZm9yZ2VuZXQudjEuUmVuZXdJbnZpdGF0aW9uUmVzcG9uc2USVgoNU3VzcGVuZE1lbWJlchIhLmZvcmdlbmV0LnYxLlN1c3BlbmRNZW1iZXJSZXF1ZXN0GiIuZm9yZ2VuZXQudjEuU3VzcGVuZE1lbWJlclJlc3BvbnNlElMKDFJlc3VtZU1lbWJlchIgLmZvcmdlbmV0LnYxLlJlc3VtZU1lbWJlclJlcXVlc3QaIS5mb3JnZW5ldC52MS5SZXN1bWVNZW1iZXJSZXNwb25zZRJoChNDbG9zZU1lbWJlclNlc3Npb25zEicuZm9yZ2VuZXQudjEuQ2xvc2VNZW1iZXJTZXNzaW9uc1JlcXVlc3QaKC5mb3JnZW5ldC52MS5DbG9zZU1lbWJlclNlc3Npb25zUmVzcG9uc2USYgoRVXBkYXRlTWVtYmVyRW1haWwSJS5mb3JnZW5ldC52MS5VcGRhdGVNZW1iZXJFbWFpbFJlcXVlc3QaJi5mb3JnZW5ldC52MS5VcGRhdGVNZW1iZXJFbWFpbFJlc3BvbnNlElMKDERlbGV0ZU1lbWJlchIgLmZvcmdlbmV0LnYxLkRlbGV0ZU1lbWJlclJlcXVlc3QaIS5mb3JnZW5ldC52MS5EZWxldGVNZW1iZXJSZXNwb25zZUJFWkNnaXRodWIuY29tL2ZvcmdlbGFiLWRldi9sZmEtZm9yZ2VuZXQvcGtnL2dlbi9mb3JnZW5ldC92MTtmb3JnZW5ldHYxYgZwcm90bzM", [file_forgenet_v1_auth, file_google_protobuf_timestamp]);
 
 /**
  * Member est un compte du serveur, vu par un administrateur. Le mot de passe
@@ -349,6 +349,55 @@ export const CloseMemberSessionsResponseSchema: GenMessage<CloseMemberSessionsRe
   messageDesc(file_forgenet_v1_team, 13);
 
 /**
+ * @generated from message forgenet.v1.UpdateMemberEmailRequest
+ */
+export type UpdateMemberEmailRequest = Message<"forgenet.v1.UpdateMemberEmailRequest"> & {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId: string;
+
+  /**
+   * Nouvelle adresse : adresse nue (sans nom affiché), 254 caractères au plus.
+   *
+   * @generated from field: string email = 2;
+   */
+  email: string;
+};
+
+/**
+ * Describes the message forgenet.v1.UpdateMemberEmailRequest.
+ * Use `create(UpdateMemberEmailRequestSchema)` to create a new message.
+ */
+export const UpdateMemberEmailRequestSchema: GenMessage<UpdateMemberEmailRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_team, 14);
+
+/**
+ * @generated from message forgenet.v1.UpdateMemberEmailResponse
+ */
+export type UpdateMemberEmailResponse = Message<"forgenet.v1.UpdateMemberEmailResponse"> & {
+  /**
+   * @generated from field: forgenet.v1.Member member = 1;
+   */
+  member?: Member | undefined;
+
+  /**
+   * Présent quand le compte attendait son mot de passe : son ancien lien est
+   * annulé, et une nouvelle invitation part à la nouvelle adresse.
+   *
+   * @generated from field: forgenet.v1.InvitationResult invitation = 2;
+   */
+  invitation?: InvitationResult | undefined;
+};
+
+/**
+ * Describes the message forgenet.v1.UpdateMemberEmailResponse.
+ * Use `create(UpdateMemberEmailResponseSchema)` to create a new message.
+ */
+export const UpdateMemberEmailResponseSchema: GenMessage<UpdateMemberEmailResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_team, 15);
+
+/**
  * @generated from message forgenet.v1.DeleteMemberRequest
  */
 export type DeleteMemberRequest = Message<"forgenet.v1.DeleteMemberRequest"> & {
@@ -371,7 +420,7 @@ export type DeleteMemberRequest = Message<"forgenet.v1.DeleteMemberRequest"> & {
  * Use `create(DeleteMemberRequestSchema)` to create a new message.
  */
 export const DeleteMemberRequestSchema: GenMessage<DeleteMemberRequest> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_team, 14);
+  messageDesc(file_forgenet_v1_team, 16);
 
 /**
  * @generated from message forgenet.v1.DeleteMemberResponse
@@ -384,7 +433,7 @@ export type DeleteMemberResponse = Message<"forgenet.v1.DeleteMemberResponse"> &
  * Use `create(DeleteMemberResponseSchema)` to create a new message.
  */
 export const DeleteMemberResponseSchema: GenMessage<DeleteMemberResponse> = /*@__PURE__*/
-  messageDesc(file_forgenet_v1_team, 15);
+  messageDesc(file_forgenet_v1_team, 17);
 
 /**
  * MemberStatus dit où en est un compte (ADR-0014).
@@ -508,6 +557,23 @@ export const TeamService: GenService<{
     methodKind: "unary";
     input: typeof CloseMemberSessionsRequestSchema;
     output: typeof CloseMemberSessionsResponseSchema;
+  },
+  /**
+   * UpdateMemberEmail corrige l'adresse d'un compte (#100). Ses liens en
+   * attente sont annulés : partis vers l'ancienne adresse, ils ouvriraient le
+   * compte à qui la lit. Un compte qui attendait son mot de passe reçoit une
+   * nouvelle invitation ; un compte actif, avec un relais SMTP, reçoit un avis
+   * à l'ancienne adresse. Son propre compte : FAILED_PRECONDITION (il se
+   * change depuis la page Compte, avec le mot de passe). Adresse invalide ou
+   * inchangée : INVALID_ARGUMENT ; déjà prise : ALREADY_EXISTS. Compte
+   * inconnu : NOT_FOUND.
+   *
+   * @generated from rpc forgenet.v1.TeamService.UpdateMemberEmail
+   */
+  updateMemberEmail: {
+    methodKind: "unary";
+    input: typeof UpdateMemberEmailRequestSchema;
+    output: typeof UpdateMemberEmailResponseSchema;
   },
   /**
    * DeleteMember supprime le compte, définitivement ; une invitation en
