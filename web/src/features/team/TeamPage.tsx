@@ -176,6 +176,16 @@ function MemberRow({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
   const [outcome, setOutcome] = useState<InvitationResult>();
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [emailDone, setEmailDone] = useState<string>();
+  const emailButton = useRef<HTMLButtonElement>(null);
+
+  const closeEmail = (message?: string) => {
+    setEditingEmail(false);
+    setEmailDone(message);
+    // Le focus revient au bouton qui a ouvert le formulaire.
+    requestAnimationFrame(() => emailButton.current?.focus());
+  };
 
   async function renew() {
     setPending(true);
@@ -204,7 +214,26 @@ function MemberRow({
             {member.username}
             {self && <span className="ml-2 text-sm font-normal text-iron-300">(vous)</span>}
           </p>
-          <p className="mt-0.5 break-all font-mono text-sm text-iron-300">{member.email}</p>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-1">
+            <span className="break-all font-mono text-sm text-iron-300">{member.email}</span>
+            {/* Sa propre adresse se change depuis la page Compte, avec le mot de passe (#100). */}
+            {!self && !editingEmail && (
+              <button
+                ref={emailButton}
+                type="button"
+                onClick={() => {
+                  setEmailDone(undefined);
+                  setOutcome(undefined);
+                  setEditingEmail(true);
+                }}
+                aria-label={`Changer l’adresse de ${member.username}`}
+                className="-my-3 inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-sm font-medium text-gold-400 hover:text-gold-300 focus-visible:outline-2 focus-visible:outline-gold-400"
+              >
+                <AtSign aria-hidden="true" className="size-3.5" />
+                Changer
+              </button>
+            )}
+          </p>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-xs">
             <span className="rounded border border-iron-700 px-2 py-0.5 text-iron-100">
               {member.role === UserRole.ADMIN ? 'Administrateur' : 'Membre'}
@@ -230,15 +259,38 @@ function MemberRow({
           {error}
         </p>
       )}
+      {editingEmail && (
+        <MemberEmailForm
+          member={member}
+          mailEnabled={mailEnabled}
+          onCancel={() => closeEmail()}
+          onChanged={(res) => {
+            if (res.member) {
+              onUpdated(res.member);
+            }
+            if (res.invitation) {
+              setOutcome(res.invitation);
+            }
+            closeEmail(
+              res.invitation
+                ? `Adresse de ${member.username} corrigée ; son ancien lien ne vaut plus.`
+                : `Adresse de ${member.username} corrigée.${
+                    mailEnabled && member.status === MemberStatus.ACTIVE
+                      ? ' Un avis part à l’ancienne adresse.'
+                      : ''
+                  }`
+            );
+          }}
+        />
+      )}
+      <p
+        role="status"
+        className="empty:hidden mt-3 rounded-md border border-ok-400/40 px-3 py-2 text-sm text-iron-100"
+      >
+        {emailDone}
+      </p>
       {outcome && <InvitationOutcome result={outcome} onDismiss={() => setOutcome(undefined)} />}
-      <MemberActions
-        member={member}
-        self={self}
-        mailEnabled={mailEnabled}
-        onUpdated={onUpdated}
-        onRemoved={onRemoved}
-        onInvited={setOutcome}
-      />
+      <MemberActions member={member} self={self} onUpdated={onUpdated} onRemoved={onRemoved} />
     </li>
   );
 }
@@ -251,28 +303,22 @@ function plural(n: bigint, one: string, many: string) {
 
 /**
  * Les gestes d'un administrateur sur un compte (#103) : fermer ses sessions,
- * le suspendre ou le réactiver, le supprimer, corriger son adresse (#100).
- * Sur son propre compte, seules ses autres sessions se ferment : le serveur
- * refuse le reste, et sa propre adresse se change depuis la page Compte.
+ * le suspendre ou le réactiver, le supprimer. Sur son propre compte, seules
+ * ses autres sessions se ferment : le serveur refuse le reste.
  */
 function MemberActions({
   member,
   self,
-  mailEnabled,
   onUpdated,
   onRemoved,
-  onInvited,
 }: {
   member: Member;
   self: boolean;
-  mailEnabled: boolean;
   onUpdated: (m: Member) => void;
   onRemoved: (m: Member) => void;
-  onInvited: (r: InvitationResult) => void;
 }) {
   const api = useApi();
   const [confirming, setConfirming] = useState<Confirming>();
-  const [editingEmail, setEditingEmail] = useState(false);
   const [typed, setTyped] = useState('');
   const [pending, setPending] = useState<'sessions' | 'resume' | Confirming>();
   const [error, setError] = useState<string>();
@@ -345,14 +391,6 @@ function MemberActions({
   }
 
   const busy = pending !== undefined;
-  const emailButton = useRef<HTMLButtonElement>(null);
-  const closeEmail = (message?: string) => {
-    setEditingEmail(false);
-    setDone(message);
-    // Le focus revient au bouton qui a ouvert le formulaire.
-    requestAnimationFrame(() => emailButton.current?.focus());
-  };
-
   return (
     <>
       <p
@@ -366,47 +404,8 @@ function MemberActions({
           {error}
         </p>
       )}
-      {editingEmail ? (
-        <MemberEmailForm
-          member={member}
-          mailEnabled={mailEnabled}
-          onCancel={() => closeEmail()}
-          onChanged={(res) => {
-            if (res.member) {
-              onUpdated(res.member);
-            }
-            if (res.invitation) {
-              onInvited(res.invitation);
-            }
-            closeEmail(
-              res.invitation
-                ? `Adresse de ${member.username} corrigée ; son ancien lien ne vaut plus.`
-                : `Adresse de ${member.username} corrigée.${
-                    mailEnabled && member.status === MemberStatus.ACTIVE
-                      ? ' Un avis part à l’ancienne adresse.'
-                      : ''
-                  }`
-            );
-          }}
-        />
-      ) : !confirming ? (
+      {!confirming ? (
         <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-iron-800 pt-3">
-          {!self && (
-            <Button
-              ref={emailButton}
-              variant="quiet"
-              onClick={() => {
-                setEditingEmail(true);
-                setDone(undefined);
-                setError(undefined);
-              }}
-              disabled={busy}
-              aria-label={`Changer l’adresse de ${member.username}`}
-            >
-              <AtSign aria-hidden="true" className="size-4" />
-              Changer l’adresse
-            </Button>
-          )}
           {active && (
             <Button
               variant="quiet"
