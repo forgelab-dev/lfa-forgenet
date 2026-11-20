@@ -120,6 +120,7 @@ It installs Docker if missing (official repository, verified key), writes `/opt/
 | `sudo forgenet backups` · `sudo forgenet restore BACKUP` | list backups, go back to one of them |
 | `forgenet user create --username NAME --email ADDRESS` | create an account (password prompted) |
 | `forgenet user set-password --username NAME` | replace a lost password; closes the account's sessions |
+| `forgenet user set-email --username NAME --email ADDRESS` | correct an account's address; its pending links are cancelled, and a notice goes to the old address when an SMTP relay is set |
 | `forgenet user login-link --username NAME [--send]` | make a new first-login link (24 hours, single use): printed, or sent to the account's address with `--send` |
 | `forgenet user suspend\|resume --username NAME` | suspend an account (sessions, tokens and links closed) or reactivate it |
 | `forgenet user delete --username NAME` | delete an account, after typing its name again; the audit log keeps its entries |

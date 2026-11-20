@@ -56,6 +56,10 @@ Usage : forgenet COMMANDE [options]
   user set-password --username NOM
                           Remplace le mot de passe d'un compte, par exemple
                           perdu ; ses sessions ouvertes sont fermées.
+  user set-email --username NOM --email ADRESSE
+                          Corrige l'adresse d'un compte ; ses liens en attente
+                          sont annulés, et un avis part à l'ancienne adresse
+                          si un relais SMTP est réglé.
   user login-link --username NOM [--send]
                           Refait un lien de première connexion (24 heures,
                           usage unique) : affiché, ou envoyé à l'adresse du
@@ -318,7 +322,7 @@ cmd_restore() {
 }
 
 cmd_user() {
-	[ $# -gt 0 ] || die "usage : forgenet user create --username NOM --email ADRESSE [--role admin|member] | forgenet user set-password --username NOM | forgenet user login-link --username NOM [--send] | forgenet user suspend|resume|delete --username NOM"
+	[ $# -gt 0 ] || die "usage : forgenet user create --username NOM --email ADRESSE [--role admin|member] | forgenet user set-password --username NOM | forgenet user set-email --username NOM --email ADRESSE | forgenet user login-link --username NOM [--send] | forgenet user suspend|resume|delete --username NOM"
 	need_docker
 	need_server
 	# -t seulement dans un terminal : le mot de passe est alors saisi masqué ;

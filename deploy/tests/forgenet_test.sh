@@ -108,6 +108,7 @@ FORGENET_DIR=relatif check "FORGENET_DIR relatif" 1 "FORGENET_DIR attend un chem
 check "version" 0 "ForgeNet 0.4.1 \(révision 566bd31, compilé le 2026-11-16T12:24:33Z\)" -- version
 check "version de la commande" 0 "Commande forgenet [0-9]+\.[0-9]+\.[0-9]+" -- version
 FAKE_VERSION=9.9.9 check "commande d'une autre version" 0 "sudo forgenet update" -- version
+FAKE_UID=1000 check "user set-email, transmis au serveur" 0 "exec exec -i forgenet-server forgenet-server user set-email --username ana --email ana@exemple.org" -- user set-email --username ana --email ana@exemple.org
 FAKE_SERVER="exited " check "version, serveur arrêté" 1 "serveur ForgeNet est arrêté" -- version
 FAKE_SERVER="" check "version, ForgeNet absent" 1 "n'existe pas" -- version
 FAKE_DOCKER_DOWN=1 check "Docker injoignable" 1 "Docker ne répond pas" -- version
@@ -135,6 +136,7 @@ FAKE_APPS=$'forgenet-agenda exited(1), running(1)\n' \
 	check "status, pile à moitié arrêtée" 0 "agenda +1 arrêté\\(s\\), 1 en marche" -- status
 FAKE_APPS=$'forgenet running(2)\n' check "status, aucune application" 0 "Applications : aucune" -- status
 FAKE_SERVER="running unhealthy" check "status, serveur malade" 1 "ne répond pas" -- status
+FAKE_UID=1000 check "user set-email, transmis au serveur" 0 "exec exec -i forgenet-server forgenet-server user set-email --username ana --email ana@exemple.org" -- user set-email --username ana --email ana@exemple.org
 FAKE_SERVER="exited " check "status, serveur arrêté" 1 "Serveur : exited" -- status
 FAKE_CADDY="" check "status, Caddy absent" 1 "Caddy : conteneur forgenet-caddy absent" -- status
 check "status sans option" 1 "ne prend pas d'option" -- status --tout
@@ -181,6 +183,7 @@ mv "$WORK/install.sh.de-cote" "$WORK/install/install.sh"
 FAKE_UID=1000 check "user, membre du groupe docker" 0 "exec exec -i forgenet-server forgenet-server user create --username ana" -- user create --username ana
 check "user sans sous-commande" 1 "usage : forgenet user create" -- user
 FAKE_UID=1000 check "user set-password, transmis au serveur" 0 "exec exec -i forgenet-server forgenet-server user set-password --username ana" -- user set-password --username ana
+FAKE_UID=1000 check "user set-email, transmis au serveur" 0 "exec exec -i forgenet-server forgenet-server user set-email --username ana --email ana@exemple.org" -- user set-email --username ana --email ana@exemple.org
 FAKE_SERVER="exited " check "user, serveur arrêté" 1 "serveur ForgeNet est arrêté" -- user create
 
 printf '\n%d vérifications, %d en échec\n' "$runs" "$fails"
