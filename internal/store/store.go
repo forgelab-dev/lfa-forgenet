@@ -291,6 +291,12 @@ type UserStore interface {
 	// inutilisés. Renvoie le nombre de sessions révoquées, ou ErrNotFound si
 	// le compte n'existe pas.
 	SetPassword(ctx context.Context, userID, passwordHash, keepSessionID string) (int64, error)
+	// SetEmail remplace l'adresse du compte et annule, dans la même
+	// transaction, ses liens à usage unique encore inutilisés : ils sont
+	// partis vers l'ancienne adresse. Les sessions restent ouvertes. Renvoie
+	// le nombre de liens annulés ; ErrConflict si l'adresse est prise ;
+	// ErrNotFound si le compte n'existe pas.
+	SetEmail(ctx context.Context, userID, email string) (int64, error)
 	// SuspendUser suspend le compte à la date at et ferme, dans la même
 	// transaction, toutes ses sessions et tous ses jetons, et annule ses liens
 	// à usage unique inutilisés. Un compte déjà suspendu garde sa date.

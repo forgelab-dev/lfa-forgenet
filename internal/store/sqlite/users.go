@@ -116,6 +116,39 @@ func setPasswordTx(ctx context.Context, tx *sql.Tx, userID, passwordHash, keepSe
 	return revoked, nil
 }
 
+func (s *usersStore) SetEmail(ctx context.Context, userID, email string) (int64, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("changement de l'adresse : %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.ExecContext(ctx, `UPDATE users SET email = ?, updated_at = ? WHERE id = ?`,
+		email, formatTime(time.Now()), userID)
+	if err != nil {
+		return 0, wrapWriteError(err, "changement de l'adresse")
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return 0, fmt.Errorf("changement de l'adresse : %w", err)
+	} else if n == 0 {
+		return 0, store.ErrNotFound
+	}
+	// Une invitation ou un « mot de passe oublié » envoyé à une adresse mal
+	// saisie ouvrirait le compte à qui la lit : ces liens partent avec elle.
+	res, err = tx.ExecContext(ctx, `DELETE FROM action_tokens WHERE user_id = ? AND used_at IS NULL`, userID)
+	if err != nil {
+		return 0, fmt.Errorf("annulation des liens : %w", err)
+	}
+	cancelled, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("annulation des liens : %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("changement de l'adresse : %w", err)
+	}
+	return cancelled, nil
+}
+
 func (s *usersStore) SuspendUser(ctx context.Context, id string, at time.Time) (int64, error) {
 	var revoked int64
 	err := s.guardedWrite(ctx, "suspension du compte", id, func(tx *sql.Tx) error {
