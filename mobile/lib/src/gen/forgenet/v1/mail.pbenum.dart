@@ -40,5 +40,28 @@ class MailTLS extends $pb.ProtobufEnum {
   const MailTLS._(super.value, super.name);
 }
 
+/// MailSource dit d'où viennent les réglages en vigueur (ADR-0015).
+class MailSource extends $pb.ProtobufEnum {
+  static const MailSource MAIL_SOURCE_UNSPECIFIED =
+      MailSource._(0, _omitEnumNames ? '' : 'MAIL_SOURCE_UNSPECIFIED');
+  static const MailSource MAIL_SOURCE_SERVER =
+      MailSource._(1, _omitEnumNames ? '' : 'MAIL_SOURCE_SERVER');
+  static const MailSource MAIL_SOURCE_DASHBOARD =
+      MailSource._(2, _omitEnumNames ? '' : 'MAIL_SOURCE_DASHBOARD');
+
+  static const $core.List<MailSource> values = <MailSource>[
+    MAIL_SOURCE_UNSPECIFIED,
+    MAIL_SOURCE_SERVER,
+    MAIL_SOURCE_DASHBOARD,
+  ];
+
+  static final $core.List<MailSource?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static MailSource? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const MailSource._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

@@ -31,6 +31,14 @@ const (
 // Enqueuer met un envoi en tâche de fond (mail.Outbox le satisfait).
 type Enqueuer interface {
 	Enqueue(job mail.Job) bool
+	// Enabled dit si les messages partent : le relais se règle sans
+	// redémarrage depuis la page Réglages (ADR-0015).
+	Enabled() bool
+}
+
+// mailOn dit si outbox existe et envoie en ce moment.
+func mailOn(outbox Enqueuer) bool {
+	return outbox != nil && outbox.Enabled()
 }
 
 // passwordReset tient ce dont « mot de passe oublié » a besoin : la file
@@ -42,9 +50,10 @@ type passwordReset struct {
 	perAddress    *loginLimiter
 }
 
-// EnablePasswordReset active « mot de passe oublié » : à n'appeler que si un
-// relais SMTP est configuré. dashboardHost est le domaine du dashboard, vide
-// sans domaine (le lien passe alors par le tunnel SSH).
+// EnablePasswordReset branche « mot de passe oublié » sur la file d'envoi :
+// il n'est proposé que tant que la file envoie, ce qui peut changer sans
+// redémarrage. dashboardHost est le domaine du dashboard, vide sans domaine
+// (le lien passe alors par le tunnel SSH).
 func (s *AuthServiceServer) EnablePasswordReset(outbox Enqueuer, dashboardHost string) *AuthServiceServer {
 	s.reset = &passwordReset{
 		outbox:        outbox,
@@ -58,7 +67,7 @@ func (s *AuthServiceServer) EnablePasswordReset(outbox Enqueuer, dashboardHost s
 // GetLoginOptions dit si l'écran de connexion peut proposer « mot de passe
 // oublié ».
 func (s *AuthServiceServer) GetLoginOptions(context.Context, *forgenetv1.GetLoginOptionsRequest) (*forgenetv1.GetLoginOptionsResponse, error) {
-	return &forgenetv1.GetLoginOptionsResponse{PasswordReset: s.reset != nil}, nil
+	return &forgenetv1.GetLoginOptionsResponse{PasswordReset: s.reset != nil && mailOn(s.reset.outbox)}, nil
 }
 
 // RequestPasswordReset met la demande en tâche de fond et répond tout de
@@ -66,7 +75,7 @@ func (s *AuthServiceServer) GetLoginOptions(context.Context, *forgenetv1.GetLogi
 // un compte correspond.
 func (s *AuthServiceServer) RequestPasswordReset(ctx context.Context, req *forgenetv1.RequestPasswordResetRequest) (*forgenetv1.RequestPasswordResetResponse, error) {
 	r := s.reset
-	if r == nil {
+	if r == nil || !mailOn(r.outbox) {
 		return nil, status.Error(codes.FailedPrecondition,
 			"l'envoi d'e-mails n'est pas configuré sur ce serveur : un mot de passe perdu se remplace sur le serveur, par « forgenet user set-password --username NOM »")
 	}

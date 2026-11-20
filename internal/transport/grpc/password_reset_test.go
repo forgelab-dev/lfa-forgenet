@@ -18,6 +18,22 @@ type syncOutbox struct {
 	mu   sync.Mutex
 	sent []mail.Message
 	full bool
+	off  bool
+}
+
+// Enabled dit si les messages partent ; SetOff coupe l'envoi comme depuis la
+// page Réglages.
+func (o *syncOutbox) Enabled() bool {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	return !o.off
+}
+
+// SetOff coupe ou rouvre l'envoi.
+func (o *syncOutbox) SetOff(off bool) {
+	o.mu.Lock()
+	o.off = off
+	o.mu.Unlock()
 }
 
 func (o *syncOutbox) Enqueue(job mail.Job) bool {

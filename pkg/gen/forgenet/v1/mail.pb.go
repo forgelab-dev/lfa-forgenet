@@ -9,6 +9,7 @@ package forgenetv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -74,6 +75,56 @@ func (MailTLS) EnumDescriptor() ([]byte, []int) {
 	return file_forgenet_v1_mail_proto_rawDescGZIP(), []int{0}
 }
 
+// MailSource dit d'où viennent les réglages en vigueur (ADR-0015).
+type MailSource int32
+
+const (
+	MailSource_MAIL_SOURCE_UNSPECIFIED MailSource = 0
+	MailSource_MAIL_SOURCE_SERVER      MailSource = 1 // .env, écrit par install.sh
+	MailSource_MAIL_SOURCE_DASHBOARD   MailSource = 2 // enregistrés depuis la page Réglages
+)
+
+// Enum value maps for MailSource.
+var (
+	MailSource_name = map[int32]string{
+		0: "MAIL_SOURCE_UNSPECIFIED",
+		1: "MAIL_SOURCE_SERVER",
+		2: "MAIL_SOURCE_DASHBOARD",
+	}
+	MailSource_value = map[string]int32{
+		"MAIL_SOURCE_UNSPECIFIED": 0,
+		"MAIL_SOURCE_SERVER":      1,
+		"MAIL_SOURCE_DASHBOARD":   2,
+	}
+)
+
+func (x MailSource) Enum() *MailSource {
+	p := new(MailSource)
+	*p = x
+	return p
+}
+
+func (x MailSource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MailSource) Descriptor() protoreflect.EnumDescriptor {
+	return file_forgenet_v1_mail_proto_enumTypes[1].Descriptor()
+}
+
+func (MailSource) Type() protoreflect.EnumType {
+	return &file_forgenet_v1_mail_proto_enumTypes[1]
+}
+
+func (x MailSource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MailSource.Descriptor instead.
+func (MailSource) EnumDescriptor() ([]byte, []int) {
+	return file_forgenet_v1_mail_proto_rawDescGZIP(), []int{1}
+}
+
 type GetMailStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -110,19 +161,36 @@ func (*GetMailStatusRequest) Descriptor() ([]byte, []int) {
 	return file_forgenet_v1_mail_proto_rawDescGZIP(), []int{0}
 }
 
-// GetMailStatusResponse décrit l'envoi d'e-mails. Les identifiants du relais
-// ne quittent jamais le serveur : seule leur présence est dite.
+// GetMailStatusResponse décrit l'envoi d'e-mails. Le mot de passe du relais
+// ne quitte jamais le serveur : seule sa présence est dite (authenticated).
 type GetMailStatusResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Faux : aucun relais n'est configuré, ForgeNet n'envoie rien.
-	Enabled bool    `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	Host    string  `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
-	Port    uint32  `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
-	Tls     MailTLS `protobuf:"varint,4,opt,name=tls,proto3,enum=forgenet.v1.MailTLS" json:"tls,omitempty"`
+	// Faux : aucun relais n'est réglé, ou l'envoi est coupé ; ForgeNet
+	// n'envoie rien.
+	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// Les valeurs restent données quand l'envoi est coupé, pour le rouvrir.
+	Host string  `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
+	Port uint32  `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
+	Tls  MailTLS `protobuf:"varint,4,opt,name=tls,proto3,enum=forgenet.v1.MailTLS" json:"tls,omitempty"`
 	// Expéditeur des messages, tel qu'il apparaît au destinataire.
 	From string `protobuf:"bytes,5,opt,name=from,proto3" json:"from,omitempty"`
-	// Vrai : le serveur s'authentifie auprès du relais.
-	Authenticated bool `protobuf:"varint,6,opt,name=authenticated,proto3" json:"authenticated,omitempty"`
+	// Vrai : le serveur s'authentifie auprès du relais (un mot de passe est
+	// enregistré).
+	Authenticated bool       `protobuf:"varint,6,opt,name=authenticated,proto3" json:"authenticated,omitempty"`
+	Source        MailSource `protobuf:"varint,7,opt,name=source,proto3,enum=forgenet.v1.MailSource" json:"source,omitempty"`
+	// Vrai : les réglages se changent depuis le dashboard (le serveur a sa clé
+	// FORGENET_SECRET_KEY).
+	Editable bool `protobuf:"varint,8,opt,name=editable,proto3" json:"editable,omitempty"`
+	// Identifiant auprès du relais, pour le formulaire.
+	Username string `protobuf:"bytes,9,opt,name=username,proto3" json:"username,omitempty"`
+	// Vrai : l'envoi a été coupé depuis le dashboard.
+	Disabled bool `protobuf:"varint,10,opt,name=disabled,proto3" json:"disabled,omitempty"`
+	// Vrai : des réglages du dashboard existent, mais leur mot de passe ne
+	// s'ouvre plus avec la clé du serveur ; ceux de .env s'appliquent.
+	PasswordUnreadable bool `protobuf:"varint,11,opt,name=password_unreadable,json=passwordUnreadable,proto3" json:"password_unreadable,omitempty"`
+	// Dernier enregistrement depuis le dashboard : quand et par quel compte.
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	UpdatedBy     string                 `protobuf:"bytes,13,opt,name=updated_by,json=updatedBy,proto3" json:"updated_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -197,6 +265,55 @@ func (x *GetMailStatusResponse) GetAuthenticated() bool {
 		return x.Authenticated
 	}
 	return false
+}
+
+func (x *GetMailStatusResponse) GetSource() MailSource {
+	if x != nil {
+		return x.Source
+	}
+	return MailSource_MAIL_SOURCE_UNSPECIFIED
+}
+
+func (x *GetMailStatusResponse) GetEditable() bool {
+	if x != nil {
+		return x.Editable
+	}
+	return false
+}
+
+func (x *GetMailStatusResponse) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *GetMailStatusResponse) GetDisabled() bool {
+	if x != nil {
+		return x.Disabled
+	}
+	return false
+}
+
+func (x *GetMailStatusResponse) GetPasswordUnreadable() bool {
+	if x != nil {
+		return x.PasswordUnreadable
+	}
+	return false
+}
+
+func (x *GetMailStatusResponse) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+func (x *GetMailStatusResponse) GetUpdatedBy() string {
+	if x != nil {
+		return x.UpdatedBy
+	}
+	return ""
 }
 
 type SendTestMailRequest struct {
@@ -280,30 +397,375 @@ func (x *SendTestMailResponse) GetTo() string {
 	return ""
 }
 
+// SaveMailSettingsRequest porte les nouveaux réglages du relais.
+type SaveMailSettingsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Host  string                 `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
+	Port  uint32                 `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	// MAIL_TLS_UNSPECIFIED vaut STARTTLS.
+	Tls MailTLS `protobuf:"varint,3,opt,name=tls,proto3,enum=forgenet.v1.MailTLS" json:"tls,omitempty"`
+	// Vide : le relais est utilisé sans authentification.
+	Username string `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
+	From     string `protobuf:"bytes,5,opt,name=from,proto3" json:"from,omitempty"`
+	// Vrai : le mot de passe enregistré est gardé, password est ignoré.
+	KeepPassword bool `protobuf:"varint,6,opt,name=keep_password,json=keepPassword,proto3" json:"keep_password,omitempty"`
+	// Nouveau mot de passe, quand keep_password est faux. Jamais renvoyé.
+	Password      string `protobuf:"bytes,7,opt,name=password,proto3" json:"password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveMailSettingsRequest) Reset() {
+	*x = SaveMailSettingsRequest{}
+	mi := &file_forgenet_v1_mail_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveMailSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveMailSettingsRequest) ProtoMessage() {}
+
+func (x *SaveMailSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_mail_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveMailSettingsRequest.ProtoReflect.Descriptor instead.
+func (*SaveMailSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_mail_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SaveMailSettingsRequest) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *SaveMailSettingsRequest) GetPort() uint32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *SaveMailSettingsRequest) GetTls() MailTLS {
+	if x != nil {
+		return x.Tls
+	}
+	return MailTLS_MAIL_TLS_UNSPECIFIED
+}
+
+func (x *SaveMailSettingsRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *SaveMailSettingsRequest) GetFrom() string {
+	if x != nil {
+		return x.From
+	}
+	return ""
+}
+
+func (x *SaveMailSettingsRequest) GetKeepPassword() bool {
+	if x != nil {
+		return x.KeepPassword
+	}
+	return false
+}
+
+func (x *SaveMailSettingsRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+type SaveMailSettingsResponse struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Status *GetMailStatusResponse `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	// Adresse du compte connecté, à qui l'e-mail d'essai est parti.
+	To            string `protobuf:"bytes,2,opt,name=to,proto3" json:"to,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SaveMailSettingsResponse) Reset() {
+	*x = SaveMailSettingsResponse{}
+	mi := &file_forgenet_v1_mail_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveMailSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveMailSettingsResponse) ProtoMessage() {}
+
+func (x *SaveMailSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_mail_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveMailSettingsResponse.ProtoReflect.Descriptor instead.
+func (*SaveMailSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_mail_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SaveMailSettingsResponse) GetStatus() *GetMailStatusResponse {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *SaveMailSettingsResponse) GetTo() string {
+	if x != nil {
+		return x.To
+	}
+	return ""
+}
+
+type DisableMailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DisableMailRequest) Reset() {
+	*x = DisableMailRequest{}
+	mi := &file_forgenet_v1_mail_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DisableMailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DisableMailRequest) ProtoMessage() {}
+
+func (x *DisableMailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_mail_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DisableMailRequest.ProtoReflect.Descriptor instead.
+func (*DisableMailRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_mail_proto_rawDescGZIP(), []int{6}
+}
+
+type DisableMailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *GetMailStatusResponse `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DisableMailResponse) Reset() {
+	*x = DisableMailResponse{}
+	mi := &file_forgenet_v1_mail_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DisableMailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DisableMailResponse) ProtoMessage() {}
+
+func (x *DisableMailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_mail_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DisableMailResponse.ProtoReflect.Descriptor instead.
+func (*DisableMailResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_mail_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DisableMailResponse) GetStatus() *GetMailStatusResponse {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+type ResetMailSettingsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetMailSettingsRequest) Reset() {
+	*x = ResetMailSettingsRequest{}
+	mi := &file_forgenet_v1_mail_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetMailSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetMailSettingsRequest) ProtoMessage() {}
+
+func (x *ResetMailSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_mail_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetMailSettingsRequest.ProtoReflect.Descriptor instead.
+func (*ResetMailSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_mail_proto_rawDescGZIP(), []int{8}
+}
+
+type ResetMailSettingsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        *GetMailStatusResponse `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResetMailSettingsResponse) Reset() {
+	*x = ResetMailSettingsResponse{}
+	mi := &file_forgenet_v1_mail_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResetMailSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResetMailSettingsResponse) ProtoMessage() {}
+
+func (x *ResetMailSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_mail_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResetMailSettingsResponse.ProtoReflect.Descriptor instead.
+func (*ResetMailSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_mail_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ResetMailSettingsResponse) GetStatus() *GetMailStatusResponse {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
 var File_forgenet_v1_mail_proto protoreflect.FileDescriptor
 
 const file_forgenet_v1_mail_proto_rawDesc = "" +
 	"\n" +
-	"\x16forgenet/v1/mail.proto\x12\vforgenet.v1\"\x16\n" +
-	"\x14GetMailStatusRequest\"\xbb\x01\n" +
+	"\x16forgenet/v1/mail.proto\x12\vforgenet.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x16\n" +
+	"\x14GetMailStatusRequest\"\xcb\x03\n" +
 	"\x15GetMailStatusResponse\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x12\n" +
 	"\x04host\x18\x02 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x03 \x01(\rR\x04port\x12&\n" +
 	"\x03tls\x18\x04 \x01(\x0e2\x14.forgenet.v1.MailTLSR\x03tls\x12\x12\n" +
 	"\x04from\x18\x05 \x01(\tR\x04from\x12$\n" +
-	"\rauthenticated\x18\x06 \x01(\bR\rauthenticated\"\x15\n" +
+	"\rauthenticated\x18\x06 \x01(\bR\rauthenticated\x12/\n" +
+	"\x06source\x18\a \x01(\x0e2\x17.forgenet.v1.MailSourceR\x06source\x12\x1a\n" +
+	"\beditable\x18\b \x01(\bR\beditable\x12\x1a\n" +
+	"\busername\x18\t \x01(\tR\busername\x12\x1a\n" +
+	"\bdisabled\x18\n" +
+	" \x01(\bR\bdisabled\x12/\n" +
+	"\x13password_unreadable\x18\v \x01(\bR\x12passwordUnreadable\x129\n" +
+	"\n" +
+	"updated_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_by\x18\r \x01(\tR\tupdatedBy\"\x15\n" +
 	"\x13SendTestMailRequest\"&\n" +
 	"\x14SendTestMailResponse\x12\x0e\n" +
-	"\x02to\x18\x01 \x01(\tR\x02to*d\n" +
+	"\x02to\x18\x01 \x01(\tR\x02to\"\xda\x01\n" +
+	"\x17SaveMailSettingsRequest\x12\x12\n" +
+	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
+	"\x04port\x18\x02 \x01(\rR\x04port\x12&\n" +
+	"\x03tls\x18\x03 \x01(\x0e2\x14.forgenet.v1.MailTLSR\x03tls\x12\x1a\n" +
+	"\busername\x18\x04 \x01(\tR\busername\x12\x12\n" +
+	"\x04from\x18\x05 \x01(\tR\x04from\x12#\n" +
+	"\rkeep_password\x18\x06 \x01(\bR\fkeepPassword\x12\x1a\n" +
+	"\bpassword\x18\a \x01(\tR\bpassword\"f\n" +
+	"\x18SaveMailSettingsResponse\x12:\n" +
+	"\x06status\x18\x01 \x01(\v2\".forgenet.v1.GetMailStatusResponseR\x06status\x12\x0e\n" +
+	"\x02to\x18\x02 \x01(\tR\x02to\"\x14\n" +
+	"\x12DisableMailRequest\"Q\n" +
+	"\x13DisableMailResponse\x12:\n" +
+	"\x06status\x18\x01 \x01(\v2\".forgenet.v1.GetMailStatusResponseR\x06status\"\x1a\n" +
+	"\x18ResetMailSettingsRequest\"W\n" +
+	"\x19ResetMailSettingsResponse\x12:\n" +
+	"\x06status\x18\x01 \x01(\v2\".forgenet.v1.GetMailStatusResponseR\x06status*d\n" +
 	"\aMailTLS\x12\x18\n" +
 	"\x14MAIL_TLS_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11MAIL_TLS_STARTTLS\x10\x01\x12\x15\n" +
 	"\x11MAIL_TLS_IMPLICIT\x10\x02\x12\x11\n" +
-	"\rMAIL_TLS_NONE\x10\x032\xba\x01\n" +
+	"\rMAIL_TLS_NONE\x10\x03*\\\n" +
+	"\n" +
+	"MailSource\x12\x1b\n" +
+	"\x17MAIL_SOURCE_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12MAIL_SOURCE_SERVER\x10\x01\x12\x19\n" +
+	"\x15MAIL_SOURCE_DASHBOARD\x10\x022\xd1\x03\n" +
 	"\vMailService\x12V\n" +
 	"\rGetMailStatus\x12!.forgenet.v1.GetMailStatusRequest\x1a\".forgenet.v1.GetMailStatusResponse\x12S\n" +
-	"\fSendTestMail\x12 .forgenet.v1.SendTestMailRequest\x1a!.forgenet.v1.SendTestMailResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
+	"\fSendTestMail\x12 .forgenet.v1.SendTestMailRequest\x1a!.forgenet.v1.SendTestMailResponse\x12_\n" +
+	"\x10SaveMailSettings\x12$.forgenet.v1.SaveMailSettingsRequest\x1a%.forgenet.v1.SaveMailSettingsResponse\x12P\n" +
+	"\vDisableMail\x12\x1f.forgenet.v1.DisableMailRequest\x1a .forgenet.v1.DisableMailResponse\x12b\n" +
+	"\x11ResetMailSettings\x12%.forgenet.v1.ResetMailSettingsRequest\x1a&.forgenet.v1.ResetMailSettingsResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
 
 var (
 	file_forgenet_v1_mail_proto_rawDescOnce sync.Once
@@ -317,26 +779,46 @@ func file_forgenet_v1_mail_proto_rawDescGZIP() []byte {
 	return file_forgenet_v1_mail_proto_rawDescData
 }
 
-var file_forgenet_v1_mail_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_forgenet_v1_mail_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_forgenet_v1_mail_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_forgenet_v1_mail_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_forgenet_v1_mail_proto_goTypes = []any{
-	(MailTLS)(0),                  // 0: forgenet.v1.MailTLS
-	(*GetMailStatusRequest)(nil),  // 1: forgenet.v1.GetMailStatusRequest
-	(*GetMailStatusResponse)(nil), // 2: forgenet.v1.GetMailStatusResponse
-	(*SendTestMailRequest)(nil),   // 3: forgenet.v1.SendTestMailRequest
-	(*SendTestMailResponse)(nil),  // 4: forgenet.v1.SendTestMailResponse
+	(MailTLS)(0),                      // 0: forgenet.v1.MailTLS
+	(MailSource)(0),                   // 1: forgenet.v1.MailSource
+	(*GetMailStatusRequest)(nil),      // 2: forgenet.v1.GetMailStatusRequest
+	(*GetMailStatusResponse)(nil),     // 3: forgenet.v1.GetMailStatusResponse
+	(*SendTestMailRequest)(nil),       // 4: forgenet.v1.SendTestMailRequest
+	(*SendTestMailResponse)(nil),      // 5: forgenet.v1.SendTestMailResponse
+	(*SaveMailSettingsRequest)(nil),   // 6: forgenet.v1.SaveMailSettingsRequest
+	(*SaveMailSettingsResponse)(nil),  // 7: forgenet.v1.SaveMailSettingsResponse
+	(*DisableMailRequest)(nil),        // 8: forgenet.v1.DisableMailRequest
+	(*DisableMailResponse)(nil),       // 9: forgenet.v1.DisableMailResponse
+	(*ResetMailSettingsRequest)(nil),  // 10: forgenet.v1.ResetMailSettingsRequest
+	(*ResetMailSettingsResponse)(nil), // 11: forgenet.v1.ResetMailSettingsResponse
+	(*timestamppb.Timestamp)(nil),     // 12: google.protobuf.Timestamp
 }
 var file_forgenet_v1_mail_proto_depIdxs = []int32{
-	0, // 0: forgenet.v1.GetMailStatusResponse.tls:type_name -> forgenet.v1.MailTLS
-	1, // 1: forgenet.v1.MailService.GetMailStatus:input_type -> forgenet.v1.GetMailStatusRequest
-	3, // 2: forgenet.v1.MailService.SendTestMail:input_type -> forgenet.v1.SendTestMailRequest
-	2, // 3: forgenet.v1.MailService.GetMailStatus:output_type -> forgenet.v1.GetMailStatusResponse
-	4, // 4: forgenet.v1.MailService.SendTestMail:output_type -> forgenet.v1.SendTestMailResponse
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0,  // 0: forgenet.v1.GetMailStatusResponse.tls:type_name -> forgenet.v1.MailTLS
+	1,  // 1: forgenet.v1.GetMailStatusResponse.source:type_name -> forgenet.v1.MailSource
+	12, // 2: forgenet.v1.GetMailStatusResponse.updated_at:type_name -> google.protobuf.Timestamp
+	0,  // 3: forgenet.v1.SaveMailSettingsRequest.tls:type_name -> forgenet.v1.MailTLS
+	3,  // 4: forgenet.v1.SaveMailSettingsResponse.status:type_name -> forgenet.v1.GetMailStatusResponse
+	3,  // 5: forgenet.v1.DisableMailResponse.status:type_name -> forgenet.v1.GetMailStatusResponse
+	3,  // 6: forgenet.v1.ResetMailSettingsResponse.status:type_name -> forgenet.v1.GetMailStatusResponse
+	2,  // 7: forgenet.v1.MailService.GetMailStatus:input_type -> forgenet.v1.GetMailStatusRequest
+	4,  // 8: forgenet.v1.MailService.SendTestMail:input_type -> forgenet.v1.SendTestMailRequest
+	6,  // 9: forgenet.v1.MailService.SaveMailSettings:input_type -> forgenet.v1.SaveMailSettingsRequest
+	8,  // 10: forgenet.v1.MailService.DisableMail:input_type -> forgenet.v1.DisableMailRequest
+	10, // 11: forgenet.v1.MailService.ResetMailSettings:input_type -> forgenet.v1.ResetMailSettingsRequest
+	3,  // 12: forgenet.v1.MailService.GetMailStatus:output_type -> forgenet.v1.GetMailStatusResponse
+	5,  // 13: forgenet.v1.MailService.SendTestMail:output_type -> forgenet.v1.SendTestMailResponse
+	7,  // 14: forgenet.v1.MailService.SaveMailSettings:output_type -> forgenet.v1.SaveMailSettingsResponse
+	9,  // 15: forgenet.v1.MailService.DisableMail:output_type -> forgenet.v1.DisableMailResponse
+	11, // 16: forgenet.v1.MailService.ResetMailSettings:output_type -> forgenet.v1.ResetMailSettingsResponse
+	12, // [12:17] is the sub-list for method output_type
+	7,  // [7:12] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_forgenet_v1_mail_proto_init() }
@@ -349,8 +831,8 @@ func file_forgenet_v1_mail_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forgenet_v1_mail_proto_rawDesc), len(file_forgenet_v1_mail_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   4,
+			NumEnums:      2,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

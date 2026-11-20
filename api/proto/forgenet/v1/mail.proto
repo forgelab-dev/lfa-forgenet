@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package forgenet.v1;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1";
 
 // --- MODELS ---
@@ -14,22 +16,46 @@ enum MailTLS {
   MAIL_TLS_NONE = 3; // Relais local seulement
 }
 
+// MailSource dit d'où viennent les réglages en vigueur (ADR-0015).
+enum MailSource {
+  MAIL_SOURCE_UNSPECIFIED = 0;
+  MAIL_SOURCE_SERVER = 1; // .env, écrit par install.sh
+  MAIL_SOURCE_DASHBOARD = 2; // enregistrés depuis la page Réglages
+}
+
 // --- REQUEST / RESPONSE MESSAGES ---
 
 message GetMailStatusRequest {}
 
-// GetMailStatusResponse décrit l'envoi d'e-mails. Les identifiants du relais
-// ne quittent jamais le serveur : seule leur présence est dite.
+// GetMailStatusResponse décrit l'envoi d'e-mails. Le mot de passe du relais
+// ne quitte jamais le serveur : seule sa présence est dite (authenticated).
 message GetMailStatusResponse {
-  // Faux : aucun relais n'est configuré, ForgeNet n'envoie rien.
+  // Faux : aucun relais n'est réglé, ou l'envoi est coupé ; ForgeNet
+  // n'envoie rien.
   bool enabled = 1;
+  // Les valeurs restent données quand l'envoi est coupé, pour le rouvrir.
   string host = 2;
   uint32 port = 3;
   MailTLS tls = 4;
   // Expéditeur des messages, tel qu'il apparaît au destinataire.
   string from = 5;
-  // Vrai : le serveur s'authentifie auprès du relais.
+  // Vrai : le serveur s'authentifie auprès du relais (un mot de passe est
+  // enregistré).
   bool authenticated = 6;
+  MailSource source = 7;
+  // Vrai : les réglages se changent depuis le dashboard (le serveur a sa clé
+  // FORGENET_SECRET_KEY).
+  bool editable = 8;
+  // Identifiant auprès du relais, pour le formulaire.
+  string username = 9;
+  // Vrai : l'envoi a été coupé depuis le dashboard.
+  bool disabled = 10;
+  // Vrai : des réglages du dashboard existent, mais leur mot de passe ne
+  // s'ouvre plus avec la clé du serveur ; ceux de .env s'appliquent.
+  bool password_unreadable = 11;
+  // Dernier enregistrement depuis le dashboard : quand et par quel compte.
+  google.protobuf.Timestamp updated_at = 12;
+  string updated_by = 13;
 }
 
 message SendTestMailRequest {}
@@ -39,11 +65,44 @@ message SendTestMailResponse {
   string to = 1;
 }
 
+// SaveMailSettingsRequest porte les nouveaux réglages du relais.
+message SaveMailSettingsRequest {
+  string host = 1;
+  uint32 port = 2;
+  // MAIL_TLS_UNSPECIFIED vaut STARTTLS.
+  MailTLS tls = 3;
+  // Vide : le relais est utilisé sans authentification.
+  string username = 4;
+  string from = 5;
+  // Vrai : le mot de passe enregistré est gardé, password est ignoré.
+  bool keep_password = 6;
+  // Nouveau mot de passe, quand keep_password est faux. Jamais renvoyé.
+  string password = 7;
+}
+
+message SaveMailSettingsResponse {
+  GetMailStatusResponse status = 1;
+  // Adresse du compte connecté, à qui l'e-mail d'essai est parti.
+  string to = 2;
+}
+
+message DisableMailRequest {}
+
+message DisableMailResponse {
+  GetMailStatusResponse status = 1;
+}
+
+message ResetMailSettingsRequest {}
+
+message ResetMailSettingsResponse {
+  GetMailStatusResponse status = 1;
+}
+
 // --- SERVICE ---
 
-// MailService montre l'envoi d'e-mails et l'essaie. Réservé aux
-// administrateurs. Les réglages se changent sur le serveur, par install.sh
-// (ADR-0014).
+// MailService montre l'envoi d'e-mails, l'essaie et le règle. Réservé aux
+// administrateurs. Les réglages du dashboard l'emportent sur ceux
+// d'install.sh tant qu'ils existent (ADR-0015).
 service MailService {
   rpc GetMailStatus(GetMailStatusRequest) returns (GetMailStatusResponse);
 
@@ -52,4 +111,20 @@ service MailService {
   // relais : FAILED_PRECONDITION avec sa réponse. Envois répétés :
   // RESOURCE_EXHAUSTED.
   rpc SendTestMail(SendTestMailRequest) returns (SendTestMailResponse);
+
+  // SaveMailSettings essaie les nouveaux réglages par un e-mail à
+  // l'administrateur connecté, puis les enregistre et les applique sans
+  // redémarrage. Réglages invalides : INVALID_ARGUMENT. Refus du relais :
+  // FAILED_PRECONDITION avec sa réponse, et les anciens réglages restent.
+  // Serveur sans clé : FAILED_PRECONDITION. Essais répétés :
+  // RESOURCE_EXHAUSTED.
+  rpc SaveMailSettings(SaveMailSettingsRequest) returns (SaveMailSettingsResponse);
+
+  // DisableMail coupe l'envoi ; les valeurs restent pour le rouvrir.
+  // Serveur sans clé : FAILED_PRECONDITION.
+  rpc DisableMail(DisableMailRequest) returns (DisableMailResponse);
+
+  // ResetMailSettings efface les réglages du dashboard : ceux d'install.sh
+  // (.env) s'appliquent de nouveau.
+  rpc ResetMailSettings(ResetMailSettingsRequest) returns (ResetMailSettingsResponse);
 }

@@ -40,8 +40,8 @@ type TeamDeps struct {
 	Auth  auth.Service
 	Users TeamUsers
 	Links TeamLinks
-	// Outbox envoie les invitations ; nil sans relais SMTP : le lien est
-	// alors rendu à l'administrateur.
+	// Outbox envoie les invitations. Tant qu'elle n'envoie pas (aucun relais,
+	// ou envoi coupé), le lien est rendu à l'administrateur.
 	Outbox Enqueuer
 	// DashboardHost est le domaine du dashboard, vide sans domaine.
 	DashboardHost string
@@ -88,7 +88,7 @@ func (s *TeamServiceServer) ListMembers(ctx context.Context, _ *forgenetv1.ListM
 		expires, invited := invitations[u.ID]
 		members = append(members, toMember(u, expires, invited))
 	}
-	return &forgenetv1.ListMembersResponse{Members: members, MailEnabled: s.deps.Outbox != nil}, nil
+	return &forgenetv1.ListMembersResponse{Members: members, MailEnabled: mailOn(s.deps.Outbox)}, nil
 }
 
 // InviteMember crée le compte sans mot de passe, puis l'invite.
@@ -160,7 +160,7 @@ func (s *TeamServiceServer) invite(ctx context.Context, claims *auth.Claims, use
 	url := mail.AccessURL(mail.DashboardURL(s.deps.DashboardHost), token)
 	result := &forgenetv1.InvitationResult{Member: toMember(user, link.ExpiresAt, true), LocalDashboard: local}
 
-	if s.deps.Outbox != nil {
+	if mailOn(s.deps.Outbox) {
 		msg := mail.InvitationMessage(user.Email, user.Username, claims.Username, url, local)
 		result.Emailed = s.deps.Outbox.Enqueue(mail.Job{Kind: "invitation", Build: func(context.Context) (*mail.Message, string, error) {
 			return &msg, user.ID, nil
