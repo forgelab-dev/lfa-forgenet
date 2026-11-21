@@ -342,8 +342,9 @@ function Actions({
       <p className="mt-6 flex items-start gap-2 border-t border-iron-800 pt-5 text-sm text-iron-300">
         <KeyRound aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
         <span>
-          Ce serveur n’a pas de clé FORGENET_SECRET_KEY pour garder le mot de passe du relais : les
-          réglages se changent par install.sh, qui la crée à la prochaine mise à jour.
+          Ce serveur n’a pas de clé FORGENET_SECRET_KEY pour garder le mot de passe du relais. La
+          prochaine mise à jour de ForgeNet la crée ; pour l’avoir tout de suite, relancez
+          install.sh sur le serveur. D’ici là, le relais se règle par install.sh.
         </span>
       </p>
     );
