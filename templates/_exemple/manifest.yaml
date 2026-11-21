@@ -1,0 +1,28 @@
+# Template d'exemple : le dossier commence par « _ », il est vérifié par la CI
+# mais n'entre pas au catalogue. Copiez-le pour commencer un template ; le
+# format est décrit dans templates/README.md.
+schema: 1
+name: Page d'exemple
+description: Une page web servie par nginx, pour montrer la forme d'un template.
+category: other
+version: "1.31.8"
+service: web
+license: BSD-2-Clause
+homepage: https://nginx.org
+
+variables:
+  - name: SITE_TITRE
+    label: Titre de la page
+    help: Il s'affiche en grand sur la page d'accueil.
+    default: Bonjour depuis ForgeNet
+    pattern: "^[^<>&]{1,80}$"
+
+ports:
+  - service: web
+    port: 80
+    protocol: http
+    description: La page, à relier à un domaine
+
+volumes:
+  - name: site
+    description: Les fichiers de la page
