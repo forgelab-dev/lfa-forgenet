@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.1](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.11.0...v0.11.1) (2026-11-21)
+
+
+### Corrections
+
+* **mail:** dire comment obtenir la clé des secrets qui manque ([72ed6ae](https://github.com/forgelab-dev/lfa-forgenet/commit/72ed6aeb9b3869c2a8938b684e9a735ecd34aa12))
+* **server:** un argument inconnu ne démarre plus le serveur ([880f3c4](https://github.com/forgelab-dev/lfa-forgenet/commit/880f3c4e668d5d2f256e1854252ad017f15ce072))
+
 ## [0.11.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.10.0...v0.11.0) (2026-11-20)
 
 
