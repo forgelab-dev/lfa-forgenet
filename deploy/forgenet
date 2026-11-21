@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-readonly CMD_VERSION="0.11.0" # x-release-please-version
+readonly CMD_VERSION="0.11.1" # x-release-please-version
 # Dossier d'installation : install.sh remplace cette ligne quand il installe
 # ailleurs (--dir) ; FORGENET_DIR l'emporte pour une commande.
 readonly DEFAULT_DIR="/opt/forgenet"
