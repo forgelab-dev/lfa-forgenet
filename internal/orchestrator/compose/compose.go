@@ -163,6 +163,14 @@ func (e *Engine) Validate(ctx context.Context, content []byte) error {
 	return err
 }
 
+// Resolve renvoie le modèle résolu du fichier, en JSON, sans rien créer.
+// Compose y a appliqué ancres, `extends` et syntaxes courtes, mais les ${NOM}
+// restent tels quels : la vérification des templates (ADR-0018) les croise
+// avec les variables du manifeste.
+func (e *Engine) Resolve(ctx context.Context, content []byte) ([]byte, error) {
+	return e.config(ctx, content, "--no-interpolate", "--format", "json")
+}
+
 // config lance `config` sur le fichier, avec args en plus, et renvoie sa sortie.
 func (e *Engine) config(ctx context.Context, content []byte, args ...string) ([]byte, error) {
 	if len(bytes.TrimSpace(content)) == 0 {
