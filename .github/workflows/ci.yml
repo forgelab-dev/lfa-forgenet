@@ -41,6 +41,8 @@ jobs:
               - 'internal/**'
               - 'cmd/**'
               - 'pkg/**'
+              # Les templates sont embarqués dans le binaire et vérifiés par go test.
+              - 'templates/**'
               - '.golangci.yml'
               - '.github/workflows/ci.yml'
             web:
