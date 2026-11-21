@@ -152,9 +152,11 @@ Pour modifier une API :
 
 ## Proposer un template Marketplace
 
-Un template = un dossier dans `templates/` contenant un `manifest.yaml` et un `docker-compose.yml`.
+Un template = un dossier dans `templates/` contenant un `manifest.yaml`, un `docker-compose.yml`, une icône `icon.svg` et un `README.md` court. **Le format et toutes les règles sont décrits dans [templates/README.md](templates/README.md)** ; le plus simple est de copier le template d'exemple [`templates/_exemple/`](templates/_exemple/).
 
-Critères d'acceptation : un logiciel open-source ou à licence claire, une image officielle ou reconnue avec **tag de version épinglé** (jamais `latest`), aucun secret en dur, des volumes déclarés pour toute donnée persistante, et un `README.md` court décrivant le service et ses variables d'environnement.
+Critères d'acceptation : un logiciel open-source ou à licence claire, une image officielle ou reconnue avec **tag de version épinglé** (jamais `latest`), aucun secret en dur, des volumes déclarés pour toute donnée persistante, aucun port publié sur l'hôte, et un `README.md` court décrivant le service, ses variables et comment s'y connecter.
+
+La CI vérifie chaque template à chaque pull request, et ses messages disent quoi corriger. Pour vérifier avant de pousser : `go test ./templates/` (Go et Docker installés).
 
 C'est la meilleure première contribution : elle n'exige aucune connaissance du code Go et elle est immédiatement utile aux utilisateurs.
 

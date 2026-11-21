@@ -1,0 +1,20 @@
+services:
+  web:
+    image: nginx:1.31.8-alpine
+    environment:
+      SITE_TITRE: ${SITE_TITRE}
+    # $${SITE_TITRE} est lu par le shell du conteneur, pas par Compose.
+    command:
+      - /bin/sh
+      - -c
+      - printf '<!doctype html><meta charset="utf-8"><h1>%s</h1>\n' "$${SITE_TITRE}" > /usr/share/nginx/html/index.html && exec nginx -g 'daemon off;'
+    volumes:
+      - site:/usr/share/nginx/html
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  site:

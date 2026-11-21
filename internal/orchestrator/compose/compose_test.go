@@ -130,6 +130,22 @@ func TestValidate_ClassifiesErrors(t *testing.T) {
 	}
 }
 
+// La vérification des templates (ADR-0018) lit le modèle sans remplacer les
+// ${NOM} : ils doivent rester visibles pour être croisés avec le manifeste.
+func TestResolve_KeepsVariablesUninterpolated(t *testing.T) {
+	r := deployRunner(resolved)
+	out, err := newEngine(t, config.DockerConfig{}, r).Resolve(context.Background(), []byte(stack))
+	require.NoError(t, err)
+
+	assert.Equal(t, resolved, string(out))
+	require.Len(t, r.calls, 1)
+	assert.Equal(t, []string{"-p", "forgenet-validation", "-f", "-", "config", "--no-interpolate", "--format", "json"}, r.calls[0].Args)
+
+	failure := &compose.CommandError{Args: []string{"config"}, ExitCode: 15, Output: "services.web.image must be a string"}
+	_, err = newEngine(t, config.DockerConfig{}, &fakeRunner{errs: map[string]error{"config": failure}}).Resolve(context.Background(), []byte(stack))
+	assert.ErrorIs(t, err, compose.ErrInvalidFile)
+}
+
 func TestDeploy_StartFailureIsReturned(t *testing.T) {
 	failure := &compose.CommandError{Args: []string{"up"}, ExitCode: 1, Output: "container web is unhealthy"}
 	r := deployRunner(resolved)

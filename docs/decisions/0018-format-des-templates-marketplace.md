@@ -1,6 +1,6 @@
 # ADR-0018 : format des templates du Marketplace
 
-- Statut : proposé, à valider par le porteur du projet avant le code
+- Statut : accepté (revue de la PR #120 par le porteur du projet, 2026-11-21)
 - Date : 2026-11-21
 - Contexte : ticket #111, découpé de #12 ; prépare les templates #112 à #115
   et l'installation en un clic (#116) ; s'appuie sur les ADR-0003 (stacks
@@ -211,17 +211,44 @@ nommés, aucun fichier voisin) :
   déploiement**. Une nouvelle version du template ne touche pas les
   applications déjà installées ; les mettre à jour sera une fonction à part.
 
-## Points ouverts, à trancher avant #116
+## Points tranchés à la revue (PR #120, 2026-11-21)
 
-1. **Joindre un service `tcp` depuis une autre application.** Chaque stack a
-   son propre réseau : une application ne voit pas la base d'une autre stack.
-   Proposition : brancher les services `tcp` des templates sur un réseau
-   géré par ForgeNet, avec l'alias `<service>.<projet>.forgenet.internal`
-   comme pour les domaines (ADR-0008). Le README de chaque template dira
-   alors l'adresse à utiliser.
-2. **Changer une variable après l'installation** (faire tourner un mot de
-   passe) : hors de cette décision. Le premier jet de #116 installe ; la
-   modification viendra ensuite.
+### Joindre un service `tcp` depuis une autre application
+
+Chaque stack a son propre réseau : une application ne voit pas la base d'une
+autre stack. Décision : **un réseau géré par ForgeNet, et sécurisé**.
+
+- **Un réseau par installation** qui déclare un port `tcp`, nommé
+  `forgenet-svc-<projet>`, plutôt qu'un réseau commun à toutes les bases :
+  une application reliée à une base ne voit pas les autres.
+- Seuls les **services qui portent un port `tcp`** y sont branchés, pas le
+  reste de la stack, avec l'alias `<service>.<projet>.forgenet.internal`
+  (même forme que l'ADR-0008). Le README de chaque template dit cette
+  adresse.
+- Le réseau est **interne** (`internal: true` de Docker) : il ne mène nulle
+  part hors du serveur. Chaque conteneur garde le réseau de sa propre stack
+  pour le reste.
+- **Caddy n'y est jamais branché**, et ce réseau n'est pas `forgenet-edge` :
+  une base n'est jamais à portée du proxy.
+- Comme pour l'ADR-0008, le réseau porte une étiquette
+  (`forgenet.managed=service`), et un réseau du même nom sans elle est
+  refusé.
+- **Une application n'y entre que par un geste de l'administrateur**
+  (« relier à une base »), inscrit au journal d'audit, et réversible.
+  Rien ne s'y branche seul.
+- **Pas de service `tcp` sans authentification** : un template qui déclare
+  un port `tcp` déclare au moins une variable `secret: true`. La vérification
+  le contrôle. Le template Redis (#114) devra donc exiger un mot de passe.
+
+Chaque base reliable consomme un réseau Docker. La réserve d'adresses par
+défaut de Docker en permet une trentaine, réseaux des stacks compris : le
+dashboard dira clairement l'erreur si elle s'épuise, et `install.sh` pourra
+l'élargir si le besoin apparaît.
+
+### Changer une variable après l'installation
+
+Faire tourner un mot de passe, par exemple : **plus tard**, validé tel quel.
+Le premier jet de #116 installe ; la modification viendra ensuite.
 
 ## Conséquences
 
