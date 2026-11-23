@@ -8,6 +8,8 @@ import { AccountPage } from '../features/account/AccountPage';
 import { AccessLinkScreen } from '../features/auth/AccessLinkScreen';
 import { ForgotPasswordScreen } from '../features/auth/ForgotPasswordScreen';
 import { LoginScreen } from '../features/auth/LoginScreen';
+import { MarketplacePage } from '../features/marketplace/MarketplacePage';
+import { TemplatePage } from '../features/marketplace/TemplatePage';
 import { useSession } from '../features/auth/session';
 import { SessionProvider } from '../features/auth/SessionProvider';
 import { ContainersPage } from '../features/containers/ContainersPage';
@@ -94,6 +96,8 @@ function SessionGate() {
             <Route path="/conteneurs" component={ContainersPage} />
             <Route path="/deploiements" component={DeploymentsPage} />
             <Route path="/surveillance" component={MonitoringPage} />
+            <Route path="/marketplace" component={MarketplacePage} />
+            <Route path="/marketplace/:id" component={TemplatePage} />
             <Route path="/domaines" component={DomainsPage} />
             <Route path="/compte" component={AccountPage} />
             <Route path="/equipe" component={TeamPage} />

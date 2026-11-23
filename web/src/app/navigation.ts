@@ -80,7 +80,6 @@ export const navigation: SectionGroup[] = [
         path: '/marketplace',
         label: 'Marketplace',
         icon: Store,
-        upcoming: true,
         summary:
           'Installer en un clic une base de données, un CMS ou un outil DevOps prêt à l’emploi.',
       },

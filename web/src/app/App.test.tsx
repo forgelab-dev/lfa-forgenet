@@ -208,10 +208,10 @@ describe('App', () => {
     const server = fakeServer();
     server.tokens.add('jeton-conserve');
     storeSession('jeton-conserve');
-    renderApp(server, '/marketplace');
+    renderApp(server, '/bases-de-donnees');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Marketplace' })
+      await screen.findByRole('heading', { level: 1, name: 'Bases de données' })
     ).toBeInTheDocument();
     expect(screen.getByText('En cours de construction')).toBeInTheDocument();
   });
