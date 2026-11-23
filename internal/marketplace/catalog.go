@@ -44,8 +44,19 @@ func (c *Catalog) Template(id string) (Template, bool) {
 // fs.ErrNotExist : seul un template du catalogue est lu, jamais un chemin
 // choisi par l'appelant.
 func (c *Catalog) Readme(id string) ([]byte, error) {
+	return c.file(id, ReadmeFile)
+}
+
+// Compose renvoie le docker-compose.yml du template id, avec la même garde
+// que Readme : c'est ce fichier, et jamais un fichier reçu, qu'une
+// installation déploie.
+func (c *Catalog) Compose(id string) ([]byte, error) {
+	return c.file(id, ComposeFile)
+}
+
+func (c *Catalog) file(id, name string) ([]byte, error) {
 	if _, ok := c.Template(id); !ok {
 		return nil, fmt.Errorf("template %q : %w", id, fs.ErrNotExist)
 	}
-	return fs.ReadFile(c.fsys, path.Join(id, ReadmeFile))
+	return fs.ReadFile(c.fsys, path.Join(id, name))
 }

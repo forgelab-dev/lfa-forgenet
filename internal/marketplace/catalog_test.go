@@ -49,7 +49,13 @@ func TestCatalog(t *testing.T) {
 	for _, id := range []string{"inconnu", "_brouillon", "../postgres", ""} {
 		_, err := c.Readme(id)
 		assert.ErrorIs(t, err, fs.ErrNotExist, id)
+		_, err = c.Compose(id)
+		assert.ErrorIs(t, err, fs.ErrNotExist, id)
 	}
+
+	content, err := c.Compose("postgres")
+	require.NoError(t, err)
+	assert.Equal(t, string(templateFS()["postgres/docker-compose.yml"].Data), string(content))
 }
 
 func TestCatalog_RejectsInvalidTemplate(t *testing.T) {
