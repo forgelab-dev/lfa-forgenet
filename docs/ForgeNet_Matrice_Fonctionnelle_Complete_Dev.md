@@ -106,7 +106,7 @@ Le cœur du produit — déploiement, monitoring, reverse proxy, IA locale — r
 ## 2. Dashboard Web (React + Vite + Tailwind)
 
 ### 2.1 Marketplace / App Store
-- [ ] Catalogue de templates 1-click (BDD, CMS, outils devops, etc.) `🔓 CE` — *#12 ; format des templates et règles de sécurité fixés par l'[ADR-0018](decisions/0018-format-des-templates-marketplace.md) (#111) ; API du catalogue et installation par le serveur faites avec #116 ([ADR-0019](decisions/0019-valeurs-des-installations-du-marketplace.md)), page du dashboard à venir*
+- [ ] Catalogue de templates 1-click (BDD, CMS, outils devops, etc.) `🔓 CE` — *#12 ; format des templates et règles de sécurité fixés par l'[ADR-0018](decisions/0018-format-des-templates-marketplace.md) (#111) ; API du catalogue et installation par le serveur faites avec #116 ([ADR-0019](decisions/0019-valeurs-des-installations-du-marketplace.md)) ; page du dashboard faite avec #116 (catalogue, formulaire d’installation, mots de passe générés montrés une fois), test de bout en bout Playwright à venir*
 - [ ] Soumission de template par la communauté `🔓 CE`
 - [ ] Notation/avis sur les templates `🔓 CE`
 - [ ] **SDK d'extension** (plugins tiers : actions custom, nouvelles intégrations, hooks de déploiement) `🔓 CE`
