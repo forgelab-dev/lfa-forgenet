@@ -18,6 +18,8 @@ type ResolveFunc func(ctx context.Context, content []byte) ([]byte, error)
 type Template struct {
 	ID       string
 	Manifest Manifest
+	// Icon est le contenu de icon.svg, vérifié par CheckIcon.
+	Icon []byte
 }
 
 // files sont les seuls fichiers d'un dossier de template : le fichier Compose
@@ -41,8 +43,9 @@ func Dirs(fsys fs.FS) ([]string, error) {
 }
 
 // Load lit le catalogue : les dossiers de fsys, sauf ceux en « _ », dont le
-// manifeste doit être valide. La vérification complète, qui demande Docker,
-// est faite par la CI (Check).
+// manifeste et l'icône doivent être valides. L'icône est vérifiée ici aussi,
+// parce que le dashboard l'affiche. La vérification complète, qui demande
+// Docker, est faite par la CI (Check).
 func Load(fsys fs.FS) ([]Template, error) {
 	dirs, err := Dirs(fsys)
 	if err != nil {
@@ -67,7 +70,14 @@ func Load(fsys fs.FS) ([]Template, error) {
 		if err != nil {
 			return nil, fmt.Errorf("templates/%s : %w", dir, err)
 		}
-		out = append(out, Template{ID: dir, Manifest: m})
+		icon, err := fs.ReadFile(fsys, path.Join(dir, IconFile))
+		if err != nil {
+			return nil, fmt.Errorf("templates/%s : %s : %w", dir, IconFile, err)
+		}
+		if err := errors.Join(CheckIcon(icon)...); err != nil {
+			return nil, fmt.Errorf("templates/%s : %w", dir, err)
+		}
+		out = append(out, Template{ID: dir, Manifest: m, Icon: icon})
 	}
 	return out, nil
 }

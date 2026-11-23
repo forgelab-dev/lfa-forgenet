@@ -92,8 +92,23 @@ func TestLoad_SkipsExampleAndRejectsInvalidManifests(t *testing.T) {
 	require.Len(t, list, 1)
 	assert.Equal(t, "postgres", list[0].ID)
 	assert.Equal(t, "PostgreSQL", list[0].Manifest.Name)
+	assert.Equal(t, validIcon, string(list[0].Icon), "l'icône est lue avec le manifeste, pour la carte du catalogue")
 
 	fsys["postgres/manifest.yaml"] = &fstest.MapFile{Data: []byte(strings.Replace(validManifest, "category: database", "category: bdd", 1))}
 	_, err = marketplace.Load(fsys)
 	assert.ErrorContains(t, err, "templates/postgres : manifest.yaml : category")
+}
+
+// Le dashboard affiche l'icône : le serveur la vérifie au chargement, même si
+// la CI l'a déjà fait.
+func TestLoad_ChecksIcon(t *testing.T) {
+	fsys := templateFS()
+	fsys["postgres/icon.svg"] = &fstest.MapFile{Data: []byte(`<svg viewBox="0 0 1 1"><script>alert(1)</script></svg>`)}
+	_, err := marketplace.Load(fsys)
+	assert.ErrorContains(t, err, "templates/postgres : icon.svg")
+
+	fsys = templateFS()
+	delete(fsys, "postgres/icon.svg")
+	_, err = marketplace.Load(fsys)
+	assert.ErrorContains(t, err, "templates/postgres : icon.svg")
 }
