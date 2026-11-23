@@ -38,8 +38,9 @@ var (
 
 // Stacks est la part du moteur Compose dont le service a besoin.
 type Stacks interface {
-	Validate(ctx context.Context, content []byte) error
-	Deploy(ctx context.Context, project string, content []byte, out compose.OutputFunc) error
+	// vars (« NOM=valeur ») sont les valeurs d'une installation (ADR-0019).
+	Validate(ctx context.Context, content []byte, vars []string) error
+	Deploy(ctx context.Context, project string, content []byte, vars []string, out compose.OutputFunc) error
 	Remove(ctx context.Context, project string, removeVolumes bool) error
 	Services(ctx context.Context, project string) ([]compose.Service, error)
 	Projects(ctx context.Context) ([]compose.Project, error)
@@ -191,7 +192,7 @@ func (s *Service) create(ctx context.Context, req CreateRequest) (*store.Deploym
 		return existing, err
 	}
 
-	if err := s.stacks.Validate(ctx, []byte(req.Content)); err != nil {
+	if err := s.stacks.Validate(ctx, []byte(req.Content), nil); err != nil {
 		if errors.Is(err, compose.ErrInvalidFile) {
 			return nil, fmt.Errorf("%w : %w", ErrInvalid, err)
 		}

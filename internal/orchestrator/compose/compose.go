@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +32,9 @@ var (
 	ErrInvalidFile = errors.New("fichier Compose invalide")
 	// ErrUnavailable indique que la commande docker compose est absente.
 	ErrUnavailable = errors.New("docker compose indisponible")
+	// ErrReservedVariable indique une variable que le moteur ne transmet pas :
+	// mal formée, ou qui changerait la commande elle-même.
+	ErrReservedVariable = errors.New("variable refusée par le moteur Compose")
 )
 
 // projectName reprend la règle de Compose : minuscules, chiffres, « _ » et « - »,
@@ -43,6 +47,13 @@ var passedEnv = []string{
 	"PATH", "HOME",
 	"DOCKER_HOST", "DOCKER_CONTEXT", "DOCKER_CONFIG", "DOCKER_CERT_PATH", "DOCKER_TLS_VERIFY",
 }
+
+// variableName est la forme des variables d'une installation (ADR-0019),
+// celle des manifestes du Marketplace.
+var variableName = regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
+
+// reservedPrefixes changeraient le démon visé, la commande ou le serveur.
+var reservedPrefixes = []string{"DOCKER_", "COMPOSE_", "FORGENET_"}
 
 const (
 	// defaultWaitTimeout borne l'attente de services démarrés et sains.
@@ -157,10 +168,48 @@ func ValidProjectName(name string) bool {
 	return projectName.MatchString(name)
 }
 
-// Validate vérifie le fichier sans rien créer.
-func (e *Engine) Validate(ctx context.Context, content []byte) error {
-	_, err := e.config(ctx, content, "--quiet")
+// Validate vérifie le fichier sans rien créer. vars (« NOM=valeur ») sont les
+// valeurs d'une installation : un fichier qui écrit ${NOM:?} serait refusé
+// sans elles.
+func (e *Engine) Validate(ctx context.Context, content []byte, vars []string) error {
+	env, err := e.withVars(vars)
+	if err != nil {
+		return err
+	}
+	_, err = e.config(ctx, content, env, "--quiet")
 	return err
+}
+
+// withVars ajoute vars à l'environnement fixe de la commande. Le manifeste
+// interdit déjà les noms réservés ; le moteur ne s'y fie pas : une valeur ne
+// doit jamais changer le démon visé ni la commande elle-même. L'erreur nomme
+// la variable, jamais sa valeur.
+func (e *Engine) withVars(vars []string) ([]string, error) {
+	if len(vars) == 0 {
+		return e.env, nil
+	}
+	env := make([]string, 0, len(e.env)+len(vars))
+	env = append(env, e.env...)
+	for _, kv := range vars {
+		name, _, ok := strings.Cut(kv, "=")
+		if !ok || !variableName.MatchString(name) || reserved(name) {
+			return nil, fmt.Errorf("%w : %q", ErrReservedVariable, name)
+		}
+		env = append(env, kv)
+	}
+	return env, nil
+}
+
+func reserved(name string) bool {
+	if slices.Contains(passedEnv, name) {
+		return true
+	}
+	for _, p := range reservedPrefixes {
+		if strings.HasPrefix(name, p) {
+			return true
+		}
+	}
+	return false
 }
 
 // Resolve renvoie le modèle résolu du fichier, en JSON, sans rien créer.
@@ -168,15 +217,19 @@ func (e *Engine) Validate(ctx context.Context, content []byte) error {
 // restent tels quels : la vérification des templates (ADR-0018) les croise
 // avec les variables du manifeste.
 func (e *Engine) Resolve(ctx context.Context, content []byte) ([]byte, error) {
-	return e.config(ctx, content, "--no-interpolate", "--format", "json")
+	return e.config(ctx, content, e.env, "--no-interpolate", "--format", "json")
 }
 
-// config lance `config` sur le fichier, avec args en plus, et renvoie sa sortie.
-func (e *Engine) config(ctx context.Context, content []byte, args ...string) ([]byte, error) {
+// config lance `config` sur le fichier, dans l'environnement env, avec args
+// en plus, et renvoie sa sortie.
+func (e *Engine) config(ctx context.Context, content []byte, env []string, args ...string) ([]byte, error) {
 	if len(bytes.TrimSpace(content)) == 0 {
 		return nil, fmt.Errorf("%w : fichier vide", ErrInvalidFile)
 	}
-	out, err := e.run(ctx, content, append([]string{"-p", validationProject, "-f", "-", "config"}, args...)...)
+	out, err := e.runner.Run(ctx, Command{
+		Args:  append([]string{"-p", validationProject, "-f", "-", "config"}, args...),
+		Stdin: content, Env: env, Dir: e.dir,
+	})
 	// Seul un refus de la commande dit que le fichier est en cause ; une
 	// annulation ou une commande absente remontent telles quelles.
 	var cmdErr *CommandError
@@ -194,14 +247,21 @@ func (e *Engine) config(ctx context.Context, content []byte, args ...string) ([]
 // Un service sans politique de redémarrage reçoit DefaultRestart, pour revenir
 // seul après un redémarrage du serveur (#70) : sans cela, Docker applique `no`
 // et l'application reste arrêtée.
-func (e *Engine) Deploy(ctx context.Context, project string, content []byte, out OutputFunc) error {
+//
+// vars (« NOM=valeur ») sont les valeurs d'une installation (ADR-0019) :
+// Compose les substitue aux ${NOM} du fichier, qui n'est jamais réécrit.
+func (e *Engine) Deploy(ctx context.Context, project string, content []byte, vars []string, out OutputFunc) error {
 	if err := checkProject(project); err != nil {
+		return err
+	}
+	env, err := e.withVars(vars)
+	if err != nil {
 		return err
 	}
 	// La lecture du modèle valide aussi le fichier : elle sépare un fichier
 	// refusé (ErrInvalidFile) d'un échec du démarrage, avant de toucher à la
 	// stack en place.
-	resolved, err := e.config(ctx, content, "--format", "json")
+	resolved, err := e.config(ctx, content, env, "--format", "json")
 	if err != nil {
 		return err
 	}
@@ -231,7 +291,7 @@ func (e *Engine) Deploy(ctx context.Context, project string, content []byte, out
 	args := append([]string{"-p", project, "--project-directory", e.dir}, files...)
 	args = append(args, "up", "--detach", "--wait", "--wait-timeout", seconds(e.waitTimeout),
 		"--remove-orphans", "--quiet-pull")
-	_, err = e.runWithOutput(ctx, content, out, args...)
+	_, err = e.runner.Run(ctx, Command{Args: args, Stdin: content, Env: env, Dir: e.dir, Output: out})
 	return err
 }
 
@@ -320,11 +380,7 @@ func (e *Engine) Ping(ctx context.Context) error {
 }
 
 func (e *Engine) run(ctx context.Context, stdin []byte, args ...string) ([]byte, error) {
-	return e.runWithOutput(ctx, stdin, nil, args...)
-}
-
-func (e *Engine) runWithOutput(ctx context.Context, stdin []byte, out OutputFunc, args ...string) ([]byte, error) {
-	return e.runner.Run(ctx, Command{Args: args, Stdin: stdin, Env: e.env, Dir: e.dir, Output: out})
+	return e.runner.Run(ctx, Command{Args: args, Stdin: stdin, Env: e.env, Dir: e.dir})
 }
 
 func checkProject(project string) error {
