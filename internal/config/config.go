@@ -261,21 +261,31 @@ type SecretsConfig struct {
 	Key string `mapstructure:"key"`
 }
 
+// MarketplaceConfig règle le catalogue du Marketplace (ADR-0018, ADR-0019).
+type MarketplaceConfig struct {
+	// Dir : chemin absolu d'un dossier de templates lu à la place du
+	// catalogue embarqué. Il sert aux tests de bout en bout et aux
+	// contributeurs qui essaient un template avant leur PR ; vide, le
+	// catalogue vérifié par la CI et embarqué dans le binaire.
+	Dir string `mapstructure:"dir"`
+}
+
 // Config est la structure racine de la configuration ForgeNet.
 type Config struct {
-	Environment string         `mapstructure:"environment"` // "development", "staging", "production"
-	Server      ServerConfig   `mapstructure:"server"`
-	Log         LogConfig      `mapstructure:"log"`
-	Database    DatabaseConfig `mapstructure:"database"`
-	Auth        AuthConfig     `mapstructure:"auth"`
-	Docker      DockerConfig   `mapstructure:"docker"`
-	Health      HealthConfig   `mapstructure:"health"`
-	Metrics     MetricsConfig  `mapstructure:"metrics"`
-	Proxy       ProxyConfig    `mapstructure:"proxy"`
-	Web         WebConfig      `mapstructure:"web"`
-	Updates     UpdatesConfig  `mapstructure:"updates"`
-	SMTP        SMTPConfig     `mapstructure:"smtp"`
-	Secrets     SecretsConfig  `mapstructure:"secrets"`
+	Environment string            `mapstructure:"environment"` // "development", "staging", "production"
+	Server      ServerConfig      `mapstructure:"server"`
+	Log         LogConfig         `mapstructure:"log"`
+	Database    DatabaseConfig    `mapstructure:"database"`
+	Auth        AuthConfig        `mapstructure:"auth"`
+	Docker      DockerConfig      `mapstructure:"docker"`
+	Health      HealthConfig      `mapstructure:"health"`
+	Metrics     MetricsConfig     `mapstructure:"metrics"`
+	Proxy       ProxyConfig       `mapstructure:"proxy"`
+	Web         WebConfig         `mapstructure:"web"`
+	Updates     UpdatesConfig     `mapstructure:"updates"`
+	SMTP        SMTPConfig        `mapstructure:"smtp"`
+	Secrets     SecretsConfig     `mapstructure:"secrets"`
+	Marketplace MarketplaceConfig `mapstructure:"marketplace"`
 }
 
 // Load charge la configuration depuis un fichier optionnel, les variables d'environnement et les valeurs par défaut.
@@ -380,6 +390,9 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("secrets.key : %w", err)
 		}
 	}
+	if c.Marketplace.Dir != "" && !filepath.IsAbs(c.Marketplace.Dir) {
+		return fmt.Errorf("marketplace.dir doit être un chemin absolu : %q", c.Marketplace.Dir)
+	}
 	if c.Web.Root != "" && !filepath.IsAbs(c.Web.Root) {
 		return fmt.Errorf("web.root doit être un chemin absolu : %q", c.Web.Root)
 	}
@@ -437,6 +450,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("smtp.from", "")
 	v.SetDefault("smtp.tls", SMTPStartTLS)
 	v.SetDefault("secrets.key", "")
+	v.SetDefault("marketplace.dir", "")
 
 	v.SetDefault("proxy.enabled", false)
 	v.SetDefault("proxy.admin_address", DefaultProxyAdminAddress)

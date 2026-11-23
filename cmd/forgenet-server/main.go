@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -178,6 +179,15 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 			}
 		}))
 	}
+	// Les valeurs des installations du Marketplace sont chiffrées en base
+	// (ADR-0019) ; sans clé, un template qui en demande ne s'installe pas.
+	box, err := secretBox(cfg)
+	if err != nil {
+		return err
+	}
+	if box != nil {
+		deployOpts = append(deployOpts, deploy.WithBox(box))
+	}
 	deployments := deploy.New(db.Deployments(), stacks, auditor, logger, deployOpts...)
 
 	// Historique court des mesures, gardé en mémoire (ADR-0010) : le serveur
@@ -229,12 +239,18 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 	// Le catalogue du Marketplace est embarqué dans le binaire et vérifié par
 	// la CI (ADR-0018) : un template illisible ici est une erreur de
 	// construction. Le serveur s'arrête plutôt que d'afficher un catalogue
-	// vide sans explication.
-	catalog, err := marketplace.NewCatalog(templates.FS)
+	// vide sans explication. marketplace.dir le remplace par un dossier, pour
+	// les tests et pour essayer un template avant sa PR (ADR-0019).
+	catalogFS := fs.FS(templates.FS)
+	if dir := cfg.Marketplace.Dir; dir != "" {
+		catalogFS = os.DirFS(dir)
+		logger.Warn().Str("dir", dir).Msg("catalogue du Marketplace lu dans un dossier, à la place du catalogue embarqué")
+	}
+	catalog, err := marketplace.NewCatalog(catalogFS)
 	if err != nil {
 		return fmt.Errorf("catalogue du Marketplace : %w", err)
 	}
-	marketplaceAPI := transportGRPC.NewMarketplaceServiceServer(catalog, logger)
+	marketplaceAPI := transportGRPC.NewMarketplaceServiceServer(catalog, deployments, logger)
 	for _, registrar := range []grpc.ServiceRegistrar{grpcServer.GRPCServer(), connectAPI.Registrar()} {
 		forgenetv1.RegisterAuthServiceServer(registrar, authAPI)
 		forgenetv1.RegisterContainerServiceServer(registrar, containerAPI)
