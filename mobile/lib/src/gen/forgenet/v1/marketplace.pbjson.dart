@@ -179,3 +179,84 @@ const GetTemplateResponse$json = {
 final $typed_data.Uint8List getTemplateResponseDescriptor = $convert.base64Decode(
     'ChNHZXRUZW1wbGF0ZVJlc3BvbnNlEjEKCHRlbXBsYXRlGAEgASgLMhUuZm9yZ2VuZXQudjEuVG'
     'VtcGxhdGVSCHRlbXBsYXRlEhYKBnJlYWRtZRgCIAEoCVIGcmVhZG1l');
+
+@$core.Deprecated('Use installTemplateRequestDescriptor instead')
+const InstallTemplateRequest$json = {
+  '1': 'InstallTemplateRequest',
+  '2': [
+    {'1': 'template_id', '3': 1, '4': 1, '5': 9, '10': 'templateId'},
+    {'1': 'project_id', '3': 2, '4': 1, '5': 9, '10': 'projectId'},
+    {
+      '1': 'values',
+      '3': 3,
+      '4': 3,
+      '5': 11,
+      '6': '.forgenet.v1.InstallTemplateRequest.ValuesEntry',
+      '10': 'values'
+    },
+    {'1': 'request_id', '3': 4, '4': 1, '5': 9, '10': 'requestId'},
+  ],
+  '3': [InstallTemplateRequest_ValuesEntry$json],
+};
+
+@$core.Deprecated('Use installTemplateRequestDescriptor instead')
+const InstallTemplateRequest_ValuesEntry$json = {
+  '1': 'ValuesEntry',
+  '2': [
+    {'1': 'key', '3': 1, '4': 1, '5': 9, '10': 'key'},
+    {'1': 'value', '3': 2, '4': 1, '5': 9, '10': 'value'},
+  ],
+  '7': {'7': true},
+};
+
+/// Descriptor for `InstallTemplateRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List installTemplateRequestDescriptor = $convert.base64Decode(
+    'ChZJbnN0YWxsVGVtcGxhdGVSZXF1ZXN0Eh8KC3RlbXBsYXRlX2lkGAEgASgJUgp0ZW1wbGF0ZU'
+    'lkEh0KCnByb2plY3RfaWQYAiABKAlSCXByb2plY3RJZBJHCgZ2YWx1ZXMYAyADKAsyLy5mb3Jn'
+    'ZW5ldC52MS5JbnN0YWxsVGVtcGxhdGVSZXF1ZXN0LlZhbHVlc0VudHJ5UgZ2YWx1ZXMSHQoKcm'
+    'VxdWVzdF9pZBgEIAEoCVIJcmVxdWVzdElkGjkKC1ZhbHVlc0VudHJ5EhAKA2tleRgBIAEoCVID'
+    'a2V5EhQKBXZhbHVlGAIgASgJUgV2YWx1ZToCOAE=');
+
+@$core.Deprecated('Use generatedSecretDescriptor instead')
+const GeneratedSecret$json = {
+  '1': 'GeneratedSecret',
+  '2': [
+    {'1': 'name', '3': 1, '4': 1, '5': 9, '10': 'name'},
+    {'1': 'label', '3': 2, '4': 1, '5': 9, '10': 'label'},
+    {'1': 'value', '3': 3, '4': 1, '5': 9, '10': 'value'},
+  ],
+};
+
+/// Descriptor for `GeneratedSecret`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List generatedSecretDescriptor = $convert.base64Decode(
+    'Cg9HZW5lcmF0ZWRTZWNyZXQSEgoEbmFtZRgBIAEoCVIEbmFtZRIUCgVsYWJlbBgCIAEoCVIFbG'
+    'FiZWwSFAoFdmFsdWUYAyABKAlSBXZhbHVl');
+
+@$core.Deprecated('Use installTemplateResponseDescriptor instead')
+const InstallTemplateResponse$json = {
+  '1': 'InstallTemplateResponse',
+  '2': [
+    {
+      '1': 'deployment',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.forgenet.v1.Deployment',
+      '10': 'deployment'
+    },
+    {
+      '1': 'generated_secrets',
+      '3': 2,
+      '4': 3,
+      '5': 11,
+      '6': '.forgenet.v1.GeneratedSecret',
+      '10': 'generatedSecrets'
+    },
+  ],
+};
+
+/// Descriptor for `InstallTemplateResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List installTemplateResponseDescriptor = $convert.base64Decode(
+    'ChdJbnN0YWxsVGVtcGxhdGVSZXNwb25zZRI3CgpkZXBsb3ltZW50GAEgASgLMhcuZm9yZ2VuZX'
+    'QudjEuRGVwbG95bWVudFIKZGVwbG95bWVudBJJChFnZW5lcmF0ZWRfc2VjcmV0cxgCIAMoCzIc'
+    'LmZvcmdlbmV0LnYxLkdlbmVyYXRlZFNlY3JldFIQZ2VuZXJhdGVkU2VjcmV0cw==');

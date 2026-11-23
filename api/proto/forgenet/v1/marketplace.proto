@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package forgenet.v1;
 
+import "forgenet/v1/deploy.proto";
+
 option go_package = "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1";
 
 // --- MODELS ---
@@ -92,6 +94,35 @@ message GetTemplateResponse {
   string readme = 2;
 }
 
+message InstallTemplateRequest {
+  string template_id = 1;
+  // Nom de l'application installée : même règle que le project_id de
+  // CreateDeployment. Il ne doit nommer aucune application existante.
+  string project_id = 2;
+  // Valeur par nom de variable du manifeste. Absente ou vide : la valeur par
+  // défaut, ou un secret tiré au hasard (generate).
+  map<string, string> values = 3;
+  // Clé d'idempotence, facultative.
+  string request_id = 4;
+}
+
+// GeneratedSecret est un secret que le serveur a tiré au hasard.
+message GeneratedSecret {
+  // Nom de la variable, ex: "POSTGRES_PASSWORD".
+  string name = 1;
+  // Libellé de la variable dans le manifeste.
+  string label = 2;
+  string value = 3;
+}
+
+message InstallTemplateResponse {
+  // Le déploiement créé, en attente, à suivre comme les autres.
+  Deployment deployment = 1;
+  // Les secrets tirés au hasard. Renvoyés cette fois seulement : ni une
+  // relecture ni un nouvel envoi de la même demande ne les redonne.
+  repeated GeneratedSecret generated_secrets = 2;
+}
+
 // --- SERVICE ---
 
 // MarketplaceService présente le catalogue des templates embarqué dans le
@@ -105,4 +136,11 @@ service MarketplaceService {
   // GetTemplate donne un template et son README. Un identifiant mal formé
   // répond INVALID_ARGUMENT ; un template absent du catalogue, NOT_FOUND.
   rpc GetTemplate(GetTemplateRequest) returns (GetTemplateResponse);
+
+  // InstallTemplate vérifie les valeurs, tire au hasard les secrets laissés
+  // vides, puis crée un déploiement ordinaire du fichier Compose du template
+  // (ADR-0019). Une valeur refusée répond INVALID_ARGUMENT ; un nom
+  // d'application déjà pris, ALREADY_EXISTS ; un serveur sans clé des
+  // secrets, FAILED_PRECONDITION.
+  rpc InstallTemplate(InstallTemplateRequest) returns (InstallTemplateResponse);
 }

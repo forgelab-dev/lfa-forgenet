@@ -4,13 +4,15 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Deployment } from "./deploy_pb";
+import { file_forgenet_v1_deploy } from "./deploy_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file forgenet/v1/marketplace.proto.
  */
 export const file_forgenet_v1_marketplace: GenFile = /*@__PURE__*/
-  fileDesc("Ch1mb3JnZW5ldC92MS9tYXJrZXRwbGFjZS5wcm90bxILZm9yZ2VuZXQudjEimQEKEFRlbXBsYXRlVmFyaWFibGUSDAoEbmFtZRgBIAEoCRINCgVsYWJlbBgCIAEoCRIMCgRoZWxwGAMgASgJEhUKDWRlZmF1bHRfdmFsdWUYBCABKAkSDwoHcGF0dGVybhgFIAEoCRIQCghvcHRpb25hbBgGIAEoCBIOCgZzZWNyZXQYByABKAgSEAoIZ2VuZXJhdGUYCCABKA0iVAoMVGVtcGxhdGVQb3J0Eg8KB3NlcnZpY2UYASABKAkSDAoEcG9ydBgCIAEoDRIQCghwcm90b2NvbBgDIAEoCRITCgtkZXNjcmlwdGlvbhgEIAEoCSIzCg5UZW1wbGF0ZVZvbHVtZRIMCgRuYW1lGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJIpsCCghUZW1wbGF0ZRIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEhAKCGNhdGVnb3J5GAQgASgJEg8KB3ZlcnNpb24YBSABKAkSDwoHbGljZW5zZRgGIAEoCRIQCghob21lcGFnZRgHIAEoCRIQCghpY29uX3N2ZxgIIAEoCRIwCgl2YXJpYWJsZXMYCSADKAsyHS5mb3JnZW5ldC52MS5UZW1wbGF0ZVZhcmlhYmxlEigKBXBvcnRzGAogAygLMhkuZm9yZ2VuZXQudjEuVGVtcGxhdGVQb3J0EiwKB3ZvbHVtZXMYCyADKAsyGy5mb3JnZW5ldC52MS5UZW1wbGF0ZVZvbHVtZSIWChRMaXN0VGVtcGxhdGVzUmVxdWVzdCJBChVMaXN0VGVtcGxhdGVzUmVzcG9uc2USKAoJdGVtcGxhdGVzGAEgAygLMhUuZm9yZ2VuZXQudjEuVGVtcGxhdGUiIAoSR2V0VGVtcGxhdGVSZXF1ZXN0EgoKAmlkGAEgASgJIk4KE0dldFRlbXBsYXRlUmVzcG9uc2USJwoIdGVtcGxhdGUYASABKAsyFS5mb3JnZW5ldC52MS5UZW1wbGF0ZRIOCgZyZWFkbWUYAiABKAkyvgEKEk1hcmtldHBsYWNlU2VydmljZRJWCg1MaXN0VGVtcGxhdGVzEiEuZm9yZ2VuZXQudjEuTGlzdFRlbXBsYXRlc1JlcXVlc3QaIi5mb3JnZW5ldC52MS5MaXN0VGVtcGxhdGVzUmVzcG9uc2USUAoLR2V0VGVtcGxhdGUSHy5mb3JnZW5ldC52MS5HZXRUZW1wbGF0ZVJlcXVlc3QaIC5mb3JnZW5ldC52MS5HZXRUZW1wbGF0ZVJlc3BvbnNlQkVaQ2dpdGh1Yi5jb20vZm9yZ2VsYWItZGV2L2xmYS1mb3JnZW5ldC9wa2cvZ2VuL2ZvcmdlbmV0L3YxO2ZvcmdlbmV0djFiBnByb3RvMw");
+  fileDesc("Ch1mb3JnZW5ldC92MS9tYXJrZXRwbGFjZS5wcm90bxILZm9yZ2VuZXQudjEimQEKEFRlbXBsYXRlVmFyaWFibGUSDAoEbmFtZRgBIAEoCRINCgVsYWJlbBgCIAEoCRIMCgRoZWxwGAMgASgJEhUKDWRlZmF1bHRfdmFsdWUYBCABKAkSDwoHcGF0dGVybhgFIAEoCRIQCghvcHRpb25hbBgGIAEoCBIOCgZzZWNyZXQYByABKAgSEAoIZ2VuZXJhdGUYCCABKA0iVAoMVGVtcGxhdGVQb3J0Eg8KB3NlcnZpY2UYASABKAkSDAoEcG9ydBgCIAEoDRIQCghwcm90b2NvbBgDIAEoCRITCgtkZXNjcmlwdGlvbhgEIAEoCSIzCg5UZW1wbGF0ZVZvbHVtZRIMCgRuYW1lGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJIpsCCghUZW1wbGF0ZRIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEhAKCGNhdGVnb3J5GAQgASgJEg8KB3ZlcnNpb24YBSABKAkSDwoHbGljZW5zZRgGIAEoCRIQCghob21lcGFnZRgHIAEoCRIQCghpY29uX3N2ZxgIIAEoCRIwCgl2YXJpYWJsZXMYCSADKAsyHS5mb3JnZW5ldC52MS5UZW1wbGF0ZVZhcmlhYmxlEigKBXBvcnRzGAogAygLMhkuZm9yZ2VuZXQudjEuVGVtcGxhdGVQb3J0EiwKB3ZvbHVtZXMYCyADKAsyGy5mb3JnZW5ldC52MS5UZW1wbGF0ZVZvbHVtZSIWChRMaXN0VGVtcGxhdGVzUmVxdWVzdCJBChVMaXN0VGVtcGxhdGVzUmVzcG9uc2USKAoJdGVtcGxhdGVzGAEgAygLMhUuZm9yZ2VuZXQudjEuVGVtcGxhdGUiIAoSR2V0VGVtcGxhdGVSZXF1ZXN0EgoKAmlkGAEgASgJIk4KE0dldFRlbXBsYXRlUmVzcG9uc2USJwoIdGVtcGxhdGUYASABKAsyFS5mb3JnZW5ldC52MS5UZW1wbGF0ZRIOCgZyZWFkbWUYAiABKAkixQEKFkluc3RhbGxUZW1wbGF0ZVJlcXVlc3QSEwoLdGVtcGxhdGVfaWQYASABKAkSEgoKcHJvamVjdF9pZBgCIAEoCRI/CgZ2YWx1ZXMYAyADKAsyLy5mb3JnZW5ldC52MS5JbnN0YWxsVGVtcGxhdGVSZXF1ZXN0LlZhbHVlc0VudHJ5EhIKCnJlcXVlc3RfaWQYBCABKAkaLQoLVmFsdWVzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASI9Cg9HZW5lcmF0ZWRTZWNyZXQSDAoEbmFtZRgBIAEoCRINCgVsYWJlbBgCIAEoCRINCgV2YWx1ZRgDIAEoCSJ/ChdJbnN0YWxsVGVtcGxhdGVSZXNwb25zZRIrCgpkZXBsb3ltZW50GAEgASgLMhcuZm9yZ2VuZXQudjEuRGVwbG95bWVudBI3ChFnZW5lcmF0ZWRfc2VjcmV0cxgCIAMoCzIcLmZvcmdlbmV0LnYxLkdlbmVyYXRlZFNlY3JldDKcAgoSTWFya2V0cGxhY2VTZXJ2aWNlElYKDUxpc3RUZW1wbGF0ZXMSIS5mb3JnZW5ldC52MS5MaXN0VGVtcGxhdGVzUmVxdWVzdBoiLmZvcmdlbmV0LnYxLkxpc3RUZW1wbGF0ZXNSZXNwb25zZRJQCgtHZXRUZW1wbGF0ZRIfLmZvcmdlbmV0LnYxLkdldFRlbXBsYXRlUmVxdWVzdBogLmZvcmdlbmV0LnYxLkdldFRlbXBsYXRlUmVzcG9uc2USXAoPSW5zdGFsbFRlbXBsYXRlEiMuZm9yZ2VuZXQudjEuSW5zdGFsbFRlbXBsYXRlUmVxdWVzdBokLmZvcmdlbmV0LnYxLkluc3RhbGxUZW1wbGF0ZVJlc3BvbnNlQkVaQ2dpdGh1Yi5jb20vZm9yZ2VsYWItZGV2L2xmYS1mb3JnZW5ldC9wa2cvZ2VuL2ZvcmdlbmV0L3YxO2ZvcmdlbmV0djFiBnByb3RvMw", [file_forgenet_v1_deploy]);
 
 /**
  * TemplateVariable est une valeur demandée à l'installation, telle que la
@@ -311,6 +313,106 @@ export const GetTemplateResponseSchema: GenMessage<GetTemplateResponse> = /*@__P
   messageDesc(file_forgenet_v1_marketplace, 7);
 
 /**
+ * @generated from message forgenet.v1.InstallTemplateRequest
+ */
+export type InstallTemplateRequest = Message<"forgenet.v1.InstallTemplateRequest"> & {
+  /**
+   * @generated from field: string template_id = 1;
+   */
+  templateId: string;
+
+  /**
+   * Nom de l'application installée : même règle que le project_id de
+   * CreateDeployment. Il ne doit nommer aucune application existante.
+   *
+   * @generated from field: string project_id = 2;
+   */
+  projectId: string;
+
+  /**
+   * Valeur par nom de variable du manifeste. Absente ou vide : la valeur par
+   * défaut, ou un secret tiré au hasard (generate).
+   *
+   * @generated from field: map<string, string> values = 3;
+   */
+  values: { [key: string]: string };
+
+  /**
+   * Clé d'idempotence, facultative.
+   *
+   * @generated from field: string request_id = 4;
+   */
+  requestId: string;
+};
+
+/**
+ * Describes the message forgenet.v1.InstallTemplateRequest.
+ * Use `create(InstallTemplateRequestSchema)` to create a new message.
+ */
+export const InstallTemplateRequestSchema: GenMessage<InstallTemplateRequest> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_marketplace, 8);
+
+/**
+ * GeneratedSecret est un secret que le serveur a tiré au hasard.
+ *
+ * @generated from message forgenet.v1.GeneratedSecret
+ */
+export type GeneratedSecret = Message<"forgenet.v1.GeneratedSecret"> & {
+  /**
+   * Nom de la variable, ex: "POSTGRES_PASSWORD".
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * Libellé de la variable dans le manifeste.
+   *
+   * @generated from field: string label = 2;
+   */
+  label: string;
+
+  /**
+   * @generated from field: string value = 3;
+   */
+  value: string;
+};
+
+/**
+ * Describes the message forgenet.v1.GeneratedSecret.
+ * Use `create(GeneratedSecretSchema)` to create a new message.
+ */
+export const GeneratedSecretSchema: GenMessage<GeneratedSecret> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_marketplace, 9);
+
+/**
+ * @generated from message forgenet.v1.InstallTemplateResponse
+ */
+export type InstallTemplateResponse = Message<"forgenet.v1.InstallTemplateResponse"> & {
+  /**
+   * Le déploiement créé, en attente, à suivre comme les autres.
+   *
+   * @generated from field: forgenet.v1.Deployment deployment = 1;
+   */
+  deployment?: Deployment | undefined;
+
+  /**
+   * Les secrets tirés au hasard. Renvoyés cette fois seulement : ni une
+   * relecture ni un nouvel envoi de la même demande ne les redonne.
+   *
+   * @generated from field: repeated forgenet.v1.GeneratedSecret generated_secrets = 2;
+   */
+  generatedSecrets: GeneratedSecret[];
+};
+
+/**
+ * Describes the message forgenet.v1.InstallTemplateResponse.
+ * Use `create(InstallTemplateResponseSchema)` to create a new message.
+ */
+export const InstallTemplateResponseSchema: GenMessage<InstallTemplateResponse> = /*@__PURE__*/
+  messageDesc(file_forgenet_v1_marketplace, 10);
+
+/**
  * MarketplaceService présente le catalogue des templates embarqué dans le
  * serveur (ADR-0018) : chaque version de ForgeNet propose les templates
  * vérifiés par sa CI, sans aller les chercher sur le réseau. Réservé aux
@@ -339,6 +441,20 @@ export const MarketplaceService: GenService<{
     methodKind: "unary";
     input: typeof GetTemplateRequestSchema;
     output: typeof GetTemplateResponseSchema;
+  },
+  /**
+   * InstallTemplate vérifie les valeurs, tire au hasard les secrets laissés
+   * vides, puis crée un déploiement ordinaire du fichier Compose du template
+   * (ADR-0019). Une valeur refusée répond INVALID_ARGUMENT ; un nom
+   * d'application déjà pris, ALREADY_EXISTS ; un serveur sans clé des
+   * secrets, FAILED_PRECONDITION.
+   *
+   * @generated from rpc forgenet.v1.MarketplaceService.InstallTemplate
+   */
+  installTemplate: {
+    methodKind: "unary";
+    input: typeof InstallTemplateRequestSchema;
+    output: typeof InstallTemplateResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_forgenet_v1_marketplace, 0);

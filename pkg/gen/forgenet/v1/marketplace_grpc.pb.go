@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MarketplaceService_ListTemplates_FullMethodName = "/forgenet.v1.MarketplaceService/ListTemplates"
-	MarketplaceService_GetTemplate_FullMethodName   = "/forgenet.v1.MarketplaceService/GetTemplate"
+	MarketplaceService_ListTemplates_FullMethodName   = "/forgenet.v1.MarketplaceService/ListTemplates"
+	MarketplaceService_GetTemplate_FullMethodName     = "/forgenet.v1.MarketplaceService/GetTemplate"
+	MarketplaceService_InstallTemplate_FullMethodName = "/forgenet.v1.MarketplaceService/InstallTemplate"
 )
 
 // MarketplaceServiceClient is the client API for MarketplaceService service.
@@ -37,6 +38,12 @@ type MarketplaceServiceClient interface {
 	// GetTemplate donne un template et son README. Un identifiant mal formé
 	// répond INVALID_ARGUMENT ; un template absent du catalogue, NOT_FOUND.
 	GetTemplate(ctx context.Context, in *GetTemplateRequest, opts ...grpc.CallOption) (*GetTemplateResponse, error)
+	// InstallTemplate vérifie les valeurs, tire au hasard les secrets laissés
+	// vides, puis crée un déploiement ordinaire du fichier Compose du template
+	// (ADR-0019). Une valeur refusée répond INVALID_ARGUMENT ; un nom
+	// d'application déjà pris, ALREADY_EXISTS ; un serveur sans clé des
+	// secrets, FAILED_PRECONDITION.
+	InstallTemplate(ctx context.Context, in *InstallTemplateRequest, opts ...grpc.CallOption) (*InstallTemplateResponse, error)
 }
 
 type marketplaceServiceClient struct {
@@ -67,6 +74,16 @@ func (c *marketplaceServiceClient) GetTemplate(ctx context.Context, in *GetTempl
 	return out, nil
 }
 
+func (c *marketplaceServiceClient) InstallTemplate(ctx context.Context, in *InstallTemplateRequest, opts ...grpc.CallOption) (*InstallTemplateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InstallTemplateResponse)
+	err := c.cc.Invoke(ctx, MarketplaceService_InstallTemplate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MarketplaceServiceServer is the server API for MarketplaceService service.
 // All implementations must embed UnimplementedMarketplaceServiceServer
 // for forward compatibility.
@@ -81,6 +98,12 @@ type MarketplaceServiceServer interface {
 	// GetTemplate donne un template et son README. Un identifiant mal formé
 	// répond INVALID_ARGUMENT ; un template absent du catalogue, NOT_FOUND.
 	GetTemplate(context.Context, *GetTemplateRequest) (*GetTemplateResponse, error)
+	// InstallTemplate vérifie les valeurs, tire au hasard les secrets laissés
+	// vides, puis crée un déploiement ordinaire du fichier Compose du template
+	// (ADR-0019). Une valeur refusée répond INVALID_ARGUMENT ; un nom
+	// d'application déjà pris, ALREADY_EXISTS ; un serveur sans clé des
+	// secrets, FAILED_PRECONDITION.
+	InstallTemplate(context.Context, *InstallTemplateRequest) (*InstallTemplateResponse, error)
 	mustEmbedUnimplementedMarketplaceServiceServer()
 }
 
@@ -96,6 +119,9 @@ func (UnimplementedMarketplaceServiceServer) ListTemplates(context.Context, *Lis
 }
 func (UnimplementedMarketplaceServiceServer) GetTemplate(context.Context, *GetTemplateRequest) (*GetTemplateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTemplate not implemented")
+}
+func (UnimplementedMarketplaceServiceServer) InstallTemplate(context.Context, *InstallTemplateRequest) (*InstallTemplateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InstallTemplate not implemented")
 }
 func (UnimplementedMarketplaceServiceServer) mustEmbedUnimplementedMarketplaceServiceServer() {}
 func (UnimplementedMarketplaceServiceServer) testEmbeddedByValue()                            {}
@@ -154,6 +180,24 @@ func _MarketplaceService_GetTemplate_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MarketplaceService_InstallTemplate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstallTemplateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketplaceServiceServer).InstallTemplate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MarketplaceService_InstallTemplate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketplaceServiceServer).InstallTemplate(ctx, req.(*InstallTemplateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MarketplaceService_ServiceDesc is the grpc.ServiceDesc for MarketplaceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -168,6 +212,10 @@ var MarketplaceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTemplate",
 			Handler:    _MarketplaceService_GetTemplate_Handler,
+		},
+		{
+			MethodName: "InstallTemplate",
+			Handler:    _MarketplaceService_InstallTemplate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

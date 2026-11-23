@@ -323,6 +323,7 @@ const Deployment$json = {
       '6': '.google.protobuf.Timestamp',
       '10': 'finishedAt'
     },
+    {'1': 'template', '3': 13, '4': 1, '5': 9, '10': 'template'},
   ],
 };
 
@@ -338,7 +339,7 @@ final $typed_data.Uint8List deploymentDescriptor = $convert.base64Decode(
     'RlZF9hdBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI5Cgp1'
     'cGRhdGVkX2F0GAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJdXBkYXRlZEF0Ej'
     'sKC2ZpbmlzaGVkX2F0GAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIKZmluaXNo'
-    'ZWRBdA==');
+    'ZWRBdBIaCgh0ZW1wbGF0ZRgNIAEoCVIIdGVtcGxhdGU=');
 
 @$core.Deprecated('Use deploymentLogEntryDescriptor instead')
 const DeploymentLogEntry$json = {

@@ -101,6 +101,9 @@ message Deployment {
   google.protobuf.Timestamp created_at = 10;
   google.protobuf.Timestamp updated_at = 11;
   google.protobuf.Timestamp finished_at = 12;
+  // Identifiant du template du Marketplace installé, ex: "postgres" ; vide
+  // pour un fichier Compose déployé à la main.
+  string template = 13;
 }
 
 // DeploymentLogEntry représente une ligne de log d'exécution du build ou déploiement.

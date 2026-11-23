@@ -53,6 +53,18 @@ class MarketplaceServiceClient extends $grpc.Client {
     return $createUnaryCall(_$getTemplate, request, options: options);
   }
 
+  /// InstallTemplate vérifie les valeurs, tire au hasard les secrets laissés
+  /// vides, puis crée un déploiement ordinaire du fichier Compose du template
+  /// (ADR-0019). Une valeur refusée répond INVALID_ARGUMENT ; un nom
+  /// d'application déjà pris, ALREADY_EXISTS ; un serveur sans clé des
+  /// secrets, FAILED_PRECONDITION.
+  $grpc.ResponseFuture<$0.InstallTemplateResponse> installTemplate(
+    $0.InstallTemplateRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$installTemplate, request, options: options);
+  }
+
   // method descriptors
 
   static final _$listTemplates =
@@ -65,6 +77,11 @@ class MarketplaceServiceClient extends $grpc.Client {
           '/forgenet.v1.MarketplaceService/GetTemplate',
           ($0.GetTemplateRequest value) => value.writeToBuffer(),
           $0.GetTemplateResponse.fromBuffer);
+  static final _$installTemplate =
+      $grpc.ClientMethod<$0.InstallTemplateRequest, $0.InstallTemplateResponse>(
+          '/forgenet.v1.MarketplaceService/InstallTemplate',
+          ($0.InstallTemplateRequest value) => value.writeToBuffer(),
+          $0.InstallTemplateResponse.fromBuffer);
 }
 
 @$pb.GrpcServiceName('forgenet.v1.MarketplaceService')
@@ -90,6 +107,15 @@ abstract class MarketplaceServiceBase extends $grpc.Service {
             ($core.List<$core.int> value) =>
                 $0.GetTemplateRequest.fromBuffer(value),
             ($0.GetTemplateResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.InstallTemplateRequest,
+            $0.InstallTemplateResponse>(
+        'InstallTemplate',
+        installTemplate_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.InstallTemplateRequest.fromBuffer(value),
+        ($0.InstallTemplateResponse value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.ListTemplatesResponse> listTemplates_Pre(
@@ -108,4 +134,13 @@ abstract class MarketplaceServiceBase extends $grpc.Service {
 
   $async.Future<$0.GetTemplateResponse> getTemplate(
       $grpc.ServiceCall call, $0.GetTemplateRequest request);
+
+  $async.Future<$0.InstallTemplateResponse> installTemplate_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.InstallTemplateRequest> $request) async {
+    return installTemplate($call, await $request);
+  }
+
+  $async.Future<$0.InstallTemplateResponse> installTemplate(
+      $grpc.ServiceCall call, $0.InstallTemplateRequest request);
 }
