@@ -312,6 +312,24 @@ func TestLoad_WebRoot(t *testing.T) {
 	require.ErrorContains(t, err, "web.root")
 }
 
+func TestLoad_MarketplaceDir(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	cfg, err := config.Load("")
+	require.NoError(t, err)
+	assert.Empty(t, cfg.Marketplace.Dir, "le catalogue embarqué par défaut")
+
+	dir := t.TempDir()
+	t.Setenv("FORGENET_MARKETPLACE_DIR", dir)
+	cfg, err = config.Load("")
+	require.NoError(t, err)
+	assert.Equal(t, dir, cfg.Marketplace.Dir)
+
+	t.Setenv("FORGENET_MARKETPLACE_DIR", "templates")
+	_, err = config.Load("")
+	require.ErrorContains(t, err, "marketplace.dir")
+}
+
 func TestLoad_Updates(t *testing.T) {
 	t.Chdir(t.TempDir())
 

@@ -202,9 +202,19 @@ func fromProtoSource(source *forgenetv1.DeploymentSource) (store.DeploymentSourc
 // erreur interne reste dans le journal ; celui d'une demande refusée est
 // renvoyé, pour que l'auteur du fichier sache quoi corriger.
 func (s *DeploymentServiceServer) toStatus(err error, action string) error {
+	return deploymentStatus(s.logger, err, action)
+}
+
+// deploymentStatus traduit une erreur de deploy.Service, pour les
+// déploiements comme pour les installations du Marketplace.
+func deploymentStatus(logger zerolog.Logger, err error, action string) error {
 	switch {
 	case errors.Is(err, deploy.ErrInvalid):
 		return status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, deploy.ErrExists):
+		return status.Error(codes.AlreadyExists, err.Error())
+	case errors.Is(err, deploy.ErrNoKey):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	case errors.Is(err, deploy.ErrUnsupported):
 		return status.Error(codes.Unimplemented, err.Error())
 	case errors.Is(err, deploy.ErrNotCancellable), errors.Is(err, deploy.ErrBusy):
@@ -218,7 +228,7 @@ func (s *DeploymentServiceServer) toStatus(err error, action string) error {
 	case errors.Is(err, context.Canceled):
 		return status.Error(codes.Canceled, "appel annulé")
 	default:
-		s.logger.Error().Err(err).Str("action", action).Msg("échec du service de déploiement")
+		logger.Error().Err(err).Str("action", action).Msg("échec du service de déploiement")
 		return status.Error(codes.Internal, "erreur du service de déploiement")
 	}
 }
@@ -245,6 +255,7 @@ func toProtoDeployment(d *store.Deployment) *forgenetv1.Deployment {
 		TargetEnv:            d.TargetEnv,
 		PreviousDeploymentId: d.PreviousDeploymentID,
 		TriggeredBy:          d.TriggeredBy,
+		Template:             d.Template,
 		CreatedAt:            timestamppb.New(d.CreatedAt),
 		UpdatedAt:            timestamppb.New(d.UpdatedAt),
 	}

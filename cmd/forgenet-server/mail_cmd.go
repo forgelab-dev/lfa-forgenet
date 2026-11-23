@@ -63,18 +63,26 @@ func runMail(ctx context.Context, args []string, stdout io.Writer) error {
 	return err
 }
 
+// secretBox prépare le chiffrement des secrets gardés en base (ADR-0015) :
+// le mot de passe du relais, les valeurs des installations (ADR-0019). nil
+// sans clé réglée.
+func secretBox(cfg *config.Config) (*sealed.Box, error) {
+	if cfg.Secrets.Key == "" {
+		return nil, nil
+	}
+	key, err := sealed.ParseKey(cfg.Secrets.Key)
+	if err != nil {
+		return nil, err
+	}
+	return sealed.NewBox(key)
+}
+
 // openRelay assemble le relais : .env, puis les réglages du dashboard s'ils
 // existent et que leur mot de passe s'ouvre (ADR-0015).
 func openRelay(ctx context.Context, cfg *config.Config, db store.Store) (*mail.Relay, error) {
-	var box *sealed.Box
-	if cfg.Secrets.Key != "" {
-		key, err := sealed.ParseKey(cfg.Secrets.Key)
-		if err != nil {
-			return nil, err
-		}
-		if box, err = sealed.NewBox(key); err != nil {
-			return nil, err
-		}
+	box, err := secretBox(cfg)
+	if err != nil {
+		return nil, err
 	}
 	relay := mail.NewRelay(cfg.SMTP, db.MailSettings(), box)
 	if err := relay.Load(ctx); err != nil {
