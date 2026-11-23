@@ -208,6 +208,12 @@ type Deployment struct {
 	CreatedAt  time.Time  `json:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at"`
 	FinishedAt *time.Time `json:"finished_at,omitempty"`
+	// Template est l'identifiant du template du Marketplace installé ; vide
+	// pour un fichier Compose déployé à la main.
+	Template string `json:"template,omitempty"`
+	// VariablesSealed porte les valeurs de l'installation, chiffrées ensemble
+	// par le serveur (ADR-0019) ; nil sans variable. Jamais sérialisé.
+	VariablesSealed []byte `json:"-"`
 }
 
 // LogStream est le flux de sortie d'une ligne de journal.
