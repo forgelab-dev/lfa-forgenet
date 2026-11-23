@@ -13,6 +13,7 @@ import { ContainerService } from '../../gen/forgenet/v1/container_pb';
 import { DeploymentService } from '../../gen/forgenet/v1/deploy_pb';
 import { DomainService } from '../../gen/forgenet/v1/domain_pb';
 import { MailService } from '../../gen/forgenet/v1/mail_pb';
+import { MarketplaceService } from '../../gen/forgenet/v1/marketplace_pb';
 import { MetricsService } from '../../gen/forgenet/v1/metrics_pb';
 import { TeamService } from '../../gen/forgenet/v1/team_pb';
 import { UpdateService } from '../../gen/forgenet/v1/update_pb';
@@ -86,6 +87,7 @@ export interface ApiClients {
   deployments: Client<typeof DeploymentService>;
   domains: Client<typeof DomainService>;
   mail: Client<typeof MailService>;
+  marketplace: Client<typeof MarketplaceService>;
   metrics: Client<typeof MetricsService>;
   team: Client<typeof TeamService>;
   updates: Client<typeof UpdateService>;
@@ -98,6 +100,7 @@ export function createApiClients(transport: Transport): ApiClients {
     deployments: createClient(DeploymentService, transport),
     domains: createClient(DomainService, transport),
     mail: createClient(MailService, transport),
+    marketplace: createClient(MarketplaceService, transport),
     metrics: createClient(MetricsService, transport),
     team: createClient(TeamService, transport),
     updates: createClient(UpdateService, transport),
