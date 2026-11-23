@@ -64,7 +64,7 @@ func TestJournal_IsBoundedButKeepsTheResult(t *testing.T) {
 	}))
 	svc := New(st.Deployments(), nil, nil, zerolog.Nop())
 
-	j := svc.newJournal("dep_1")
+	j := svc.newJournal("dep_1", nil)
 	out := j.output(stepDeploy)
 	for range maxLogLines + 50 {
 		out(store.LogStderr, "ligne")

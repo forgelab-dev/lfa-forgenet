@@ -46,6 +46,8 @@ var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b[@-_]`)
 type journal struct {
 	svc *Service
 	id  string
+	// redact masque les valeurs secrètes de l'installation (ADR-0019).
+	redact func(string) string
 
 	mu        sync.Mutex
 	last      time.Time
@@ -59,8 +61,11 @@ type journal struct {
 	done chan struct{}
 }
 
-func (s *Service) newJournal(id string) *journal {
-	j := &journal{svc: s, id: id, stop: make(chan struct{}), done: make(chan struct{})}
+func (s *Service) newJournal(id string, redact func(string) string) *journal {
+	if redact == nil {
+		redact = func(s string) string { return s }
+	}
+	j := &journal{svc: s, id: id, redact: redact, stop: make(chan struct{}), done: make(chan struct{})}
 	go j.loop()
 	return j
 }
@@ -93,7 +98,10 @@ func (j *journal) output(step string) func(stream store.LogStream, line string) 
 }
 
 func (j *journal) add(stream store.LogStream, step, message string, always bool) {
-	message = cleanLine(message)
+	// Masquer avant et après le nettoyage : une séquence de terminal au
+	// milieu d'un secret, ou la coupe d'une ligne trop longue, ne le
+	// laissent pas passer.
+	message = j.redact(cleanLine(j.redact(message)))
 	if message == "" {
 		return
 	}

@@ -155,9 +155,15 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 	log := s.logger.With().Str("deployment_id", d.ID).Str("project_id", d.ProjectID).Logger()
 	stack, content := StackName(d.ProjectID), []byte(d.SourceContent)
 	state := store.DeploymentPending
+	// Les valeurs d'une installation (ADR-0019) : une erreur fait échouer le
+	// déploiement à sa première étape. Les secrets sont masqués partout où le
+	// déploiement écrit : journal, message d'échec, journal du serveur.
+	vars, varsErr := s.openVariables(d)
+	redact := redactor(vars)
+	env := environment(vars)
 	// Le journal est fermé avant l'état final (voir journal) ; le defer couvre
 	// un déploiement annulé entre deux étapes.
-	journal := s.newJournal(d.ID)
+	journal := s.newJournal(d.ID, redact)
 	defer journal.close()
 
 	advance := func(to store.DeploymentState) bool {
@@ -168,7 +174,7 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 		return true
 	}
 	fail := func(err error) {
-		to, message := store.DeploymentFailed, failureMessage(err)
+		to, message := store.DeploymentFailed, redact(failureMessage(err))
 		s.mu.Lock()
 		reason := run.reason
 		s.mu.Unlock()
@@ -194,8 +200,12 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 	if !advance(store.DeploymentBuilding) {
 		return true // annulé entre-temps
 	}
+	if varsErr != nil {
+		fail(varsErr)
+		return true
+	}
 	journal.info(stepValidate, "Vérification du fichier Compose")
-	if err := s.stacks.Validate(ctx, content, nil); err != nil {
+	if err := s.stacks.Validate(ctx, content, env); err != nil {
 		fail(err)
 		return true
 	}
@@ -204,7 +214,7 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 		return true
 	}
 	journal.info(stepDeploy, "Mise en service de la stack "+stack+" (docker compose up)")
-	if err := s.stacks.Deploy(ctx, stack, content, nil, composeOutput(journal.output(stepDeploy))); err != nil {
+	if err := s.stacks.Deploy(ctx, stack, content, env, composeOutput(journal.output(stepDeploy))); err != nil {
 		fail(err)
 		return true
 	}
