@@ -41,12 +41,36 @@ func TestDeploymentStore_CreateAndGet(t *testing.T) {
 	assert.Empty(t, got.RequestID)
 	assert.Nil(t, got.FinishedAt)
 	assert.True(t, got.CreatedAt.Equal(d.CreatedAt))
+	assert.Empty(t, got.Template, "un fichier déployé à la main ne vient d'aucun template")
+	assert.Nil(t, got.VariablesSealed)
 
 	_, err = st.Deployments().GetDeployment(ctx, "absent")
 	assert.ErrorIs(t, err, store.ErrNotFound)
 
 	require.ErrorIs(t, st.Deployments().CreateDeployment(ctx, newDeployment("d1", "p1")), store.ErrConflict,
 		"un identifiant ne sert qu'une fois")
+}
+
+// Une installation du Marketplace garde son template et ses valeurs chiffrées
+// (ADR-0019), relues à l'octet près, dans les listes comme à l'unité.
+func TestDeploymentStore_TemplateAndSealedVariables(t *testing.T) {
+	st := newTestStore(t)
+	ctx := context.Background()
+
+	d := newDeployment("d1", "base")
+	d.Template = "postgres"
+	d.VariablesSealed = []byte{0x01, 0x00, 0xff, 0x42}
+	require.NoError(t, st.Deployments().CreateDeployment(ctx, d))
+
+	got, err := st.Deployments().GetDeployment(ctx, "d1")
+	require.NoError(t, err)
+	assert.Equal(t, "postgres", got.Template)
+	assert.Equal(t, []byte{0x01, 0x00, 0xff, 0x42}, got.VariablesSealed)
+
+	list, err := st.Deployments().ListDeployments(ctx, "base", 1, 0)
+	require.NoError(t, err)
+	require.Len(t, list, 1)
+	assert.Equal(t, d.VariablesSealed, list[0].VariablesSealed)
 }
 
 func TestDeploymentStore_RejectsUnknownSourceAndState(t *testing.T) {

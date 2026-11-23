@@ -12,7 +12,8 @@ import (
 
 const (
 	deploymentColumns = `id, project_id, source_type, source_content, state, error_message, target_env,
-		previous_deployment_id, triggered_by, request_id, created_at, updated_at, finished_at`
+		previous_deployment_id, triggered_by, request_id, created_at, updated_at, finished_at,
+		template, variables_sealed`
 	selectDeployment = `SELECT ` + deploymentColumns + ` FROM deployments`
 
 	// defaultDeploymentPageSize borne une liste de déploiements sans limite explicite.
@@ -52,10 +53,11 @@ func (s *deploymentsStore) CreateDeployment(ctx context.Context, d *store.Deploy
 	}
 
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO deployments (`+deploymentColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO deployments (`+deploymentColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		d.ID, d.ProjectID, string(d.SourceType), d.SourceContent, string(d.State), nullIfEmpty(d.ErrorMessage),
 		d.TargetEnv, nullIfEmpty(d.PreviousDeploymentID), d.TriggeredBy, nullIfEmpty(d.RequestID),
 		formatTime(d.CreatedAt), formatTime(d.UpdatedAt), finishedAt,
+		d.Template, d.VariablesSealed,
 	)
 	if err != nil {
 		return wrapWriteError(err, "insertion du déploiement")
@@ -139,7 +141,8 @@ func scanDeployment(row scanner) (*store.Deployment, error) {
 		finishedAt                    sql.NullTime
 	)
 	if err := row.Scan(&d.ID, &d.ProjectID, &sourceType, &d.SourceContent, &state, &errMsg, &d.TargetEnv,
-		&previousID, &d.TriggeredBy, &requestID, &d.CreatedAt, &d.UpdatedAt, &finishedAt); err != nil {
+		&previousID, &d.TriggeredBy, &requestID, &d.CreatedAt, &d.UpdatedAt, &finishedAt,
+		&d.Template, &d.VariablesSealed); err != nil {
 		return nil, wrapReadError(err, "lecture du déploiement")
 	}
 	d.SourceType = store.DeploymentSourceType(sourceType)
