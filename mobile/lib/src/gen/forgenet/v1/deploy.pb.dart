@@ -742,6 +742,7 @@ class Deployment extends $pb.GeneratedMessage {
     $1.Timestamp? createdAt,
     $1.Timestamp? updatedAt,
     $1.Timestamp? finishedAt,
+    $core.String? template,
   }) {
     final result = Deployment._();
     if (id != null) result.id = id;
@@ -757,6 +758,7 @@ class Deployment extends $pb.GeneratedMessage {
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
     if (finishedAt != null) result.finishedAt = finishedAt;
+    if (template != null) result.template = template;
     return result;
   }
 
@@ -791,6 +793,7 @@ class Deployment extends $pb.GeneratedMessage {
         subBuilder: $1.Timestamp.$_createMessage)
     ..aOM<$1.Timestamp>(12, _omitFieldNames ? '' : 'finishedAt',
         subBuilder: $1.Timestamp.$_createMessage)
+    ..aOS(13, _omitFieldNames ? '' : 'template')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -930,6 +933,17 @@ class Deployment extends $pb.GeneratedMessage {
   void clearFinishedAt() => $_clearField(12);
   @$pb.TagNumber(12)
   $1.Timestamp ensureFinishedAt() => $_ensure(11);
+
+  /// Identifiant du template du Marketplace installé, ex: "postgres" ; vide
+  /// pour un fichier Compose déployé à la main.
+  @$pb.TagNumber(13)
+  $core.String get template => $_getSZ(12);
+  @$pb.TagNumber(13)
+  set template($core.String value) => $_setString(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasTemplate() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearTemplate() => $_clearField(13);
 }
 
 /// DeploymentLogEntry représente une ligne de log d'exécution du build ou déploiement.

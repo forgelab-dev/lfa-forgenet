@@ -679,8 +679,11 @@ type Deployment struct {
 	CreatedAt            *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt            *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	FinishedAt           *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// Identifiant du template du Marketplace installé, ex: "postgres" ; vide
+	// pour un fichier Compose déployé à la main.
+	Template      string `protobuf:"bytes,13,opt,name=template,proto3" json:"template,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Deployment) Reset() {
@@ -795,6 +798,13 @@ func (x *Deployment) GetFinishedAt() *timestamppb.Timestamp {
 		return x.FinishedAt
 	}
 	return nil
+}
+
+func (x *Deployment) GetTemplate() string {
+	if x != nil {
+		return x.Template
+	}
+	return ""
 }
 
 // DeploymentLogEntry représente une ligne de log d'exécution du build ou déploiement.
@@ -1851,7 +1861,7 @@ const file_forgenet_v1_deploy_proto_rawDesc = "" +
 	"\x03git\x18\x01 \x01(\v2\x16.forgenet.v1.GitSourceH\x00R\x03git\x120\n" +
 	"\x05image\x18\x02 \x01(\v2\x18.forgenet.v1.ImageSourceH\x00R\x05image\x126\n" +
 	"\acompose\x18\x03 \x01(\v2\x1a.forgenet.v1.ComposeSourceH\x00R\acomposeB\b\n" +
-	"\x06source\"\xaf\x04\n" +
+	"\x06source\"\xcb\x04\n" +
 	"\n" +
 	"Deployment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
@@ -1871,7 +1881,8 @@ const file_forgenet_v1_deploy_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12;\n" +
 	"\vfinished_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"finishedAt\"\xad\x01\n" +
+	"finishedAt\x12\x1a\n" +
+	"\btemplate\x18\r \x01(\tR\btemplate\"\xad\x01\n" +
 	"\x12DeploymentLogEntry\x129\n" +
 	"\n" +
 	"emitted_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\temittedAt\x12\x18\n" +

@@ -14,6 +14,8 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+import 'deploy.pb.dart' as $1;
+
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 /// TemplateVariable est une valeur demandée à l'installation, telle que la
@@ -735,6 +737,261 @@ class GetTemplateResponse extends $pb.GeneratedMessage {
   $core.bool hasReadme() => $_has(1);
   @$pb.TagNumber(2)
   void clearReadme() => $_clearField(2);
+}
+
+class InstallTemplateRequest extends $pb.GeneratedMessage {
+  factory InstallTemplateRequest({
+    $core.String? templateId,
+    $core.String? projectId,
+    $core.Iterable<$core.MapEntry<$core.String, $core.String>>? values,
+    $core.String? requestId,
+  }) {
+    final result = InstallTemplateRequest._();
+    if (templateId != null) result.templateId = templateId;
+    if (projectId != null) result.projectId = projectId;
+    if (values != null) result.values.addEntries(values);
+    if (requestId != null) result.requestId = requestId;
+    return result;
+  }
+
+  InstallTemplateRequest._();
+
+  factory InstallTemplateRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      InstallTemplateRequest()..mergeFromBuffer(data, registry);
+  factory InstallTemplateRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      InstallTemplateRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'InstallTemplateRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: InstallTemplateRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'templateId')
+    ..aOS(2, _omitFieldNames ? '' : 'projectId')
+    ..m<$core.String, $core.String>(3, _omitFieldNames ? '' : 'values',
+        entryClassName: 'InstallTemplateRequest.ValuesEntry',
+        keyFieldType: $pb.PbFieldType.OS,
+        valueFieldType: $pb.PbFieldType.OS,
+        packageName: const $pb.PackageName('forgenet.v1'))
+    ..aOS(4, _omitFieldNames ? '' : 'requestId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  InstallTemplateRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  InstallTemplateRequest copyWith(
+          void Function(InstallTemplateRequest) updates) =>
+      super.copyWith((message) => updates(message as InstallTemplateRequest))
+          as InstallTemplateRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use InstallTemplateRequest() / InstallTemplateRequest.new instead')
+  static InstallTemplateRequest create() => InstallTemplateRequest._();
+  static $pb.GeneratedMessage $_createMessage() => InstallTemplateRequest._();
+  @$core.override
+  InstallTemplateRequest createEmptyInstance() => InstallTemplateRequest._();
+  @$core.pragma('dart2js:noInline')
+  static InstallTemplateRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<InstallTemplateRequest>(
+          InstallTemplateRequest.$_createMessage);
+  static InstallTemplateRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get templateId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set templateId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTemplateId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTemplateId() => $_clearField(1);
+
+  /// Nom de l'application installée : même règle que le project_id de
+  /// CreateDeployment. Il ne doit nommer aucune application existante.
+  @$pb.TagNumber(2)
+  $core.String get projectId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set projectId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasProjectId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearProjectId() => $_clearField(2);
+
+  /// Valeur par nom de variable du manifeste. Absente ou vide : la valeur par
+  /// défaut, ou un secret tiré au hasard (generate).
+  @$pb.TagNumber(3)
+  $pb.PbMap<$core.String, $core.String> get values => $_getMap(2);
+
+  /// Clé d'idempotence, facultative.
+  @$pb.TagNumber(4)
+  $core.String get requestId => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set requestId($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasRequestId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearRequestId() => $_clearField(4);
+}
+
+/// GeneratedSecret est un secret que le serveur a tiré au hasard.
+class GeneratedSecret extends $pb.GeneratedMessage {
+  factory GeneratedSecret({
+    $core.String? name,
+    $core.String? label,
+    $core.String? value,
+  }) {
+    final result = GeneratedSecret._();
+    if (name != null) result.name = name;
+    if (label != null) result.label = label;
+    if (value != null) result.value = value;
+    return result;
+  }
+
+  GeneratedSecret._();
+
+  factory GeneratedSecret.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GeneratedSecret()..mergeFromBuffer(data, registry);
+  factory GeneratedSecret.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GeneratedSecret()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GeneratedSecret',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: GeneratedSecret.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'name')
+    ..aOS(2, _omitFieldNames ? '' : 'label')
+    ..aOS(3, _omitFieldNames ? '' : 'value')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GeneratedSecret clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GeneratedSecret copyWith(void Function(GeneratedSecret) updates) =>
+      super.copyWith((message) => updates(message as GeneratedSecret))
+          as GeneratedSecret;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GeneratedSecret() / GeneratedSecret.new instead')
+  static GeneratedSecret create() => GeneratedSecret._();
+  static $pb.GeneratedMessage $_createMessage() => GeneratedSecret._();
+  @$core.override
+  GeneratedSecret createEmptyInstance() => GeneratedSecret._();
+  @$core.pragma('dart2js:noInline')
+  static GeneratedSecret getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GeneratedSecret>(
+          GeneratedSecret.$_createMessage);
+  static GeneratedSecret? _defaultInstance;
+
+  /// Nom de la variable, ex: "POSTGRES_PASSWORD".
+  @$pb.TagNumber(1)
+  $core.String get name => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set name($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasName() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearName() => $_clearField(1);
+
+  /// Libellé de la variable dans le manifeste.
+  @$pb.TagNumber(2)
+  $core.String get label => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set label($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasLabel() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearLabel() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get value => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set value($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasValue() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearValue() => $_clearField(3);
+}
+
+class InstallTemplateResponse extends $pb.GeneratedMessage {
+  factory InstallTemplateResponse({
+    $1.Deployment? deployment,
+    $core.Iterable<GeneratedSecret>? generatedSecrets,
+  }) {
+    final result = InstallTemplateResponse._();
+    if (deployment != null) result.deployment = deployment;
+    if (generatedSecrets != null)
+      result.generatedSecrets.addAll(generatedSecrets);
+    return result;
+  }
+
+  InstallTemplateResponse._();
+
+  factory InstallTemplateResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      InstallTemplateResponse()..mergeFromBuffer(data, registry);
+  factory InstallTemplateResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      InstallTemplateResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'InstallTemplateResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'forgenet.v1'),
+      createEmptyInstance: InstallTemplateResponse.$_createMessage)
+    ..aOM<$1.Deployment>(1, _omitFieldNames ? '' : 'deployment',
+        subBuilder: $1.Deployment.$_createMessage)
+    ..pPM<GeneratedSecret>(2, _omitFieldNames ? '' : 'generatedSecrets',
+        subBuilder: GeneratedSecret.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  InstallTemplateResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  InstallTemplateResponse copyWith(
+          void Function(InstallTemplateResponse) updates) =>
+      super.copyWith((message) => updates(message as InstallTemplateResponse))
+          as InstallTemplateResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use InstallTemplateResponse() / InstallTemplateResponse.new instead')
+  static InstallTemplateResponse create() => InstallTemplateResponse._();
+  static $pb.GeneratedMessage $_createMessage() => InstallTemplateResponse._();
+  @$core.override
+  InstallTemplateResponse createEmptyInstance() => InstallTemplateResponse._();
+  @$core.pragma('dart2js:noInline')
+  static InstallTemplateResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<InstallTemplateResponse>(
+          InstallTemplateResponse.$_createMessage);
+  static InstallTemplateResponse? _defaultInstance;
+
+  /// Le déploiement créé, en attente, à suivre comme les autres.
+  @$pb.TagNumber(1)
+  $1.Deployment get deployment => $_getN(0);
+  @$pb.TagNumber(1)
+  set deployment($1.Deployment value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasDeployment() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearDeployment() => $_clearField(1);
+  @$pb.TagNumber(1)
+  $1.Deployment ensureDeployment() => $_ensure(0);
+
+  /// Les secrets tirés au hasard. Renvoyés cette fois seulement : ni une
+  /// relecture ni un nouvel envoi de la même demande ne les redonne.
+  @$pb.TagNumber(2)
+  $pb.PbList<GeneratedSecret> get generatedSecrets => $_getList(1);
 }
 
 const $core.bool _omitFieldNames =

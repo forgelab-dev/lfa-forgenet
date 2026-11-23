@@ -573,11 +573,202 @@ func (x *GetTemplateResponse) GetReadme() string {
 	return ""
 }
 
+type InstallTemplateRequest struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	TemplateId string                 `protobuf:"bytes,1,opt,name=template_id,json=templateId,proto3" json:"template_id,omitempty"`
+	// Nom de l'application installée : même règle que le project_id de
+	// CreateDeployment. Il ne doit nommer aucune application existante.
+	ProjectId string `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	// Valeur par nom de variable du manifeste. Absente ou vide : la valeur par
+	// défaut, ou un secret tiré au hasard (generate).
+	Values map[string]string `protobuf:"bytes,3,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Clé d'idempotence, facultative.
+	RequestId     string `protobuf:"bytes,4,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InstallTemplateRequest) Reset() {
+	*x = InstallTemplateRequest{}
+	mi := &file_forgenet_v1_marketplace_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstallTemplateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstallTemplateRequest) ProtoMessage() {}
+
+func (x *InstallTemplateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_marketplace_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstallTemplateRequest.ProtoReflect.Descriptor instead.
+func (*InstallTemplateRequest) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_marketplace_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *InstallTemplateRequest) GetTemplateId() string {
+	if x != nil {
+		return x.TemplateId
+	}
+	return ""
+}
+
+func (x *InstallTemplateRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *InstallTemplateRequest) GetValues() map[string]string {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+func (x *InstallTemplateRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+// GeneratedSecret est un secret que le serveur a tiré au hasard.
+type GeneratedSecret struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Nom de la variable, ex: "POSTGRES_PASSWORD".
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Libellé de la variable dans le manifeste.
+	Label         string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	Value         string `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GeneratedSecret) Reset() {
+	*x = GeneratedSecret{}
+	mi := &file_forgenet_v1_marketplace_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GeneratedSecret) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GeneratedSecret) ProtoMessage() {}
+
+func (x *GeneratedSecret) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_marketplace_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GeneratedSecret.ProtoReflect.Descriptor instead.
+func (*GeneratedSecret) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_marketplace_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *GeneratedSecret) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *GeneratedSecret) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *GeneratedSecret) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+type InstallTemplateResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Le déploiement créé, en attente, à suivre comme les autres.
+	Deployment *Deployment `protobuf:"bytes,1,opt,name=deployment,proto3" json:"deployment,omitempty"`
+	// Les secrets tirés au hasard. Renvoyés cette fois seulement : ni une
+	// relecture ni un nouvel envoi de la même demande ne les redonne.
+	GeneratedSecrets []*GeneratedSecret `protobuf:"bytes,2,rep,name=generated_secrets,json=generatedSecrets,proto3" json:"generated_secrets,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *InstallTemplateResponse) Reset() {
+	*x = InstallTemplateResponse{}
+	mi := &file_forgenet_v1_marketplace_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstallTemplateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstallTemplateResponse) ProtoMessage() {}
+
+func (x *InstallTemplateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_forgenet_v1_marketplace_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstallTemplateResponse.ProtoReflect.Descriptor instead.
+func (*InstallTemplateResponse) Descriptor() ([]byte, []int) {
+	return file_forgenet_v1_marketplace_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *InstallTemplateResponse) GetDeployment() *Deployment {
+	if x != nil {
+		return x.Deployment
+	}
+	return nil
+}
+
+func (x *InstallTemplateResponse) GetGeneratedSecrets() []*GeneratedSecret {
+	if x != nil {
+		return x.GeneratedSecrets
+	}
+	return nil
+}
+
 var File_forgenet_v1_marketplace_proto protoreflect.FileDescriptor
 
 const file_forgenet_v1_marketplace_proto_rawDesc = "" +
 	"\n" +
-	"\x1dforgenet/v1/marketplace.proto\x12\vforgenet.v1\"\xdf\x01\n" +
+	"\x1dforgenet/v1/marketplace.proto\x12\vforgenet.v1\x1a\x18forgenet/v1/deploy.proto\"\xdf\x01\n" +
 	"\x10TemplateVariable\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x12\n" +
@@ -615,10 +806,31 @@ const file_forgenet_v1_marketplace_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"`\n" +
 	"\x13GetTemplateResponse\x121\n" +
 	"\btemplate\x18\x01 \x01(\v2\x15.forgenet.v1.TemplateR\btemplate\x12\x16\n" +
-	"\x06readme\x18\x02 \x01(\tR\x06readme2\xbe\x01\n" +
+	"\x06readme\x18\x02 \x01(\tR\x06readme\"\xfb\x01\n" +
+	"\x16InstallTemplateRequest\x12\x1f\n" +
+	"\vtemplate_id\x18\x01 \x01(\tR\n" +
+	"templateId\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\x12G\n" +
+	"\x06values\x18\x03 \x03(\v2/.forgenet.v1.InstallTemplateRequest.ValuesEntryR\x06values\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x04 \x01(\tR\trequestId\x1a9\n" +
+	"\vValuesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Q\n" +
+	"\x0fGeneratedSecret\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05label\x18\x02 \x01(\tR\x05label\x12\x14\n" +
+	"\x05value\x18\x03 \x01(\tR\x05value\"\x9d\x01\n" +
+	"\x17InstallTemplateResponse\x127\n" +
+	"\n" +
+	"deployment\x18\x01 \x01(\v2\x17.forgenet.v1.DeploymentR\n" +
+	"deployment\x12I\n" +
+	"\x11generated_secrets\x18\x02 \x03(\v2\x1c.forgenet.v1.GeneratedSecretR\x10generatedSecrets2\x9c\x02\n" +
 	"\x12MarketplaceService\x12V\n" +
 	"\rListTemplates\x12!.forgenet.v1.ListTemplatesRequest\x1a\".forgenet.v1.ListTemplatesResponse\x12P\n" +
-	"\vGetTemplate\x12\x1f.forgenet.v1.GetTemplateRequest\x1a .forgenet.v1.GetTemplateResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
+	"\vGetTemplate\x12\x1f.forgenet.v1.GetTemplateRequest\x1a .forgenet.v1.GetTemplateResponse\x12\\\n" +
+	"\x0fInstallTemplate\x12#.forgenet.v1.InstallTemplateRequest\x1a$.forgenet.v1.InstallTemplateResponseBEZCgithub.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1;forgenetv1b\x06proto3"
 
 var (
 	file_forgenet_v1_marketplace_proto_rawDescOnce sync.Once
@@ -632,32 +844,42 @@ func file_forgenet_v1_marketplace_proto_rawDescGZIP() []byte {
 	return file_forgenet_v1_marketplace_proto_rawDescData
 }
 
-var file_forgenet_v1_marketplace_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_forgenet_v1_marketplace_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_forgenet_v1_marketplace_proto_goTypes = []any{
-	(*TemplateVariable)(nil),      // 0: forgenet.v1.TemplateVariable
-	(*TemplatePort)(nil),          // 1: forgenet.v1.TemplatePort
-	(*TemplateVolume)(nil),        // 2: forgenet.v1.TemplateVolume
-	(*Template)(nil),              // 3: forgenet.v1.Template
-	(*ListTemplatesRequest)(nil),  // 4: forgenet.v1.ListTemplatesRequest
-	(*ListTemplatesResponse)(nil), // 5: forgenet.v1.ListTemplatesResponse
-	(*GetTemplateRequest)(nil),    // 6: forgenet.v1.GetTemplateRequest
-	(*GetTemplateResponse)(nil),   // 7: forgenet.v1.GetTemplateResponse
+	(*TemplateVariable)(nil),        // 0: forgenet.v1.TemplateVariable
+	(*TemplatePort)(nil),            // 1: forgenet.v1.TemplatePort
+	(*TemplateVolume)(nil),          // 2: forgenet.v1.TemplateVolume
+	(*Template)(nil),                // 3: forgenet.v1.Template
+	(*ListTemplatesRequest)(nil),    // 4: forgenet.v1.ListTemplatesRequest
+	(*ListTemplatesResponse)(nil),   // 5: forgenet.v1.ListTemplatesResponse
+	(*GetTemplateRequest)(nil),      // 6: forgenet.v1.GetTemplateRequest
+	(*GetTemplateResponse)(nil),     // 7: forgenet.v1.GetTemplateResponse
+	(*InstallTemplateRequest)(nil),  // 8: forgenet.v1.InstallTemplateRequest
+	(*GeneratedSecret)(nil),         // 9: forgenet.v1.GeneratedSecret
+	(*InstallTemplateResponse)(nil), // 10: forgenet.v1.InstallTemplateResponse
+	nil,                             // 11: forgenet.v1.InstallTemplateRequest.ValuesEntry
+	(*Deployment)(nil),              // 12: forgenet.v1.Deployment
 }
 var file_forgenet_v1_marketplace_proto_depIdxs = []int32{
-	0, // 0: forgenet.v1.Template.variables:type_name -> forgenet.v1.TemplateVariable
-	1, // 1: forgenet.v1.Template.ports:type_name -> forgenet.v1.TemplatePort
-	2, // 2: forgenet.v1.Template.volumes:type_name -> forgenet.v1.TemplateVolume
-	3, // 3: forgenet.v1.ListTemplatesResponse.templates:type_name -> forgenet.v1.Template
-	3, // 4: forgenet.v1.GetTemplateResponse.template:type_name -> forgenet.v1.Template
-	4, // 5: forgenet.v1.MarketplaceService.ListTemplates:input_type -> forgenet.v1.ListTemplatesRequest
-	6, // 6: forgenet.v1.MarketplaceService.GetTemplate:input_type -> forgenet.v1.GetTemplateRequest
-	5, // 7: forgenet.v1.MarketplaceService.ListTemplates:output_type -> forgenet.v1.ListTemplatesResponse
-	7, // 8: forgenet.v1.MarketplaceService.GetTemplate:output_type -> forgenet.v1.GetTemplateResponse
-	7, // [7:9] is the sub-list for method output_type
-	5, // [5:7] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	0,  // 0: forgenet.v1.Template.variables:type_name -> forgenet.v1.TemplateVariable
+	1,  // 1: forgenet.v1.Template.ports:type_name -> forgenet.v1.TemplatePort
+	2,  // 2: forgenet.v1.Template.volumes:type_name -> forgenet.v1.TemplateVolume
+	3,  // 3: forgenet.v1.ListTemplatesResponse.templates:type_name -> forgenet.v1.Template
+	3,  // 4: forgenet.v1.GetTemplateResponse.template:type_name -> forgenet.v1.Template
+	11, // 5: forgenet.v1.InstallTemplateRequest.values:type_name -> forgenet.v1.InstallTemplateRequest.ValuesEntry
+	12, // 6: forgenet.v1.InstallTemplateResponse.deployment:type_name -> forgenet.v1.Deployment
+	9,  // 7: forgenet.v1.InstallTemplateResponse.generated_secrets:type_name -> forgenet.v1.GeneratedSecret
+	4,  // 8: forgenet.v1.MarketplaceService.ListTemplates:input_type -> forgenet.v1.ListTemplatesRequest
+	6,  // 9: forgenet.v1.MarketplaceService.GetTemplate:input_type -> forgenet.v1.GetTemplateRequest
+	8,  // 10: forgenet.v1.MarketplaceService.InstallTemplate:input_type -> forgenet.v1.InstallTemplateRequest
+	5,  // 11: forgenet.v1.MarketplaceService.ListTemplates:output_type -> forgenet.v1.ListTemplatesResponse
+	7,  // 12: forgenet.v1.MarketplaceService.GetTemplate:output_type -> forgenet.v1.GetTemplateResponse
+	10, // 13: forgenet.v1.MarketplaceService.InstallTemplate:output_type -> forgenet.v1.InstallTemplateResponse
+	11, // [11:14] is the sub-list for method output_type
+	8,  // [8:11] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_forgenet_v1_marketplace_proto_init() }
@@ -665,13 +887,14 @@ func file_forgenet_v1_marketplace_proto_init() {
 	if File_forgenet_v1_marketplace_proto != nil {
 		return
 	}
+	file_forgenet_v1_deploy_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_forgenet_v1_marketplace_proto_rawDesc), len(file_forgenet_v1_marketplace_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
