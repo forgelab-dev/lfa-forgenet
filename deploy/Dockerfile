@@ -25,6 +25,8 @@ RUN go mod download
 COPY cmd/ cmd/
 COPY internal/ internal/
 COPY pkg/ pkg/
+# Le catalogue du Marketplace, embarqué dans le binaire (ADR-0018).
+COPY templates/ templates/
 ARG VERSION=0.1.0-alpha.dev
 ARG GIT_COMMIT=unknown
 # Date du commit compilé (RFC3339, UTC), fournie par la CI : la même source

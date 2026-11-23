@@ -23,6 +23,7 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/health"
 	"github.com/forgelab-dev/lfa-forgenet/internal/logging"
 	"github.com/forgelab-dev/lfa-forgenet/internal/mail"
+	"github.com/forgelab-dev/lfa-forgenet/internal/marketplace"
 	"github.com/forgelab-dev/lfa-forgenet/internal/metrics"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/compose"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/docker"
@@ -36,6 +37,7 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/update"
 	"github.com/forgelab-dev/lfa-forgenet/internal/version"
 	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
+	"github.com/forgelab-dev/lfa-forgenet/templates"
 )
 
 // main se contente de traduire l'erreur de run en code de sortie : toute la
@@ -224,6 +226,15 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 			return update.Launch(ctx, update.CLI{}, o)
 		},
 	}, logger)
+	// Le catalogue du Marketplace est embarqué dans le binaire et vérifié par
+	// la CI (ADR-0018) : un template illisible ici est une erreur de
+	// construction. Le serveur s'arrête plutôt que d'afficher un catalogue
+	// vide sans explication.
+	catalog, err := marketplace.NewCatalog(templates.FS)
+	if err != nil {
+		return fmt.Errorf("catalogue du Marketplace : %w", err)
+	}
+	marketplaceAPI := transportGRPC.NewMarketplaceServiceServer(catalog, logger)
 	for _, registrar := range []grpc.ServiceRegistrar{grpcServer.GRPCServer(), connectAPI.Registrar()} {
 		forgenetv1.RegisterAuthServiceServer(registrar, authAPI)
 		forgenetv1.RegisterContainerServiceServer(registrar, containerAPI)
@@ -233,6 +244,7 @@ func runServer(ctx context.Context, cfg *config.Config) error {
 		forgenetv1.RegisterMailServiceServer(registrar, mailAPI)
 		forgenetv1.RegisterTeamServiceServer(registrar, teamAPI)
 		forgenetv1.RegisterUpdateServiceServer(registrar, updateAPI)
+		forgenetv1.RegisterMarketplaceServiceServer(registrar, marketplaceAPI)
 	}
 	connectAPI.Mount(httpServer.Mux())
 
