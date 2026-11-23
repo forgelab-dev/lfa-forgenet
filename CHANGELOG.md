@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.11.1...v0.12.0) (2026-11-23)
+
+
+### Fonctionnalités
+
+* **templates:** catalogue embarqué, template d'exemple et guide ([fe02ef0](https://github.com/forgelab-dev/lfa-forgenet/commit/fe02ef0b297836ae9113f2384722670cef2bb724)), closes [#111](https://github.com/forgelab-dev/lfa-forgenet/issues/111)
+* **templates:** vérifier le format des templates du Marketplace ([3652878](https://github.com/forgelab-dev/lfa-forgenet/commit/3652878ac401f6cbb79d65b3e3b02804fa417d73)), closes [#111](https://github.com/forgelab-dev/lfa-forgenet/issues/111)
+
 ## [0.11.1](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.11.0...v0.11.1) (2026-11-21)
 
 
