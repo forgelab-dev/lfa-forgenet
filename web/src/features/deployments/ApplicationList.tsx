@@ -105,6 +105,7 @@ function ApplicationRow({ app, stacksKnown, onUpdate, onStackDeleted }: RowProps
                   </time>
                 )}
             {author && ` · ${author}`}
+            {latest.template && ` · Marketplace : ${latest.template}`}
           </p>
           {!active && <StackStatus stack={app.stack} known={stacksKnown} />}
         </div>

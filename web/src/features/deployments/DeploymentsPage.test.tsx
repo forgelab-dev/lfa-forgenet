@@ -28,7 +28,7 @@ function deployment(
   projectId: string,
   state: DeploymentState,
   minutesAgo: number,
-  extra: { errorMessage?: string } = {}
+  extra: { errorMessage?: string; template?: string } = {}
 ): Deployment {
   return create(DeploymentSchema, {
     id,
@@ -222,7 +222,7 @@ describe('DeploymentsPage', () => {
     renderPage(
       fakeServer({
         initial: [
-          deployment('dep_1', 'boutique', DeploymentState.SUCCESS, 30),
+          deployment('dep_1', 'boutique', DeploymentState.SUCCESS, 30, { template: 'redis' }),
           deployment('dep_2', 'api', DeploymentState.FAILED, 10, {
             errorMessage: 'docker compose up : pull access denied for api',
           }),
@@ -247,6 +247,9 @@ describe('DeploymentsPage', () => {
 
     const boutique = await appRow('boutique');
     expect(within(boutique).getByText('Réussi')).toBeInTheDocument();
+    // Installée depuis le Marketplace : la ligne nomme le template.
+    expect(within(boutique).getByText(/Marketplace : redis/)).toBeInTheDocument();
+    expect(within(api).queryByText(/Marketplace/)).toBeNull();
     fireEvent.click(within(boutique).getByRole('button', { name: 'Historique (1)' }));
     const history = within(boutique).getByRole('list', {
       name: 'Déploiements précédents de boutique',
