@@ -22,6 +22,7 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/ids"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator"
 	"github.com/forgelab-dev/lfa-forgenet/internal/orchestrator/compose"
+	"github.com/forgelab-dev/lfa-forgenet/internal/sealed"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store"
 )
 
@@ -80,6 +81,16 @@ type CreateRequest struct {
 	TargetEnv   string
 	RequestID   string // clé d'idempotence, facultative
 	TriggeredBy string // ex: "user:usr_…"
+
+	// Template et Variables décrivent une installation du Marketplace
+	// (ADR-0019). Sans Variables, celles du déploiement précédent du projet
+	// sont reprises : un fichier redéployé à la main garde ainsi ses mots de
+	// passe.
+	Template  string
+	Variables []Variable
+	// NewProject refuse un projet qui a déjà un déploiement ou une stack
+	// (ErrExists) : une installation ne remplace jamais une application.
+	NewProject bool
 }
 
 // Service enregistre et exécute les déploiements. Start et Shutdown en font un
@@ -87,6 +98,7 @@ type CreateRequest struct {
 type Service struct {
 	store   store.DeploymentStore
 	stacks  Stacks
+	box     *sealed.Box // chiffre les valeurs des installations ; nil sans clé
 	auditor audit.Auditor
 	logger  zerolog.Logger
 	timeout time.Duration
@@ -162,71 +174,143 @@ func New(st store.DeploymentStore, stacks Stacks, auditor audit.Auditor, logger 
 // Create vérifie et enregistre un déploiement, en attente, puis réveille la
 // file. Avec une clé d'idempotence déjà vue, il renvoie le déploiement existant.
 func (s *Service) Create(ctx context.Context, req CreateRequest) (*store.Deployment, error) {
-	d, err := s.create(ctx, req)
+	d, _, err := s.CreateOnce(ctx, req)
+	return d, err
+}
+
+// CreateOnce fait comme Create, et dit si le déploiement vient d'être créé :
+// faux quand la clé d'idempotence a rendu un déploiement existant. Une
+// installation ne renvoie ses secrets générés que la première fois.
+func (s *Service) CreateOnce(ctx context.Context, req CreateRequest) (*store.Deployment, bool, error) {
+	d, created, err := s.create(ctx, req)
 	meta := map[string]any{"success": err == nil, "project_id": req.ProjectID, "source": string(req.SourceType)}
+	if req.Template != "" {
+		meta["template"] = req.Template
+	}
+	if len(req.Variables) > 0 {
+		meta["variables"] = variableNames(req.Variables)
+	}
 	resource := "project:" + req.ProjectID
 	if err != nil {
-		meta["error"] = err.Error()
+		meta["error"] = redactor(req.Variables)(err.Error())
 	} else {
 		resource = "deployment:" + d.ID
 	}
 	s.audit(ctx, "deployment.create", resource, meta)
-	return d, err
+	return d, created, err
 }
 
-func (s *Service) create(ctx context.Context, req CreateRequest) (*store.Deployment, error) {
+func (s *Service) create(ctx context.Context, req CreateRequest) (*store.Deployment, bool, error) {
+	d, existing, err := s.prepare(ctx, req)
+	if err != nil {
+		return nil, false, err
+	}
+	if existing != nil {
+		return existing, false, nil
+	}
+	if err := s.store.CreateDeployment(ctx, d); err != nil {
+		// Deux appels avec la même clé en même temps : le second rend le premier.
+		if errors.Is(err, store.ErrConflict) && req.RequestID != "" {
+			existing, err := s.byRequestID(ctx, req)
+			return existing, false, err
+		}
+		return nil, false, err
+	}
+	s.notify()
+	return d, true, nil
+}
+
+// prepare vérifie req et construit le déploiement à enregistrer, ou rend
+// celui que la clé d'idempotence a déjà créé (existing).
+func (s *Service) prepare(ctx context.Context, req CreateRequest) (d, existing *store.Deployment, err error) {
 	if err := validateProjectID(req.ProjectID); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if req.SourceType != store.SourceCompose {
-		return nil, fmt.Errorf("%w : %s", ErrUnsupported, req.SourceType)
+		return nil, nil, fmt.Errorf("%w : %s", ErrUnsupported, req.SourceType)
 	}
 	if strings.TrimSpace(req.Content) == "" {
-		return nil, fmt.Errorf("%w : fichier Compose vide", ErrInvalid)
+		return nil, nil, fmt.Errorf("%w : fichier Compose vide", ErrInvalid)
 	}
 	if len(req.Content) > MaxComposeSize {
-		return nil, fmt.Errorf("%w : fichier Compose de plus de %d octets", ErrInvalid, MaxComposeSize)
+		return nil, nil, fmt.Errorf("%w : fichier Compose de plus de %d octets", ErrInvalid, MaxComposeSize)
 	}
 
-	if existing, err := s.byRequestID(ctx, req); existing != nil || err != nil {
-		return existing, err
-	}
-
-	if err := s.stacks.Validate(ctx, []byte(req.Content), nil); err != nil {
-		if errors.Is(err, compose.ErrInvalidFile) {
-			return nil, fmt.Errorf("%w : %w", ErrInvalid, err)
-		}
-		return nil, err
+	if found, err := s.byRequestID(ctx, req); found != nil || err != nil {
+		return nil, found, err
 	}
 
 	// Le déploiement précédent du projet trace la chaîne des versions.
 	previous, err := s.store.ListDeployments(ctx, req.ProjectID, 1, 0)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	d := &store.Deployment{
-		ID:            ids.New("dep"),
-		ProjectID:     req.ProjectID,
-		SourceType:    req.SourceType,
-		SourceContent: req.Content,
-		State:         store.DeploymentPending,
-		TargetEnv:     req.TargetEnv,
-		TriggeredBy:   req.TriggeredBy,
-		RequestID:     req.RequestID,
+	if req.NewProject {
+		if err := s.checkNewProject(ctx, req.ProjectID, len(previous) > 0); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	template, vars, sealedVars := req.Template, req.Variables, []byte(nil)
+	switch {
+	case len(vars) > 0:
+		if sealedVars, err = s.sealVariables(vars); err != nil {
+			return nil, nil, err
+		}
+	case len(previous) > 0 && previous[0].VariablesSealed != nil:
+		// Le chiffré est repris tel quel ; il n'est ouvert que pour vérifier
+		// le fichier avec ses valeurs.
+		if vars, err = s.openVariables(previous[0]); err != nil {
+			return nil, nil, err
+		}
+		sealedVars = previous[0].VariablesSealed
+		if template == "" {
+			template = previous[0].Template
+		}
+	}
+
+	if err := s.stacks.Validate(ctx, []byte(req.Content), environment(vars)); err != nil {
+		if errors.Is(err, compose.ErrInvalidFile) {
+			// Compose peut citer une valeur dans son refus.
+			return nil, nil, fmt.Errorf("%w : %s", ErrInvalid, redactor(vars)(err.Error()))
+		}
+		return nil, nil, err
+	}
+
+	d = &store.Deployment{
+		ID:              ids.New("dep"),
+		ProjectID:       req.ProjectID,
+		SourceType:      req.SourceType,
+		SourceContent:   req.Content,
+		State:           store.DeploymentPending,
+		TargetEnv:       req.TargetEnv,
+		TriggeredBy:     req.TriggeredBy,
+		RequestID:       req.RequestID,
+		Template:        template,
+		VariablesSealed: sealedVars,
 	}
 	if len(previous) > 0 {
 		d.PreviousDeploymentID = previous[0].ID
 	}
+	return d, nil, nil
+}
 
-	if err := s.store.CreateDeployment(ctx, d); err != nil {
-		// Deux appels avec la même clé en même temps : le second rend le premier.
-		if errors.Is(err, store.ErrConflict) && req.RequestID != "" {
-			return s.byRequestID(ctx, req)
-		}
-		return nil, err
+// checkNewProject refuse un projet déjà connu : par un déploiement, ou par une
+// stack en place sur l'hôte, laissée par une base effacée.
+func (s *Service) checkNewProject(ctx context.Context, projectID string, deployed bool) error {
+	if deployed {
+		return fmt.Errorf("%w : %s", ErrExists, projectID)
 	}
-	s.notify()
-	return d, nil
+	stacks, err := s.ListStacks(ctx)
+	if err != nil {
+		return err
+	}
+	for _, st := range stacks {
+		if st.ProjectID == projectID {
+			return fmt.Errorf("%w : %s (stack en place)", ErrExists, projectID)
+		}
+	}
+	return nil
 }
 
 // byRequestID renvoie le déploiement déjà créé avec la clé de req, ou nil.

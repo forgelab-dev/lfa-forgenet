@@ -35,6 +35,9 @@ type fakeStacks struct {
 	projects    []compose.Project
 	removed     []string
 	started     chan struct{} // reçoit un signal à chaque Deploy
+	// validateVars et deployVars gardent les variables reçues par chaque appel.
+	validateVars [][]string
+	deployVars   [][]string
 }
 
 func newFakeStacks() *fakeStacks {
@@ -44,15 +47,17 @@ func newFakeStacks() *fakeStacks {
 	}
 }
 
-func (f *fakeStacks) Validate(context.Context, []byte, []string) error {
+func (f *fakeStacks) Validate(_ context.Context, _ []byte, vars []string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.validateVars = append(f.validateVars, vars)
 	return f.validateErr
 }
 
-func (f *fakeStacks) Deploy(ctx context.Context, project string, _ []byte, _ []string, out compose.OutputFunc) error {
+func (f *fakeStacks) Deploy(ctx context.Context, project string, _ []byte, vars []string, out compose.OutputFunc) error {
 	f.mu.Lock()
 	f.deployed = append(f.deployed, project)
+	f.deployVars = append(f.deployVars, vars)
 	block, err, output := f.block, f.deployErr, f.output
 	f.mu.Unlock()
 	// La sortie imite celle de `docker compose up`, écrite sur stderr.
