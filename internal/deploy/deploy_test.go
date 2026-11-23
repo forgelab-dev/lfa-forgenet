@@ -44,13 +44,13 @@ func newFakeStacks() *fakeStacks {
 	}
 }
 
-func (f *fakeStacks) Validate(context.Context, []byte) error {
+func (f *fakeStacks) Validate(context.Context, []byte, []string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.validateErr
 }
 
-func (f *fakeStacks) Deploy(ctx context.Context, project string, _ []byte, out compose.OutputFunc) error {
+func (f *fakeStacks) Deploy(ctx context.Context, project string, _ []byte, _ []string, out compose.OutputFunc) error {
 	f.mu.Lock()
 	f.deployed = append(f.deployed, project)
 	block, err, output := f.block, f.deployErr, f.output

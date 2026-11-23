@@ -195,7 +195,7 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 		return true // annulé entre-temps
 	}
 	journal.info(stepValidate, "Vérification du fichier Compose")
-	if err := s.stacks.Validate(ctx, content); err != nil {
+	if err := s.stacks.Validate(ctx, content, nil); err != nil {
 		fail(err)
 		return true
 	}
@@ -204,7 +204,7 @@ func (s *Service) execute(runCtx context.Context, d *store.Deployment) bool {
 		return true
 	}
 	journal.info(stepDeploy, "Mise en service de la stack "+stack+" (docker compose up)")
-	if err := s.stacks.Deploy(ctx, stack, content, composeOutput(journal.output(stepDeploy))); err != nil {
+	if err := s.stacks.Deploy(ctx, stack, content, nil, composeOutput(journal.output(stepDeploy))); err != nil {
 		fail(err)
 		return true
 	}

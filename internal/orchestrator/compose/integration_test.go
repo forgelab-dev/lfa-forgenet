@@ -47,7 +47,7 @@ func TestEngine_RealComposeLifecycle(t *testing.T) {
 	})
 
 	// Déploiement : les deux services tournent, web est sain.
-	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/reference.compose.yaml"), nil))
+	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/reference.compose.yaml"), nil, nil))
 	first := byService(ctx, t, engine, project)
 	require.Len(t, first, 2)
 	assert.Equal(t, orchestrator.StateRunning, first["web"].State)
@@ -57,7 +57,7 @@ func TestEngine_RealComposeLifecycle(t *testing.T) {
 		"le fichier ne lit pas l'environnement du serveur")
 
 	// Mise à jour : web n'est pas recréé, cache est retiré, worker apparaît.
-	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/reference-v2.compose.yaml"), nil))
+	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/reference-v2.compose.yaml"), nil, nil))
 	second := byService(ctx, t, engine, project)
 	require.Len(t, second, 2)
 	assert.Equal(t, first["web"].ID, second["web"].ID, "un service inchangé garde son conteneur")
@@ -105,7 +105,7 @@ func TestEngine_RealComposeRestartPolicy(t *testing.T) {
 
 	var journal []string
 	out := func(_ compose.OutputStream, line string) { journal = append(journal, line) }
-	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/restart.compose.yaml"), out))
+	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/restart.compose.yaml"), nil, out))
 	assert.Contains(t, journal, "Relance après un redémarrage du serveur (restart: unless-stopped) ajoutée à : app, web")
 
 	services := byService(ctx, t, engine, project)
@@ -132,7 +132,7 @@ func TestEngine_RealComposeRestartPolicy(t *testing.T) {
 	// Un nouveau déploiement du même fichier ne recrée rien : la politique fait
 	// partie de la configuration appliquée, elle ne change pas d'un déploiement
 	// à l'autre.
-	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/restart.compose.yaml"), nil))
+	require.NoError(t, engine.Deploy(ctx, project, readFile(t, "testdata/restart.compose.yaml"), nil, nil))
 	assert.Equal(t, services["app"].ID, byService(ctx, t, engine, project)["app"].ID)
 }
 
@@ -149,7 +149,7 @@ func TestEngine_RealComposeRejectsInvalidFile(t *testing.T) {
 		t.Skipf("docker compose indisponible : %v", err)
 	}
 
-	err = engine.Validate(ctx, []byte("services:\n  web:\n    image: [pas, une, chaine]\n"))
+	err = engine.Validate(ctx, []byte("services:\n  web:\n    image: [pas, une, chaine]\n"), nil)
 	require.ErrorIs(t, err, compose.ErrInvalidFile)
 	var cmdErr *compose.CommandError
 	require.ErrorAs(t, err, &cmdErr)

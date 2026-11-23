@@ -73,7 +73,7 @@ func TestDeploy_ValidatesThenStartsAndWaits(t *testing.T) {
 	r := deployRunner(resolved)
 	e := newEngine(t, config.DockerConfig{}, r)
 
-	require.NoError(t, e.Deploy(context.Background(), "prj_0a1b2c3d4e5f6a7b", []byte(stack), nil))
+	require.NoError(t, e.Deploy(context.Background(), "prj_0a1b2c3d4e5f6a7b", []byte(stack), nil, nil))
 	require.Len(t, r.calls, 2)
 
 	assert.Equal(t, []string{"-p", "forgenet-validation", "-f", "-", "config", "--format", "json"}, r.calls[0].Args)
@@ -97,7 +97,7 @@ func TestDeploy_RefusesBadProjectBeforeAnyCommand(t *testing.T) {
 	e := newEngine(t, config.DockerConfig{}, r)
 
 	for _, name := range []string{"", "Majuscules", "-tiret", "avec espace", "point.final"} {
-		err := e.Deploy(context.Background(), name, []byte(stack), nil)
+		err := e.Deploy(context.Background(), name, []byte(stack), nil, nil)
 		assert.ErrorIs(t, err, compose.ErrInvalidProject, "%q", name)
 	}
 	assert.Empty(t, r.calls)
@@ -109,7 +109,7 @@ func TestDeploy_InvalidFileDoesNotTouchTheStack(t *testing.T) {
 	}}
 	e := newEngine(t, config.DockerConfig{}, r)
 
-	err := e.Deploy(context.Background(), "prj_1", []byte(stack), nil)
+	err := e.Deploy(context.Background(), "prj_1", []byte(stack), nil, nil)
 	require.ErrorIs(t, err, compose.ErrInvalidFile)
 	assert.Contains(t, err.Error(), "services.web.image must be a string", "le message de Compose est gardé")
 	assert.Len(t, r.calls, 1, "up n'est pas lancé")
@@ -119,12 +119,12 @@ func TestValidate_ClassifiesErrors(t *testing.T) {
 	ctx := context.Background()
 
 	e := newEngine(t, config.DockerConfig{}, &fakeRunner{})
-	assert.ErrorIs(t, e.Validate(ctx, []byte("  \n")), compose.ErrInvalidFile, "un fichier vide est refusé sans commande")
+	assert.ErrorIs(t, e.Validate(ctx, []byte("  \n"), nil), compose.ErrInvalidFile, "un fichier vide est refusé sans commande")
 
 	// Une annulation ou une commande absente ne disent rien du fichier.
 	for _, cause := range []error{context.Canceled, compose.ErrUnavailable} {
 		r := &fakeRunner{errs: map[string]error{"config": cause}}
-		err := newEngine(t, config.DockerConfig{}, r).Validate(ctx, []byte(stack))
+		err := newEngine(t, config.DockerConfig{}, r).Validate(ctx, []byte(stack), nil)
 		assert.ErrorIs(t, err, cause)
 		assert.NotErrorIs(t, err, compose.ErrInvalidFile)
 	}
@@ -150,7 +150,7 @@ func TestDeploy_StartFailureIsReturned(t *testing.T) {
 	failure := &compose.CommandError{Args: []string{"up"}, ExitCode: 1, Output: "container web is unhealthy"}
 	r := deployRunner(resolved)
 	r.errs = map[string]error{"up": failure}
-	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), nil)
+	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), nil, nil)
 
 	var cmdErr *compose.CommandError
 	require.ErrorAs(t, err, &cmdErr)
@@ -178,7 +178,7 @@ func TestDeploy_AddsRestartPolicyOnlyWhereMissing(t *testing.T) {
 	var journal []string
 	out := func(_ compose.OutputStream, line string) { journal = append(journal, line) }
 
-	require.NoError(t, e.Deploy(context.Background(), "prj_1", []byte(stack), out))
+	require.NoError(t, e.Deploy(context.Background(), "prj_1", []byte(stack), nil, out))
 	require.Len(t, r.calls, 2)
 	up := r.calls[1].Args
 	require.Len(t, up, 15)
@@ -209,7 +209,7 @@ func TestDeploy_RemovesOverrideWhenStartFails(t *testing.T) {
 	r := deployRunner(`{"services":{"web":{"image":"nginx:alpine"},"worker":{"image":"alpine"}}}`)
 	r.errs = map[string]error{"up": &compose.CommandError{Args: []string{"up"}, ExitCode: 1, Output: "boom"}}
 
-	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), nil)
+	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), nil, nil)
 	require.Error(t, err)
 	require.Len(t, r.overrides, 1)
 	assert.JSONEq(t, `{"services":{"web":{"restart":"unless-stopped"},"worker":{"restart":"unless-stopped"}}}`, r.overrides[0])
@@ -218,7 +218,7 @@ func TestDeploy_RemovesOverrideWhenStartFails(t *testing.T) {
 
 func TestDeploy_UnreadableModelStopsBeforeUp(t *testing.T) {
 	r := deployRunner("pas du json")
-	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), nil)
+	err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), nil, nil)
 	require.Error(t, err)
 	assert.Len(t, r.calls, 1, "up n'est pas lancé")
 }
@@ -286,6 +286,40 @@ func TestCommandEnv_OnlyPassesWhatComposeNeeds(t *testing.T) {
 	r = &fakeRunner{}
 	require.NoError(t, newEngine(t, config.DockerConfig{}, r).Ping(context.Background()))
 	assert.Contains(t, r.calls[0].Env, "DOCKER_HOST=unix:///var/run/env.sock", "sans docker.host, l'environnement décide")
+}
+
+// Les valeurs d'une installation (ADR-0019) s'ajoutent à l'environnement de
+// la commande, pour la lecture du modèle comme pour up.
+func TestDeploy_PassesVariablesToEveryCommand(t *testing.T) {
+	r := deployRunner(resolved)
+	e := newEngine(t, config.DockerConfig{}, r)
+	vars := []string{"POSTGRES_PASSWORD=s3cret", "POSTGRES_USER=app"}
+
+	require.NoError(t, e.Deploy(context.Background(), "prj_1", []byte(stack), vars, nil))
+	require.Len(t, r.calls, 2)
+	for _, c := range r.calls {
+		assert.Contains(t, c.Env, "POSTGRES_PASSWORD=s3cret", subcommand(c.Args))
+		assert.Contains(t, c.Env, "POSTGRES_USER=app", subcommand(c.Args))
+		assert.Contains(t, c.Env, "PATH="+os.Getenv("PATH"), "l'environnement fixe reste")
+	}
+
+	r = &fakeRunner{}
+	require.NoError(t, newEngine(t, config.DockerConfig{}, r).Validate(context.Background(), []byte(stack), vars))
+	assert.Contains(t, r.calls[0].Env, "POSTGRES_PASSWORD=s3cret", "${VAR:?} serait refusé sans la valeur")
+}
+
+// Le manifeste interdit déjà ces noms ; le moteur ne s'y fie pas : une valeur
+// ne doit jamais changer le démon visé ni la commande elle-même.
+func TestDeploy_RefusesReservedVariables(t *testing.T) {
+	for _, kv := range []string{
+		"PATH=/tmp", "HOME=/tmp", "DOCKER_HOST=tcp://ailleurs:2375", "COMPOSE_FILE=/etc/passwd",
+		"FORGENET_SECRET_KEY=x", "SANS_EGAL", "=vide", "minuscules=x",
+	} {
+		r := deployRunner(resolved)
+		err := newEngine(t, config.DockerConfig{}, r).Deploy(context.Background(), "prj_1", []byte(stack), []string{kv}, nil)
+		require.ErrorIs(t, err, compose.ErrReservedVariable, kv)
+		assert.Empty(t, r.calls, "%s : aucune commande lancée", kv)
+	}
 }
 
 func TestValidProjectName(t *testing.T) {

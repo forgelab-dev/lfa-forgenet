@@ -34,13 +34,15 @@ type fakeStacks struct {
 	removed     []string
 }
 
-func (f *fakeStacks) Validate(context.Context, []byte) error {
+func (f *fakeStacks) Validate(context.Context, []byte, []string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.validateErr
 }
 
-func (f *fakeStacks) Deploy(context.Context, string, []byte, compose.OutputFunc) error { return nil }
+func (f *fakeStacks) Deploy(context.Context, string, []byte, []string, compose.OutputFunc) error {
+	return nil
+}
 
 func (f *fakeStacks) Remove(_ context.Context, project string, _ bool) error {
 	f.mu.Lock()
