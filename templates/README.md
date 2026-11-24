@@ -161,10 +161,11 @@ Chaque erreur nomme le template, le fichier et la règle, par exemple :
 templates/postgres/docker-compose.yml : services.postgres : image "postgres:latest" : l'étiquette "latest" change sous le même nom ; épinglez une version
 ```
 
-La vérification ne remplace pas l'essai réel. Tant que la page Marketplace du
-dashboard n'existe pas (#116), essayez la stack avec `docker compose`, en
-donnant les variables comme ForgeNet le fait (dans l'environnement de la
-commande, ADR-0019) :
+La vérification ne remplace pas l'essai réel, qui se fait en deux temps.
+
+**1. La stack seule, avec `docker compose`** (obligatoire). Donnez les
+variables comme ForgeNet le fait, dans l'environnement de la commande
+(ADR-0019) :
 
 ```bash
 cd templates/postgres
@@ -175,11 +176,14 @@ docker compose -p essai-postgres restart   # les données restent
 docker compose -p essai-postgres down -v   # retire la stack et ses volumes
 ```
 
-Un ForgeNet lancé sur votre machine peut aussi lire votre dossier à la place
-du catalogue embarqué : démarrez `forgenet-server` avec
-`FORGENET_MARKETPLACE_DIR="$PWD/templates"` (un chemin absolu). Votre template
-apparaît alors au catalogue et s'installe comme ceux de la version publiée.
-Les dossiers en `_` restent écartés, et le serveur refuse de démarrer si un
+**2. L'installation depuis le dashboard** (conseillé, si vous pouvez lancer
+ForgeNet sur votre machine). Démarrez `forgenet-server` avec
+`FORGENET_MARKETPLACE_DIR="$PWD/templates"` (un chemin absolu) : il lit votre
+dossier à la place du catalogue embarqué. Ouvrez la page **Marketplace** du
+dashboard, où votre template apparaît, et installez-le comme le ferait un
+administrateur : formulaire des variables, secrets générés affichés une seule
+fois, puis suivi du déploiement jusqu'à ce que l'application soit saine. Les
+dossiers en `_` restent écartés, et le serveur refuse de démarrer si un
 manifeste ou une icône est invalide.
 
-Joignez une capture de l'essai à la pull request.
+Joignez à la pull request une capture de chaque essai réalisé.
