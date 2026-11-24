@@ -204,7 +204,7 @@ task test      # test suite
 
 **Conventions** — [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `chore:`), SemVer on the Core Engine, mandatory pull-request review before merging to `main`. Read [CONTRIBUTING.md](CONTRIBUTING.md) before your first PR.
 
-Looking for a place to start? Issues labelled [`good first issue`](https://github.com/forgelab-dev/lfa-forgenet/labels/good%20first%20issue) are meant for exactly that.
+Looking for a place to start? Issues labelled [`good first issue`](https://github.com/forgelab-dev/lfa-forgenet/labels/good%20first%20issue) are meant for exactly that: comment on the issue and wait to be assigned first, as explained in [CONTRIBUTING.md](CONTRIBUTING.md#manières-de-contribuer).
 
 > Project documentation is currently written in French. Contributions in English are welcome, and translating the docs is itself a valuable first contribution.
 
