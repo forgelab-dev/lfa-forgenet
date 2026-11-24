@@ -35,6 +35,16 @@ Le code n'est pas la seule porte d'entrée :
 
 Vous cherchez un point de départ ? Les issues étiquetées [`good first issue`](https://github.com/forgelab-dev/lfa-forgenet/labels/good%20first%20issue) sont choisies pour être abordables sans connaître tout le projet.
 
+**Prendre une `good first issue`.** Ces issues sont gardées pour une première contribution, annoncée avant le travail :
+
+1. Commentez « je prends » (ou « I'll take it ») sur l'issue.
+2. Attendez qu'un mainteneur vous l'assigne.
+3. Ouvrez ensuite la Pull Request, avec `Closes #<numéro>` dans la description.
+
+Une PR ouverte sur une `good first issue` qui n'a été ni annoncée ni assignée est fermée, même si la modification est juste : l'issue reste ainsi disponible pour quelqu'un qui découvre le projet.
+
+> *English: comment on a `good first issue` and wait to be assigned before opening a pull request. Unannounced pull requests on these issues are closed, even when correct, so the issue stays available to a newcomer.*
+
 ## Code de conduite
 
 Soyez respectueux et constructif. Nous partons du principe que chacun agit de bonne foi et débute quelque part. Sont exclus : le harcèlement, les attaques personnelles, les propos discriminatoires, et le mépris envers ceux qui posent des questions de débutant.

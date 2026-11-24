@@ -205,7 +205,7 @@ task test      # suite de tests
 
 **Conventions** — [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `chore:`), SemVer sur le Core Engine, revue par Pull Request obligatoire avant merge sur `main`. Consultez [CONTRIBUTING.md](CONTRIBUTING.md) avant votre première PR.
 
-Vous cherchez par où commencer ? Les issues étiquetées [`good first issue`](https://github.com/forgelab-dev/lfa-forgenet/labels/good%20first%20issue) sont faites pour ça.
+Vous cherchez par où commencer ? Les issues étiquetées [`good first issue`](https://github.com/forgelab-dev/lfa-forgenet/labels/good%20first%20issue) sont faites pour ça : annoncez-vous d'abord en commentaire, comme l'explique [CONTRIBUTING.md](CONTRIBUTING.md#manières-de-contribuer).
 
 ## 📦 Éditions
 
