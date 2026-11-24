@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.13.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.12.0...v0.13.0) (2026-11-24)
+
+
+### Fonctionnalités
+
+* **api:** contrat d'installation d'un template ([3017780](https://github.com/forgelab-dev/lfa-forgenet/commit/3017780d883d432a492002e3d017ef77c68da076)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **api:** contrat MarketplaceService ([7aec342](https://github.com/forgelab-dev/lfa-forgenet/commit/7aec342d0ce6248936adeb52293d77e26fa4fdae)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **compose:** passer les valeurs d'une installation à la commande ([0fb2523](https://github.com/forgelab-dev/lfa-forgenet/commit/0fb252373f10537d3c2f065a36f11ee905d331ac)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **deploy:** déployer avec les valeurs d'une installation ([d48713a](https://github.com/forgelab-dev/lfa-forgenet/commit/d48713a48e2544565fcfbe495cff86f36c3fa8f8)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **marketplace:** catalogue lu au démarrage du serveur ([3721f0f](https://github.com/forgelab-dev/lfa-forgenet/commit/3721f0fff2b118ca281e33fde0c6490ff81f731c)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **marketplace:** installer un template depuis l'API ([03295c7](https://github.com/forgelab-dev/lfa-forgenet/commit/03295c7f2e34306ecfccc33fb95ed0ae86c5a700)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **marketplace:** vérifier et compléter les valeurs d'une installation ([732cd78](https://github.com/forgelab-dev/lfa-forgenet/commit/732cd7877048c53db41497c7ae386741c995a398)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **server:** servir l'API du Marketplace ([1f9c891](https://github.com/forgelab-dev/lfa-forgenet/commit/1f9c891e9df821458e84e80b6df9f02bd6a041dd)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **store:** garder le template et les valeurs d'un déploiement ([6c0551f](https://github.com/forgelab-dev/lfa-forgenet/commit/6c0551f4ef8244afb246d4460178a0189cf2ea22)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **web:** client et règles du formulaire du Marketplace ([f02888d](https://github.com/forgelab-dev/lfa-forgenet/commit/f02888d3b65935fbf107737445aa6e376beed092)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **web:** installer un template depuis la page Marketplace ([7c91703](https://github.com/forgelab-dev/lfa-forgenet/commit/7c91703f4b6e98775885a47c72ff4327e9911c7a)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+* **web:** nommer le template installé dans Déploiements ([aa5a4f3](https://github.com/forgelab-dev/lfa-forgenet/commit/aa5a4f3f93b38b6af32a88d1035bd9510ffd3108)), closes [#116](https://github.com/forgelab-dev/lfa-forgenet/issues/116)
+
 ## [0.12.0](https://github.com/forgelab-dev/lfa-forgenet/compare/v0.11.1...v0.12.0) (2026-11-23)
 
 
