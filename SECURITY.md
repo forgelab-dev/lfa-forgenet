@@ -11,7 +11,7 @@ ForgeNet est en **alpha** depuis la v0.1.0 : les correctifs de sécurité sont p
 | Version | Prise en charge |
 |---|---|
 | `main` | ✅ |
-| 0.1.x (dernière publiée) | ✅ |
+| Dernière version mineure publiée | ✅ |
 | antérieures | ❌ |
 
 ## Signaler une vulnérabilité
