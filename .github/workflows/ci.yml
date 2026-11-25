@@ -43,6 +43,8 @@ jobs:
               - 'pkg/**'
               # Les templates sont embarqués dans le binaire et vérifiés par go test.
               - 'templates/**'
+              # Catalogue d'essai partagé par le test Go et le test Playwright.
+              - 'testdata/**'
               - '.golangci.yml'
               - '.github/workflows/ci.yml'
             web:
@@ -159,14 +161,15 @@ jobs:
             npm install --no-save
           fi
 
+      # Les scripts npm couvrent aussi e2e/ et playwright.config.ts.
       - name: Lint sources
-        run: npx eslint src/ --no-error-on-unmatched-pattern
+        run: npm run lint
 
       - name: Check formatting
-        run: npx prettier --check src/
+        run: npm run format:check
 
       - name: Typecheck
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Tests (Vitest)
         run: npm test
@@ -252,16 +255,63 @@ jobs:
       - name: Check image runs as non-root
         run: test "$(docker image inspect forgenet-server:ci --format '{{.Config.User}}')" = "10001:10001"
 
+  # Le parcours du Marketplace dans un vrai navigateur (#116) : le dashboard
+  # compilé, servi par le vrai binaire, et une vraie stack Docker.
+  e2e:
+    needs: changes
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build dashboard
+        run: npm run build
+
+      - name: Tests de bout en bout (Playwright)
+        run: npm run e2e
+
+      - name: Rapport Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            web/playwright-report/
+            web/test-results/
+          retention-days: 7
+
   all-checks-pass:
-    needs: [buf, go, web, mobile, deploy]
+    needs: [buf, go, web, e2e, mobile, deploy]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Verify all required checks
         run: |
-          echo "buf=${{ needs.buf.result }} go=${{ needs.go.result }} web=${{ needs.web.result }} mobile=${{ needs.mobile.result }} deploy=${{ needs.deploy.result }}"
+          echo "buf=${{ needs.buf.result }} go=${{ needs.go.result }} web=${{ needs.web.result }} e2e=${{ needs.e2e.result }} mobile=${{ needs.mobile.result }} deploy=${{ needs.deploy.result }}"
           fail=0
-          for r in "${{ needs.buf.result }}" "${{ needs.go.result }}" "${{ needs.web.result }}" "${{ needs.mobile.result }}" "${{ needs.deploy.result }}"; do
+          for r in "${{ needs.buf.result }}" "${{ needs.go.result }}" "${{ needs.web.result }}" "${{ needs.e2e.result }}" "${{ needs.mobile.result }}" "${{ needs.deploy.result }}"; do
             if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
               fail=1
             fi
