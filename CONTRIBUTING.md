@@ -148,6 +148,19 @@ Des hooks pre-commit lancent ces vérifications automatiquement ; `task lint` fa
 
 **Sur les tests** — inutile de viser un pourcentage de couverture. Testez ce qui peut réellement casser en production : l'orchestration Docker, le parsing Compose, la génération de Caddyfile, la logique de rollback, l'enforcement RBAC. Un test qui vérifie qu'un getter retourne bien la valeur passée au constructeur ne protège de rien.
 
+### Tests de bout en bout
+
+Le parcours du Marketplace (se connecter, installer un template, noter le mot de passe généré) est testé avec Playwright dans un vrai navigateur, sur le vrai serveur et un vrai démon Docker. Il faut Go, Node et Docker Compose :
+
+```bash
+cd web
+npm ci
+npm run build                     # le serveur d'essai sert web/dist
+FORGENET_E2E_CHROME=1 npm run e2e # avec le Chrome déjà installé
+```
+
+Sans `FORGENET_E2E_CHROME`, Playwright utilise son propre Chromium : `npx playwright install chromium` une fois. Le test compile `forgenet-server`, crée un administrateur d'essai au mot de passe tiré au hasard, installe le template de `testdata/marketplace/secret/` sous un nom unique, puis retire la stack à la fin. En cas d'échec, les captures et la trace sont dans `web/test-results/`.
+
 ## La règle du contrat `api/`
 
 **Aucun client HTTP ou gRPC n'est écrit à la main.** Le dossier `api/proto/` est la source de vérité ; les clients Go, TypeScript et Dart en sont générés.
