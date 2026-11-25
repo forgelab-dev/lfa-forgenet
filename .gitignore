@@ -107,3 +107,5 @@ tmp/
 # Le code généré depuis api/proto/ (clients Go, TypeScript, Dart) EST versionné :
 # il fait partie du contrat et doit rester synchronisé avec les .proto.
 # Voir CONTRIBUTING.md § « La règle du contrat api/ ».
+web/test-results/
+web/playwright-report/
