@@ -8,8 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -28,62 +26,12 @@ import (
 	"github.com/forgelab-dev/lfa-forgenet/internal/ids"
 	"github.com/forgelab-dev/lfa-forgenet/internal/store/sqlite"
 	forgenetv1 "github.com/forgelab-dev/lfa-forgenet/pkg/gen/forgenet/v1"
-	"github.com/forgelab-dev/lfa-forgenet/templates"
 )
 
-const (
-	// e2eManifest décrit un template dont le secret est tiré au hasard.
-	e2eManifest = `schema: 1
-name: Secret de bout en bout
-description: Un conteneur qui n'est sain qu'avec son secret.
-category: other
-version: "1"
-service: app
-license: MIT
-homepage: https://example.org
-variables:
-  - name: APP_SECRET
-    label: Secret de l'application
-    secret: true
-    generate: 24
-  - name: APP_NAME
-    label: Nom
-    default: forgenet
-`
-	// La sonde de santé échoue si Compose n'a pas reçu APP_SECRET ; ${…:?}
-	// refuse même le fichier sans elle.
-	e2eCompose = `services:
-  app:
-    image: alpine:3.21
-    command: ["sleep", "3600"]
-    environment:
-      APP_SECRET: ${APP_SECRET:?}
-      APP_NAME: ${APP_NAME}
-    healthcheck:
-      test: ["CMD-SHELL", "test -n \"$$APP_SECRET\""]
-      interval: 1s
-      retries: 20
-`
-)
-
-// writeE2ECatalog écrit un catalogue d'un template, « secret », dans un dossier.
-func writeE2ECatalog(t *testing.T) string {
-	t.Helper()
-	dir := t.TempDir()
-	icon, err := fs.ReadFile(templates.FS, "_exemple/icon.svg")
-	require.NoError(t, err)
-	files := map[string][]byte{
-		"manifest.yaml":      []byte(e2eManifest),
-		"docker-compose.yml": []byte(e2eCompose),
-		"icon.svg":           icon,
-		"README.md":          []byte("# Secret de bout en bout\n"),
-	}
-	require.NoError(t, os.Mkdir(filepath.Join(dir, "secret"), 0o700))
-	for name, data := range files {
-		require.NoError(t, os.WriteFile(filepath.Join(dir, "secret", name), data, 0o600))
-	}
-	return dir
-}
+// e2eCatalogDir est le catalogue d'essai partagé avec le test Playwright du
+// dashboard (web/e2e) : un seul template, « secret », dont le mot de passe est
+// tiré au hasard et dont la sonde de santé échoue sans lui.
+const e2eCatalogDir = "../../testdata/marketplace"
 
 // TestServer_E2E_MarketplaceInstall parcourt l'installation d'un template
 // (#116, ADR-0019) sur le vrai binaire et un vrai démon : le secret tiré au
@@ -101,8 +49,10 @@ func TestServer_E2E_MarketplaceInstall(t *testing.T) {
 		}
 	}
 
+	catalog, err := filepath.Abs(e2eCatalogDir)
+	require.NoError(t, err)
 	key := make([]byte, 32)
-	_, err := rand.Read(key)
+	_, err = rand.Read(key)
 	require.NoError(t, err)
 	dbPath := filepath.Join(t.TempDir(), "forgenet.db")
 	grpcPort := freePort(t)
@@ -120,7 +70,7 @@ secrets:
   key: %q
 marketplace:
   dir: %q
-`, freePort(t), grpcPort, dbPath, e2eJWTSecret, hex.EncodeToString(key), writeE2ECatalog(t)))
+`, freePort(t), grpcPort, dbPath, e2eJWTSecret, hex.EncodeToString(key), catalog))
 
 	token := adminToken(ctx, t, configFile, dbPath)
 	_, exited := startServer(t, nil, "--config", configFile)
