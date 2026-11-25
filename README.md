@@ -39,6 +39,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 
 - **Installation en une commande** sur Debian ou Ubuntu, x86_64 ou ARM64 : le serveur et Caddy en conteneurs durcis, image signée (voir [Installation](#-installation)).
 - **Déploiements Docker Compose** depuis le dashboard : mis en file, suivis en direct avec leur journal, repris au redémarrage du serveur ; état réel de chaque stack, suppression avec ou sans ses volumes.
+- **Marketplace** : un catalogue d'applications dans le dashboard. Le formulaire d'un template vérifie les valeurs avant l'installation, les mots de passe laissés vides sont générés et montrés une seule fois, et l'application installée apparaît dans Déploiements. Le catalogue publié est encore vide : les premiers templates arrivent, et le [guide des templates](templates/README.md) explique comment en écrire un.
 - **Domaines et HTTPS** : un domaine par service, certificat Let's Encrypt et redirection HTTPS par Caddy, rechargé à chaque changement.
 - **Surveillance** : processeur, mémoire, disque et réseau du serveur et de chaque conteneur, en direct, avec la dernière heure ; reconnexion propre sur une connexion lente ou coupée.
 - **Conteneurs** : lister, consulter, démarrer, arrêter, redémarrer.
@@ -47,7 +48,7 @@ Déployez, surveillez et orchestrez vos services — avec une IA d'administratio
 - **Comptes et sécurité** : rôles administrateur et membre, droits vérifiés à chaque appel, tentatives de connexion limitées, journal d'audit.
 - **API** : contrat gRPC ([`api/proto`](api/proto)), servi aussi en Connect et gRPC-Web, avec des clients générés en TypeScript et en Dart.
 
-**Pas encore là** : retour arrière d'un déploiement, déploiement depuis Git, Marketplace, assistant IA local, sauvegardes des applications, migration depuis les autres PaaS, CLI, droits par projet, et l'application mobile, dont seul le client d'API généré existe. Le détail, case par case, est dans la [matrice fonctionnelle](docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md) ; les choix d'architecture dans [`docs/decisions/`](docs/decisions/).
+**Pas encore là** : retour arrière d'un déploiement, déploiement depuis Git, les templates du Marketplace (PostgreSQL, MySQL, Redis et MinIO en cours), assistant IA local, sauvegardes des applications, migration depuis les autres PaaS, CLI, droits par projet, et l'application mobile, dont seul le client d'API généré existe. Le détail, case par case, est dans la [matrice fonctionnelle](docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md) ; les choix d'architecture dans [`docs/decisions/`](docs/decisions/).
 
 ---
 
