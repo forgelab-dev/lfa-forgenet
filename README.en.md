@@ -39,6 +39,7 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 
 - **One-command install** on Debian or Ubuntu, x86_64 or ARM64: the server and Caddy in hardened containers, signed image (see [Installation](#-installation)).
 - **Docker Compose deployments** from the dashboard: queued, followed live with their log, resumed when the server restarts; the real state of each stack, removal with or without its volumes.
+- **Marketplace**: an application catalogue in the dashboard. A template's form checks the values before installing, passwords left empty are generated and shown only once, and the installed application appears in Deployments. The published catalogue is still empty: the first templates are on their way, and the [template guide](templates/README.md) (in French) explains how to write one.
 - **Domains and HTTPS**: one domain per service, Let's Encrypt certificate and HTTPS redirect by Caddy, reloaded on every change.
 - **Monitoring**: CPU, memory, disk and network for the server and each container, live, with the last hour; clean reconnection on a slow or dropped connection.
 - **Containers**: list, inspect, start, stop, restart.
@@ -47,7 +48,7 @@ Deploy, monitor and orchestrate your services — with a sysadmin AI that runs *
 - **Accounts and security**: admin and member roles, permissions checked on every call, rate-limited sign-in, audit log.
 - **API**: gRPC contract ([`api/proto`](api/proto)), also served over Connect and gRPC-Web, with generated TypeScript and Dart clients.
 
-**Not there yet**: deployment rollback, deploy from Git, Marketplace, local AI assistant, application backups, migration from other PaaS, CLI, per-project permissions, and the mobile app, of which only the generated API client exists. The item-by-item status is in the [feature matrix](docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md) (in French); architecture decisions are in [`docs/decisions/`](docs/decisions/) (in French).
+**Not there yet**: deployment rollback, deploy from Git, the Marketplace templates (PostgreSQL, MySQL, Redis and MinIO in progress), local AI assistant, application backups, migration from other PaaS, CLI, per-project permissions, and the mobile app, of which only the generated API client exists. The item-by-item status is in the [feature matrix](docs/ForgeNet_Matrice_Fonctionnelle_Complete_Dev.md) (in French); architecture decisions are in [`docs/decisions/`](docs/decisions/) (in French).
 
 ---
 
